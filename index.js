@@ -47,7 +47,7 @@ app.get('/', async (req, res) => {
         <title>Reversed Log Viewer</title>
       </head>
       <body>
-        <h1>Experiment Log - Newest Entries on Top</h1>
+        <h1>EBEAM Web Monitor</h1>
         <p>File URL: ${FILE_URL}</p>
         <pre style="white-space: pre-wrap; font-family: monospace;">
 ${reversedLog}

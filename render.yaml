@@ -1,0 +1,14 @@
+# render.yaml
+
+services:
+  - type: web
+    name: ebeam-webmonitor
+    env: node
+    branch: main  # or whatever branch your code lives on
+    buildCommand: "npm install"
+    startCommand: "npm start"
+    plan: free
+    # Optionally, you can set environment variables for your app here:
+    # envVars:
+    #   - key: FILE_URL
+    #     value: "https://drive.google.com/uc?export=download&id=YOUR_FILE_ID_HERE"

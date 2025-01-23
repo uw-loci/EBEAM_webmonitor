@@ -1,11 +1,25 @@
-const express = require('express');
-const fetch = require('node-fetch');
+const express = require("express");
+const fetch = require("node-fetch");
 
 // Use your direct-download URL from Google Drive:
-const FILE_URL = 'https://drive.google.com/uc?export=download&id=1-EUNY-noM9UhiIdNVP5Zu4O46-UkOY0u';
+const FILE_URL =
+  "https://drive.google.com/uc?export=download&id=1-EUNY-noM9UhiIdNVP5Zu4O46-UkOY0u";
 
 const PORT = process.env.PORT || 3000;
 const app = express();
+
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  res.on("finish", () => {
+    const duration = Date.now() - start; // Calculate the duration in ms
+    const durationSec = (duration / 1000).toFixed(2); // Convert to seconds (round to 2 decimal places)
+    console.log(`Request to ${req.originalUrl} took ${durationSec} seconds`);
+    // console.log(`Request to ${req.originalUrl} took ${duration}ms`);
+  });
+
+  next();
+});
 
 /**
  * Helper function to fetch the Drive file and reverse its line order.
@@ -21,20 +35,20 @@ async function fetchReversedFileContents() {
   const fileContents = await response.text();
 
   // Split into lines
-  let lines = fileContents.split('\n');
+  let lines = fileContents.split("\n");
 
   // Reverse so the newest lines appear at the top
   lines.reverse();
 
   // Re-join into a single string
-  const reversedContents = lines.join('\n');
+  const reversedContents = lines.join("\n");
   return reversedContents;
 }
 
 /**
  * GET / : Displays an HTML page with reversed log lines (newest at top).
  */
-app.get('/', async (req, res) => {
+app.get("/", async (req, res) => {
   try {
     const reversedLog = await fetchReversedFileContents();
 
@@ -64,10 +78,10 @@ ${reversedLog}
 /**
  * GET /raw : Returns just the reversed text (newest at top), no HTML.
  */
-app.get('/raw', async (req, res) => {
+app.get("/raw", async (req, res) => {
   try {
     const reversedLog = await fetchReversedFileContents();
-    res.type('text/plain').send(reversedLog);
+    res.type("text/plain").send(reversedLog);
   } catch (err) {
     console.error(err);
     res.status(500).send(`Error fetching or processing file: ${err.message}`);

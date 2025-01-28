@@ -1,53 +1,42 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
+const fetch = require('node-fetch');
+const { google } = require('googleapis'); // Google Drive API
 
-const FOLDER_URL = 'https://drive.google.com/drive/folders/1-1PKnmvtWe6ErDyhP2MXGGy60sm2hz84';
-const PORT = process.env.PORT || 3000;
+// Public folder ID
+const FOLDER_ID = '1-1PKnmvtWe6ErDyhP2MXGGy60sm2hz84'; // Just the folder ID from the URL
+
+const PORT = process.env.PORT || 3000; // Port
 const app = express();
 
 /**
- * Helper function to scrape files from the Google Drive folder using Puppeteer.
+ * Initialize Google Drive API with API Key
  */
-async function scrapeGoogleDriveFolder() {
+const drive = google.drive({
+  version: 'v3',
+  auth: 'AIzaSyDxLmrOSK6DZ8Njc-NPnndynw6Wuf7vC2w', // API Key
+});
+
+/**
+ * Fetch the most recent file in the specified Google Drive folder.
+ */
+async function getMostRecentFileId() { // Get the most recent file in the folder
   try {
-    // Launch Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true, // Run in headless mode
-      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Necessary for some environments
-    });
-    const page = await browser.newPage();
-
-    // Go to the folder URL
-    await page.goto(FOLDER_URL, { waitUntil: 'networkidle2' });
-
-    // Wait for the files to load (targeting elements in the page)
-    await page.waitForSelector('div[aria-label="Files"]');
-
-    // Extract file links and names
-    const files = await page.evaluate(() => {
-      const fileElements = document.querySelectorAll('div[role="listitem"] a');
-      const fileList = [];
-
-      fileElements.forEach((el) => {
-        const name = el.textContent.trim();
-        const link = el.href;
-        if (link.includes('uc?id=')) {
-          fileList.push({ name, url: link });
-        }
-      });
-
-      return fileList;
+    const res = await drive.files.list({
+      q: `'${FOLDER_ID}' in parents and mimeType='text/plain'`,
+      orderBy: 'modifiedTime desc',
+      pageSize: 1,
+      fields: 'files(id, name)',
     });
 
-    await browser.close();
-
-    if (files.length === 0) {
-      throw new Error('No downloadable files found in the folder.');
+    const files = res.data.files; // Get the files list in the folder
+    if (!files || files.length === 0) {
+      throw new Error('No files found in the folder.');
     }
 
-    return files;
+    // Return the most recent file's ID and name
+    return files[0]; // Most recent file
   } catch (err) {
-    throw new Error(`Error scraping folder: ${err.message}`);
+    throw new Error(`Error retrieving files: ${err.message}`);
   }
 }
 
@@ -56,15 +45,17 @@ async function scrapeGoogleDriveFolder() {
  */
 async function fetchReversedFileContents() {
   try {
-    const files = await scrapeGoogleDriveFolder();
-
-    // Assume the first file is the most recent (Google Drive default sorting)
-    const mostRecentFile = files[0];
-    console.log(`Fetching file: ${mostRecentFile.name}`);
+    const mostRecentFile = await getMostRecentFileId();
 
     // Fetch the file's content
-    const response = await fetch(mostRecentFile.url);
-    const fileContents = await response.text();
+    const fileResponse = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${mostRecentFile.id}?alt=media&key=AIzaSyDxLmrOSK6DZ8Njc-NPnndynw6Wuf7vC2w` // API Key
+    );
+    if (!fileResponse.ok) {
+      throw new Error(`File fetch failed with status ${fileResponse.status}`);
+    }
+
+    const fileContents = await fileResponse.text();
 
     // Split and reverse lines
     const lines = fileContents.split('\n').reverse();
@@ -120,3 +111,4 @@ app.get('/raw', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+

@@ -1,44 +1,86 @@
 const express = require('express');
-const fetch = require('node-fetch');
+const puppeteer = require('puppeteer');
 
-// Use your direct-download URL from Google Drive:
-const FILE_URL = 'https://drive.google.com/uc?export=download&id=1-EUNY-noM9UhiIdNVP5Zu4O46-UkOY0u';
-
+const FOLDER_URL = 'https://drive.google.com/drive/folders/1-1PKnmvtWe6ErDyhP2MXGGy60sm2hz84';
 const PORT = process.env.PORT || 3000;
 const app = express();
 
 /**
- * Helper function to fetch the Drive file and reverse its line order.
+ * Helper function to scrape files from the Google Drive folder using Puppeteer.
  */
-async function fetchReversedFileContents() {
-  // Fetch the text from Google Drive
-  const response = await fetch(FILE_URL);
-  if (!response.ok) {
-    throw new Error(`Drive fetch failed with status ${response.status}`);
+async function scrapeGoogleDriveFolder() {
+  try {
+    // Launch Puppeteer
+    const browser = await puppeteer.launch({
+      headless: true, // Run in headless mode
+      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Necessary for some environments
+    });
+    const page = await browser.newPage();
+
+    // Go to the folder URL
+    await page.goto(FOLDER_URL, { waitUntil: 'networkidle2' });
+
+    // Wait for the files to load (targeting elements in the page)
+    await page.waitForSelector('div[aria-label="Files"]');
+
+    // Extract file links and names
+    const files = await page.evaluate(() => {
+      const fileElements = document.querySelectorAll('div[role="listitem"] a');
+      const fileList = [];
+
+      fileElements.forEach((el) => {
+        const name = el.textContent.trim();
+        const link = el.href;
+        if (link.includes('uc?id=')) {
+          fileList.push({ name, url: link });
+        }
+      });
+
+      return fileList;
+    });
+
+    await browser.close();
+
+    if (files.length === 0) {
+      throw new Error('No downloadable files found in the folder.');
+    }
+
+    return files;
+  } catch (err) {
+    throw new Error(`Error scraping folder: ${err.message}`);
   }
-
-  // Original file contents (oldest line first)
-  const fileContents = await response.text();
-
-  // Split into lines
-  let lines = fileContents.split('\n');
-
-  // Reverse so the newest lines appear at the top
-  lines.reverse();
-
-  // Re-join into a single string
-  const reversedContents = lines.join('\n');
-  return reversedContents;
 }
 
 /**
- * GET / : Displays an HTML page with reversed log lines (newest at top).
+ * Fetch and reverse the contents of the most recent file.
+ */
+async function fetchReversedFileContents() {
+  try {
+    const files = await scrapeGoogleDriveFolder();
+
+    // Assume the first file is the most recent (Google Drive default sorting)
+    const mostRecentFile = files[0];
+    console.log(`Fetching file: ${mostRecentFile.name}`);
+
+    // Fetch the file's content
+    const response = await fetch(mostRecentFile.url);
+    const fileContents = await response.text();
+
+    // Split and reverse lines
+    const lines = fileContents.split('\n').reverse();
+    return { fileName: mostRecentFile.name, reversedContents: lines.join('\n') };
+  } catch (err) {
+    throw new Error(`Error processing file: ${err.message}`);
+  }
+}
+
+/**
+ * GET / : Displays an HTML page with reversed log lines.
  */
 app.get('/', async (req, res) => {
   try {
-    const reversedLog = await fetchReversedFileContents();
+    const { fileName, reversedContents } = await fetchReversedFileContents();
 
-    // Simple HTML with a <pre> block to show reversed logs
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -47,30 +89,30 @@ app.get('/', async (req, res) => {
         <title>Reversed Log Viewer</title>
       </head>
       <body>
-        <h1>EBEAM Web Monitor</h1>
-        <p>File URL: ${FILE_URL}</p>
+        <h1>Reversed Log Viewer</h1>
+        <p>Most Recent File: ${fileName}</p>
         <pre style="white-space: pre-wrap; font-family: monospace;">
-${reversedLog}
+${reversedContents}
         </pre>
       </body>
       </html>
     `);
   } catch (err) {
     console.error(err);
-    res.status(500).send(`Error fetching or processing file: ${err.message}`);
+    res.status(500).send(`Error: ${err.message}`);
   }
 });
 
 /**
- * GET /raw : Returns just the reversed text (newest at top), no HTML.
+ * GET /raw : Returns just the reversed text (newest at top).
  */
 app.get('/raw', async (req, res) => {
   try {
-    const reversedLog = await fetchReversedFileContents();
-    res.type('text/plain').send(reversedLog);
+    const { reversedContents } = await fetchReversedFileContents();
+    res.type('text/plain').send(reversedContents);
   } catch (err) {
     console.error(err);
-    res.status(500).send(`Error fetching or processing file: ${err.message}`);
+    res.status(500).send(`Error: ${err.message}`);
   }
 });
 

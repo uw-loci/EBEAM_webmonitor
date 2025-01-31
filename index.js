@@ -13,7 +13,7 @@ const app = express();
  */
 const drive = google.drive({
   version: 'v3',
-  auth: 'AIzaSyDxLmrOSK6DZ8Njc-NPnndynw6Wuf7vC2w', // API Key
+  auth: 'AIzaSyB4xcno460ZzujbuDQ5h2bkklbChXx2AFo', // API Key
 });
 
 /**
@@ -49,7 +49,7 @@ async function fetchReversedFileContents() {
 
     // Fetch the file's content
     const fileResponse = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${mostRecentFile.id}?alt=media&key=AIzaSyDxLmrOSK6DZ8Njc-NPnndynw6Wuf7vC2w` // API Key
+      `https://www.googleapis.com/drive/v3/files/${mostRecentFile.id}?alt=media&key=AIzaSyB4xcno460ZzujbuDQ5h2bkklbChXx2AFo` // API Key
     );
     if (!fileResponse.ok) {
       throw new Error(`File fetch failed with status ${fileResponse.status}`);

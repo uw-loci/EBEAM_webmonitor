@@ -2,8 +2,13 @@ const express = require('express');
 const fetch = require('node-fetch');
 const { google } = require('googleapis'); // Google Drive API
 
-// Public folder ID
-const FOLDER_ID = '1-1PKnmvtWe6ErDyhP2MXGGy60sm2hz84'; // Just the folder ID from the URL
+// Public folder ID and API key
+require('dotenv').config(); // This is optional for local development
+const FOLDER_ID = process.env.FOLDER_ID; // Get from Render environment
+const API_KEY = process.env.API_KEY;    // Get from Render environment
+
+// // Public folder ID
+// const FOLDER_ID = '1-1PKnmvtWe6ErDyhP2MXGGy60sm2hz84'; // Just the folder ID from the URL
 
 const PORT = process.env.PORT || 3000; // Port
 const app = express();
@@ -13,7 +18,8 @@ const app = express();
  */
 const drive = google.drive({
   version: 'v3',
-  auth: 'AIzaSyB4xcno460ZzujbuDQ5h2bkklbChXx2AFo', // API Key
+  // auth: 'AIzaSyB4xcno460ZzujbuDQ5h2bkklbChXx2AFo', // API Key
+  auth: API_KEY, // API Key
 });
 
 /**
@@ -49,7 +55,7 @@ async function fetchReversedFileContents() {
 
     // Fetch the file's content
     const fileResponse = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${mostRecentFile.id}?alt=media&key=AIzaSyB4xcno460ZzujbuDQ5h2bkklbChXx2AFo` // API Key
+      `https://www.googleapis.com/drive/v3/files/${mostRecentFile.id}?alt=media&key=${API_KEY}` // API Key
     );
     if (!fileResponse.ok) {
       throw new Error(`File fetch failed with status ${fileResponse.status}`);

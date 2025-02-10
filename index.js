@@ -2,10 +2,27 @@ const express = require('express');
 const fetch = require('node-fetch');
 const { google } = require('googleapis'); // Google Drive API
 
-// Public folder ID
-const FOLDER_ID = '1-1PKnmvtWe6ErDyhP2MXGGy60sm2hz84'; // Just the folder ID from the URL
+// Load environment variables
+require('dotenv').config();
 
-const PORT = process.env.PORT || 3000; // Port
+// Public folder ID and API key
+const FOLDER_ID = process.env.FOLDER_ID;
+const API_KEY = process.env.API_KEY;
+
+// Port
+const PORT = process.env.PORT || 3000;
+
+if (!FOLDER_ID) {
+  console.error('Error: FOLDER_ID is not set in environment variables.');
+  process.exit(1); // Exit the app
+}
+
+if (!API_KEY) {
+  console.error('Error: API_KEY is not set in environment variables.');
+  process.exit(1); // Exit the app
+}
+
+// Initialize Express app
 const app = express();
 
 /**
@@ -13,13 +30,13 @@ const app = express();
  */
 const drive = google.drive({
   version: 'v3',
-  auth: 'AIzaSyDxLmrOSK6DZ8Njc-NPnndynw6Wuf7vC2w', // API Key
+  auth: API_KEY,
 });
 
 /**
  * Fetch the most recent file in the specified Google Drive folder.
  */
-async function getMostRecentFileId() { // Get the most recent file in the folder
+async function getMostRecentFileId() {
   try {
     const res = await drive.files.list({
       q: `'${FOLDER_ID}' in parents and mimeType='text/plain'`,
@@ -28,13 +45,12 @@ async function getMostRecentFileId() { // Get the most recent file in the folder
       fields: 'files(id, name)',
     });
 
-    const files = res.data.files; // Get the files list in the folder
+    const files = res.data.files;
     if (!files || files.length === 0) {
       throw new Error('No files found in the folder.');
     }
 
-    // Return the most recent file's ID and name
-    return files[0]; // Most recent file
+    return files[0];
   } catch (err) {
     throw new Error(`Error retrieving files: ${err.message}`);
   }
@@ -47,17 +63,16 @@ async function fetchReversedFileContents() {
   try {
     const mostRecentFile = await getMostRecentFileId();
 
-    // Fetch the file's content
     const fileResponse = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${mostRecentFile.id}?alt=media&key=AIzaSyDxLmrOSK6DZ8Njc-NPnndynw6Wuf7vC2w` // API Key
+      `https://www.googleapis.com/drive/v3/files/${mostRecentFile.id}?alt=media&key=${API_KEY}`
     );
+
     if (!fileResponse.ok) {
       throw new Error(`File fetch failed with status ${fileResponse.status}`);
     }
 
     const fileContents = await fileResponse.text();
 
-    // Split and reverse lines
     const lines = fileContents.split('\n').reverse();
     return { fileName: mostRecentFile.name, reversedContents: lines.join('\n') };
   } catch (err) {

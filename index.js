@@ -93,6 +93,12 @@ app.get('/', async (req, res) => {
       <head>
         <meta charset="utf-8" />
         <title>Reversed Log Viewer</title>
+        <script type="text/javascript">
+          // Reload the page after 60 seconds (60,000 milliseconds)
+          setTimeout(function() {
+            location.reload();
+          }, 60000);
+        </script>
       </head>
       <body>
         <h1>Reversed Log Viewer</h1>

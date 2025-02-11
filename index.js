@@ -1,48 +1,36 @@
 const express = require('express');
 const fetch = require('node-fetch');
-const { google } = require('googleapis'); // Google Drive API
+const { google } = require('googleapis'); 
+const fs = require('fs');
+const path = require('path');
 
 // Load environment variables
 require('dotenv').config();
 
-// Public folder ID and API key
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
-
-// Port
 const PORT = process.env.PORT || 3000;
 
-if (!FOLDER_ID) {
-  console.error('Error: FOLDER_ID is not set in environment variables.');
-  process.exit(1); // Exit the app
-}
-
-if (!API_KEY) {
-  console.error('Error: API_KEY is not set in environment variables.');
-  process.exit(1); // Exit the app
-}
+// File paths for local storage
+const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
+const METADATA_FILE_PATH = path.join(__dirname, 'metadata.json');
 
 // Initialize Express app
 const app = express();
 
-/**
- * Initialize Google Drive API with API Key
- */
-const drive = google.drive({
-  version: 'v3',
-  auth: API_KEY,
-});
+// Initialize Google Drive API
+const drive = google.drive({ version: 'v3', auth: API_KEY });
 
 /**
  * Fetch the most recent file in the specified Google Drive folder.
  */
-async function getMostRecentFileId() {
+async function getMostRecentFile() {
   try {
     const res = await drive.files.list({
       q: `'${FOLDER_ID}' in parents and mimeType='text/plain'`,
       orderBy: 'modifiedTime desc',
       pageSize: 1,
-      fields: 'files(id, name)',
+      fields: 'files(id, name, modifiedTime)',
     });
 
     const files = res.data.files;
@@ -50,19 +38,35 @@ async function getMostRecentFileId() {
       throw new Error('No files found in the folder.');
     }
 
-    return files[0];
+    return files[0]; // Returns the most recent file
   } catch (err) {
     throw new Error(`Error retrieving files: ${err.message}`);
   }
 }
 
 /**
- * Fetch and reverse the contents of the most recent file.
+ * Fetch, reverse, and save the latest file if updated.
  */
-async function fetchReversedFileContents() {
+async function fetchAndUpdateFile() {
   try {
-    const mostRecentFile = await getMostRecentFileId();
+    const mostRecentFile = await getMostRecentFile();
 
+    // Load last known file metadata
+    let lastModifiedTime = null;
+    if (fs.existsSync(METADATA_FILE_PATH)) {
+      const metadata = JSON.parse(fs.readFileSync(METADATA_FILE_PATH, 'utf8'));
+      lastModifiedTime = metadata.modifiedTime;
+    }
+
+    // If file is unchanged, skip fetching
+    if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
+      console.log("No new updates. Using cached file.");
+      return false;
+    }
+
+    console.log("Fetching new file...");
+
+    // Download the latest file
     const fileResponse = await fetch(
       `https://www.googleapis.com/drive/v3/files/${mostRecentFile.id}?alt=media&key=${API_KEY}`
     );
@@ -72,21 +76,38 @@ async function fetchReversedFileContents() {
     }
 
     const fileContents = await fileResponse.text();
+    const reversedContents = fileContents.split('\n').reverse().join('\n');
 
-    const lines = fileContents.split('\n').reverse();
-    return { fileName: mostRecentFile.name, reversedContents: lines.join('\n') };
+    // Save the reversed file locally
+    fs.writeFileSync(REVERSED_FILE_PATH, reversedContents);
+    
+    // Save metadata (last modified time)
+    fs.writeFileSync(METADATA_FILE_PATH, JSON.stringify({ modifiedTime: mostRecentFile.modifiedTime }));
+
+    console.log("File updated successfully.");
+    return true; // File was updated
   } catch (err) {
-    throw new Error(`Error processing file: ${err.message}`);
+    console.error(`Error processing file: ${err.message}`);
+    return false;
   }
 }
 
 /**
- * GET / : Displays an HTML page with reversed log lines.
+ * GET / : Serve the HTML page with reversed log lines.
  */
 app.get('/', async (req, res) => {
   try {
-    const { fileName, reversedContents } = await fetchReversedFileContents();
+    let reversedContents = "No data available.";
 
+    // If the file exists, serve it immediately
+    if (fs.existsSync(REVERSED_FILE_PATH)) {
+      reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
+    }
+
+    // Fetch the latest file in the background
+    const updated = await fetchAndUpdateFile();
+
+    // HTML Response
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -94,7 +115,6 @@ app.get('/', async (req, res) => {
         <meta charset="utf-8" />
         <title>Reversed Log Viewer</title>
         <script type="text/javascript">
-          // Reload the page after 60 seconds (60,000 milliseconds)
           setTimeout(function() {
             location.reload();
           }, 60000);
@@ -102,10 +122,11 @@ app.get('/', async (req, res) => {
       </head>
       <body>
         <h1>Reversed Log Viewer</h1>
-        <p>Most Recent File: ${fileName}</p>
+        <p>Most Recent File: ${fs.existsSync(METADATA_FILE_PATH) ? JSON.parse(fs.readFileSync(METADATA_FILE_PATH)).modifiedTime : 'Unknown'}</p>
         <pre style="white-space: pre-wrap; font-family: monospace;">
 ${reversedContents}
         </pre>
+        <p>Last Updated: ${new Date().toLocaleString()}</p>
       </body>
       </html>
     `);
@@ -120,8 +141,11 @@ ${reversedContents}
  */
 app.get('/raw', async (req, res) => {
   try {
-    const { reversedContents } = await fetchReversedFileContents();
-    res.type('text/plain').send(reversedContents);
+    if (fs.existsSync(REVERSED_FILE_PATH)) {
+      res.type('text/plain').send(fs.readFileSync(REVERSED_FILE_PATH, 'utf8'));
+    } else {
+      res.status(404).send("No file found.");
+    }
   } catch (err) {
     console.error(err);
     res.status(500).send(`Error: ${err.message}`);

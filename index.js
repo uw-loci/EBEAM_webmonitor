@@ -1,6 +1,6 @@
 const express = require('express');
 const fetch = require('node-fetch');
-const { google } = require('googleapis'); 
+const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
 
@@ -22,7 +22,7 @@ const app = express();
 const drive = google.drive({ version: 'v3', auth: API_KEY });
 
 /**
- * Fetch the most recent file in the specified Google Drive folder.
+ * Fetch the most recent file from Google Drive.
  */
 async function getMostRecentFile() {
   try {
@@ -38,18 +38,20 @@ async function getMostRecentFile() {
       throw new Error('No files found in the folder.');
     }
 
-    return files[0]; // Returns the most recent file
+    return files[0]; // Returns the most recent file (ID, name, modifiedTime)
   } catch (err) {
-    throw new Error(`Error retrieving files: ${err.message}`);
+    console.error(`Google Drive API Error: ${err.message}`);
+    return null;
   }
 }
 
 /**
- * Fetch, reverse, and save the latest file if updated.
+ * Fetch and update the reversed file only if there's a new version.
  */
 async function fetchAndUpdateFile() {
   try {
     const mostRecentFile = await getMostRecentFile();
+    if (!mostRecentFile) return false; // API failure, avoid crashing
 
     // Load last known file metadata
     let lastModifiedTime = null;
@@ -58,7 +60,7 @@ async function fetchAndUpdateFile() {
       lastModifiedTime = metadata.modifiedTime;
     }
 
-    // If file is unchanged, skip fetching
+    // Skip fetching if the file is unchanged
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       console.log("No new updates. Using cached file.");
       return false;
@@ -66,21 +68,28 @@ async function fetchAndUpdateFile() {
 
     console.log("Fetching new file...");
 
-    // Download the latest file
-    const fileResponse = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${mostRecentFile.id}?alt=media&key=${API_KEY}`
-    );
+    // Retry logic for fetching file contents
+    let retries = 3;
+    let fileResponse;
+    while (retries > 0) {
+      fileResponse = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${mostRecentFile.id}?alt=media&key=${API_KEY}`
+      );
 
-    if (!fileResponse.ok) {
-      throw new Error(`File fetch failed with status ${fileResponse.status}`);
+      if (fileResponse.ok) break; // Exit loop if successful
+      console.log(`Retrying... (${4 - retries} attempt)`);
+      retries--;
+      await new Promise(res => setTimeout(res, 2000)); // Wait before retrying
     }
+
+    if (!fileResponse.ok) throw new Error(`Google API Fetch Failed`);
 
     const fileContents = await fileResponse.text();
     const reversedContents = fileContents.split('\n').reverse().join('\n');
 
     // Save the reversed file locally
     fs.writeFileSync(REVERSED_FILE_PATH, reversedContents);
-    
+
     // Save metadata (last modified time)
     fs.writeFileSync(METADATA_FILE_PATH, JSON.stringify({ modifiedTime: mostRecentFile.modifiedTime }));
 
@@ -93,19 +102,32 @@ async function fetchAndUpdateFile() {
 }
 
 /**
+ * Ensure we have a valid reversed file on server startup.
+ */
+async function checkAndFetchFileOnStartup() {
+  if (!fs.existsSync(REVERSED_FILE_PATH)) {
+    console.log("No cached file found. Fetching immediately...");
+    await fetchAndUpdateFile();
+  }
+}
+
+// Run this check when the server starts
+checkAndFetchFileOnStartup();
+
+/**
  * GET / : Serve the HTML page with reversed log lines.
  */
 app.get('/', async (req, res) => {
   try {
     let reversedContents = "No data available.";
 
-    // If the file exists, serve it immediately
+    // Serve cached file if available
     if (fs.existsSync(REVERSED_FILE_PATH)) {
       reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
     }
 
     // Fetch the latest file in the background
-    const updated = await fetchAndUpdateFile();
+    fetchAndUpdateFile();
 
     // HTML Response
     res.send(`

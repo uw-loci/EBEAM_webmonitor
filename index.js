@@ -46,6 +46,7 @@ async function getMostRecentFile() {
 }
 
 let lastModifiedTime = null;
+let logFileName = null;
 
 /**
  * Fetch and update the reversed file only if there's a new version.
@@ -94,7 +95,8 @@ async function fetchAndUpdateFile() {
 
     // Save metadata (last modified time)
     // fs.writeFileSync(METADATA_FILE_PATH, JSON.stringify({ modifiedTime: mostRecentFile.modifiedTime }));
-    lastModifiedTime = mostRecentFile.modifiedTime
+    lastModifiedTime = mostRecentFile.modifiedTime;
+    logFileName = mostRecentFile.name;
 
     console.log("File updated successfully.");
     return true; // File was updated
@@ -153,7 +155,8 @@ app.get('/', async (req, res) => {
       </head>
       <body>
         <h1>Reversed Log Viewer</h1>
-        <p>Most Recent File: ${lastModifiedTime}</p>
+        <p>Most Recent File: ${logFileName}</p>
+        <p>File Last Modified: ${lastModifiedTime}</p>
         <p>Last Updated: ${new Date().toLocaleString()}</p>
         <pre style="white-space: pre-wrap; font-family: monospace;">
 ${reversedContents}

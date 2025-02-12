@@ -153,7 +153,7 @@ app.get('/', async (req, res) => {
       </head>
       <body>
         <h1>Reversed Log Viewer</h1>
-        <p>Most Recent File: ${fs.existsSync(METADATA_FILE_PATH) ? JSON.parse(fs.readFileSync(METADATA_FILE_PATH)).modifiedTime : 'Unknown'}</p>
+        <p>Most Recent File: ${lastModifiedTime}</p>
         <p>Last Updated: ${new Date().toLocaleString()}</p>
         <pre style="white-space: pre-wrap; font-family: monospace;">
 ${reversedContents}

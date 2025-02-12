@@ -157,7 +157,18 @@ app.get('/', async (req, res) => {
         <h1>Reversed Log Viewer</h1>
         <p>Most Recent File: ${logFileName}</p>
         <p>File Last Modified: ${lastModifiedTime}</p>
-        <p>Last Updated: ${new Date().toLocaleString()}</p>
+        <p>Last Updated: ${new Date().toLocaleString('en-US', {
+            timeZone: 'America/Chicago',
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          })}
+        </p>
         <pre style="white-space: pre-wrap; font-family: monospace;">
 ${reversedContents}
         </pre>

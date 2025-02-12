@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 // File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
-#const METADATA_FILE_PATH = path.join(__dirname, 'metadata.json');
+// const METADATA_FILE_PATH = path.join(__dirname, 'metadata.json');
 
 // Initialize Express app
 const app = express();

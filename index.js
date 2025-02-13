@@ -13,7 +13,6 @@ const PORT = process.env.PORT || 3000;
 
 // File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
-// const METADATA_FILE_PATH = path.join(__dirname, 'metadata.json');
 
 // Initialize Express app
 const app = express();
@@ -56,13 +55,6 @@ async function fetchAndUpdateFile() {
     const mostRecentFile = await getMostRecentFile();
     if (!mostRecentFile) return false; // API failure, avoid crashing
 
-    // Load last known file metadata
-    // let lastModifiedTime = null;
-    // if (fs.existsSync(METADATA_FILE_PATH)) {
-    //   const metadata = JSON.parse(fs.readFileSync(METADATA_FILE_PATH, 'utf8'));
-    //   lastModifiedTime = metadata.modifiedTime;
-    // }
-
     // Skip fetching if the file is unchanged
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       console.log("No new updates. Using cached file.");
@@ -94,7 +86,6 @@ async function fetchAndUpdateFile() {
     fs.writeFileSync(REVERSED_FILE_PATH, reversedContents);
 
     // Save metadata (last modified time)
-    // fs.writeFileSync(METADATA_FILE_PATH, JSON.stringify({ modifiedTime: mostRecentFile.modifiedTime }));
     lastModifiedTime = mostRecentFile.modifiedTime;
     logFileName = mostRecentFile.name;
 
@@ -105,19 +96,6 @@ async function fetchAndUpdateFile() {
     return false;
   }
 }
-
-/**
- * Ensure we have a valid reversed file on server startup.
- */
-// async function checkAndFetchFileOnStartup() {
-//   if (!fs.existsSync(REVERSED_FILE_PATH)) {
-//     console.log("No cached file found. Fetching immediately...");
-//     await fetchAndUpdateFile();
-//   }
-// }
-
-// // Run this check when the server starts
-// checkAndFetchFileOnStartup();
 
 // Immediately call once on server startup:
 fetchAndUpdateFile()

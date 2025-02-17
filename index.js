@@ -3,6 +3,8 @@ const fetch = require('node-fetch');
 const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
+
 
 // Load environment variables
 require('dotenv').config();
@@ -48,14 +50,72 @@ let lastModifiedTime = null;
 let logFileName = null;
 
 /**
- * Fetch and update the reversed file only if there's a new version.
+ * Fetches file contents from Google Drive using streaming
+ * @param {string} fileId - The Google Drive file ID
+ * @returns {Promise<string[]>} Array of lines from the file
+ */
+async function fetchFileContents(fileId) {
+  let retries = 3;
+  
+  while (retries > 0) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        https.get(
+          `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`,
+          {
+            headers: {
+              'Accept': 'text/plain'
+            }
+          },
+          (res) => {
+            if (res.statusCode !== 200) {
+              reject(new Error(`Google API Failed: ${res.statusCode}`));
+              return;
+            }
+            resolve(res);
+          }
+        ).on('error', reject);
+      });
+
+      // Process the stream line by line
+      const lines = [];
+      let currentLine = '';
+
+      await new Promise((resolve, reject) => {
+        response.on('data', chunk => {
+          const chunkStr = chunk.toString();
+          const chunkLines = (currentLine + chunkStr).split('\n');
+          currentLine = chunkLines.pop();
+          lines.push(...chunkLines);
+        });
+
+        response.on('end', () => {
+          if (currentLine) lines.push(currentLine);
+          resolve();
+        });
+
+        response.on('error', reject);
+      });
+
+      return lines;
+    } catch (err) {
+      console.log(`Retry ${4 - retries}: ${err.message}`);
+      retries--;
+      if (retries === 0) throw err;
+      await new Promise(res => setTimeout(res, 2000));
+    }
+  }
+}
+
+/**
+ * Fetches and updates the log file if there's a new version
+ * @returns {Promise<boolean>} True if file was updated, false otherwise
  */
 async function fetchAndUpdateFile() {
   try {
     const mostRecentFile = await getMostRecentFile();
-    if (!mostRecentFile) return false; // API failure, avoid crashing
+    if (!mostRecentFile) return false;
 
-    // Skip fetching if the file is unchanged
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       console.log("No new updates. Using cached file.");
       return false;
@@ -86,11 +146,12 @@ async function fetchAndUpdateFile() {
     fs.writeFileSync(REVERSED_FILE_PATH, reversedContents);
 
     // Save metadata (last modified time)
+    // fs.writeFileSync(METADATA_FILE_PATH, JSON.stringify({ modifiedTime: mostRecentFile.modifiedTime }));
     lastModifiedTime = mostRecentFile.modifiedTime;
     logFileName = mostRecentFile.name;
 
     console.log("File updated successfully.");
-    return true; // File was updated
+    return true;
   } catch (err) {
     console.error(`Error processing file: ${err.message}`);
     return false;

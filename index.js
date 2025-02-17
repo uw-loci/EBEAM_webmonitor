@@ -1,24 +1,22 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const { google } = require('googleapis');
-const fs = require('fs');
-const path = require('path');
-
-// Load environment variables
-require('dotenv').config();
+require('dotenv').config(); // Load environment variables
 
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const PORT = process.env.PORT || 3000;
-
-// File paths for local storage
-const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 
 // Initialize Express app
 const app = express();
 
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });
+
+// Store reversed file content in memory
+let reversedContentsCache = null;
+let lastModifiedTime = null;
+let logFileName = null;
 
 /**
  * Fetch the most recent file from Google Drive.
@@ -44,11 +42,8 @@ async function getMostRecentFile() {
   }
 }
 
-let lastModifiedTime = null;
-let logFileName = null;
-
 /**
- * Fetch and update the reversed file only if there's a new version.
+ * Fetch and update the reversed file content in memory only if there's a new version.
  */
 async function fetchAndUpdateFile() {
   try {
@@ -80,12 +75,9 @@ async function fetchAndUpdateFile() {
     if (!fileResponse.ok) throw new Error(`Google API Fetch Failed`);
 
     const fileContents = await fileResponse.text();
-    const reversedContents = fileContents.split('\n').reverse().join('\n');
+    reversedContentsCache = fileContents.split('\n').reverse().join('\n'); // Store in memory
 
-    // Save the reversed file locally
-    fs.writeFileSync(REVERSED_FILE_PATH, reversedContents);
-
-    // Save metadata (last modified time)
+    // Save metadata (last modified time and filename)
     lastModifiedTime = mostRecentFile.modifiedTime;
     logFileName = mostRecentFile.name;
 
@@ -97,28 +89,19 @@ async function fetchAndUpdateFile() {
   }
 }
 
-// Immediately call once on server startup:
-fetchAndUpdateFile()
+// Fetch on startup
+fetchAndUpdateFile();
 
-// 3. Schedule it to run once a minute (60,000 ms):
+// Schedule it to run every minute
 setInterval(fetchAndUpdateFile, 60000);
 
 /**
- * GET / : Serve the HTML page with reversed log lines.
+ * GET / : Serve the HTML page with reversed log lines from memory.
  */
 app.get('/', async (req, res) => {
   try {
-    let reversedContents = "No data available.";
+    let reversedContents = reversedContentsCache || "No data available.";
 
-    // Fetch the latest file in the background
-    // fetchAndUpdateFile();
-
-    // Serve cached file if available
-    if (fs.existsSync(REVERSED_FILE_PATH)) {
-      reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
-    }
-
-    // HTML Response
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -133,8 +116,8 @@ app.get('/', async (req, res) => {
       </head>
       <body>
         <h1>Reversed Log Viewer</h1>
-        <p>Most Recent File: ${logFileName}</p>
-        <p>File Last Modified: ${lastModifiedTime}</p>
+        <p>Most Recent File: ${logFileName || "None"}</p>
+        <p>File Last Modified: ${lastModifiedTime || "N/A"}</p>
         <p>Last Updated: ${new Date().toLocaleString('en-US', {
             timeZone: 'America/Chicago',
             weekday: 'long',
@@ -160,12 +143,12 @@ ${reversedContents}
 });
 
 /**
- * GET /raw : Returns just the reversed text (newest at top).
+ * GET /raw : Returns just the reversed text from memory.
  */
 app.get('/raw', async (req, res) => {
   try {
-    if (fs.existsSync(REVERSED_FILE_PATH)) {
-      res.type('text/plain').send(fs.readFileSync(REVERSED_FILE_PATH, 'utf8'));
+    if (reversedContentsCache) {
+      res.type('text/plain').send(reversedContentsCache);
     } else {
       res.status(404).send("No file found.");
     }

@@ -1,5 +1,4 @@
 const express = require('express');
-const fetch = require('node-fetch');
 const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
@@ -122,31 +121,12 @@ async function fetchAndUpdateFile() {
     }
 
     console.log("Fetching new file...");
-
-    // Retry logic for fetching file contents
-    let retries = 3;
-    let fileResponse;
-    while (retries > 0) {
-      fileResponse = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${mostRecentFile.id}?alt=media&key=${API_KEY}`
-      );
-
-      if (fileResponse.ok) break; // Exit loop if successful
-      console.log(`Retrying... (${4 - retries} attempt)`);
-      retries--;
-      await new Promise(res => setTimeout(res, 2000)); // Wait before retrying
-    }
-
-    if (!fileResponse.ok) throw new Error(`Google API Fetch Failed`);
-
-    const fileContents = await fileResponse.text();
-    const reversedContents = fileContents.split('\n').reverse().join('\n');
-
-    // Save the reversed file locally
-    fs.writeFileSync(REVERSED_FILE_PATH, reversedContents);
-
-    // Save metadata (last modified time)
-    // fs.writeFileSync(METADATA_FILE_PATH, JSON.stringify({ modifiedTime: mostRecentFile.modifiedTime }));
+    
+    const lines = await fetchFileContents(mostRecentFile.id);
+    
+    // Write reversed lines in one operation
+    fs.writeFileSync(REVERSED_FILE_PATH, lines.reverse().join('\n'));
+    
     lastModifiedTime = mostRecentFile.modifiedTime;
     logFileName = mostRecentFile.name;
 
@@ -158,11 +138,9 @@ async function fetchAndUpdateFile() {
   }
 }
 
-// Immediately call once on server startup:
-fetchAndUpdateFile()
-
-// 3. Schedule it to run once a minute (60,000 ms):
-setInterval(fetchAndUpdateFile, 60000);
+// Schedule updates
+fetchAndUpdateFile(); // Initial fetch
+setInterval(fetchAndUpdateFile, 60000); // Check every minute
 
 /**
  * GET / : Serve the HTML page with reversed log lines.

@@ -199,6 +199,20 @@ ${reversedContents}
 });
 
 /**
+ * GET/dashboard: Implement the log file dashboard to this end point.
+ */
+app.get('/dashboard', async (req, res) => {
+  try{
+    res.send('Hi; I am Log System Dashboard. I am being built so bare with me until then. (::)');
+  }catch (err) {
+    // Handle any errors
+    console.error(err);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+/**
  * GET /raw : Returns just the reversed text (newest at top).
  */
 app.get('/raw', async (req, res) => {

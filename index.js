@@ -190,15 +190,15 @@ app.get('/', async (req, res) => {
       return;
     }
 
-    // let reversedContents = "No data available.";
+    let reversedContents = "No data available.";
 
     // Fetch the latest file in the background
     // fetchAndUpdateFile();
 
     // Serve cached file if available
-    // if (fs.existsSync(REVERSED_FILE_PATH)) {
-    //   reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
-    // }
+    if (fs.existsSync(REVERSED_FILE_PATH)) {
+      reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
+    }
 
     // HTML Response
     res.send(`

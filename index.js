@@ -1,33 +1,36 @@
-const express = require('express');
-const { google } = require('googleapis');
-const fs = require('fs');
-const path = require('path');
-const https = require('https');
+import Fastify from 'fastify';
+import { google } from 'googleapis';
+import { promises as fs } from 'fs';
+import path from 'path';
+import https from 'https';
+import dotenv from 'dotenv';
 
-
-// Load environment variables
-require('dotenv').config();
+// Configure environment variables
+dotenv.config();
 
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const PORT = process.env.PORT || 3000;
-
-// File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
+const INACTIVE_THRESHOLD = 15 * 60 * 1000; // 15 minutes in milliseconds
 
-// 15 minutes in milliseconds
-const INACTIVE_THRESHOLD = 15 * 60 * 1000;
-
-// Initialize Express app
-const app = express();
+// Initialize Fastify
+const fastify = Fastify({
+  logger: true
+});
 
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });
 
+// State variables
+let lastModifiedTime = null;
+let logFileName = null;
+let experimentRunning = false;
+
 /**
  * Fetch the most recent file from Google Drive.
  */
-async function getMostRecentFile() {
+const getMostRecentFile = async () => {
   try {
     const res = await drive.files.list({
       q: `'${FOLDER_ID}' in parents and mimeType='text/plain'`,
@@ -37,27 +40,23 @@ async function getMostRecentFile() {
     });
 
     const files = res.data.files;
-    if (!files || files.length === 0) {
+    if (!files?.length) {
       throw new Error('No files found in the folder.');
     }
 
-    return files[0]; // Returns the most recent file (ID, name, modifiedTime)
+    return files[0];
   } catch (err) {
-    console.error(`Google Drive API Error: ${err.message}`);
+    fastify.log.error(`Google Drive API Error: ${err.message}`);
     return null;
   }
-}
-
-let lastModifiedTime = null;
-let logFileName = null;
-let experimentRunning = false;
+};
 
 /**
  * Fetches file contents from Google Drive using streaming
  * @param {string} fileId - The Google Drive file ID
  * @returns {Promise<string[]>} Array of lines from the file
  */
-async function fetchFileContents(fileId) {
+const fetchFileContents = async (fileId) => {
   let retries = 3;
   
   while (retries > 0) {
@@ -80,7 +79,6 @@ async function fetchFileContents(fileId) {
         ).on('error', reject);
       });
 
-      // Process the stream line by line
       const lines = [];
       let currentLine = '';
 
@@ -102,19 +100,19 @@ async function fetchFileContents(fileId) {
 
       return lines;
     } catch (err) {
-      console.log(`Retry ${4 - retries}: ${err.message}`);
+      fastify.log.error(`Retry ${4 - retries}: ${err.message}`);
       retries--;
       if (retries === 0) throw err;
       await new Promise(res => setTimeout(res, 2000));
     }
   }
-}
+};
 
 /**
  * Fetches and updates the log file if there's a new version
  * @returns {Promise<boolean>} True if file was updated, false otherwise
  */
-async function fetchAndUpdateFile() {
+const fetchAndUpdateFile = async () => {
   try {
     const mostRecentFile = await getMostRecentFile();
     if (!mostRecentFile) {
@@ -123,85 +121,73 @@ async function fetchAndUpdateFile() {
     }
 
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
-    const currentTime = Date.now();
     
     // Check if file hasn't been modified in last 15 minutes
-    // KEEP THIS FOR FUTURE NEED FOR AFTER DEVELOPMENT FINISHED
-    // if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
-    //   experimentRunning = false;
-    //   console.log("Experiment not running - no updates in 15 minutes");
-    //   return false;
-    // }
+    // Uncomment for production use
+    /*
+    if (Date.now() - fileModifiedTime > INACTIVE_THRESHOLD) {
+      experimentRunning = false;
+      fastify.log.info("Experiment not running - no updates in 15 minutes");
+      return false;
+    }
+    */
 
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
-      console.log("No new updates. Using cached file.");
-      experimentRunning = true; // Still running if within threshold
+      fastify.log.info("No new updates. Using cached file.");
+      experimentRunning = true;
       return false;
     }
 
-    console.log("Fetching new file...");
+    fastify.log.info("Fetching new file...");
     
     const lines = await fetchFileContents(mostRecentFile.id);
-    
     // Write reversed lines in one operation
-    fs.writeFileSync(REVERSED_FILE_PATH, lines.reverse().join('\n'));
+    await fs.writeFile(REVERSED_FILE_PATH, lines.reverse().join('\n'));
     
     lastModifiedTime = mostRecentFile.modifiedTime;
     logFileName = mostRecentFile.name;
     experimentRunning = true;
 
-    console.log("File updated successfully.");
+    fastify.log.info("File updated successfully.");
     return true;
   } catch (err) {
-    console.error(`Error processing file: ${err.message}`);
+    fastify.log.error(`Error processing file: ${err.message}`);
     experimentRunning = false;
     return false;
   }
-}
+};
 
-// Schedule updates
-fetchAndUpdateFile(); // Initial fetch
-setInterval(fetchAndUpdateFile, 60000); // Check every minute
+// Route handlers
+fastify.get('/', async (request, reply) => {
+  if (!experimentRunning) {
+    return reply.type('text/html').send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Reversed Log Viewer</title>
+        <script type="text/javascript">
+          setTimeout(function() {
+            location.reload();
+          }, 60000);
+        </script>
+      </head>
+      <body>
+        <h1>Experiment Status</h1>
+        <p style="font-size: 1.5em; color: red;">Experiment is not running.</p>
+      </body>
+      </html>
+    `);
+  }
 
-/**
- * GET / : Serve the HTML page with reversed log lines.
- */
-app.get('/', async (req, res) => {
+  let reversedContents = "No data available.";
+
   try {
-    if (!experimentRunning) {
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>Reversed Log Viewer</title>
-          <script type="text/javascript">
-            setTimeout(function() {
-              location.reload();
-            }, 60000);
-          </script>
-        </head>
-        <body>
-          <h1>Experiment Status</h1>
-          <p style="font-size: 1.5em; color: red;">Experiment is not running.</p>
-        </body>
-        </html>
-      `);
-      return;
-    }
-
-    let reversedContents = "No data available.";
-
-    // Fetch the latest file in the background
-    // fetchAndUpdateFile();
-
-    // Serve cached file if available
     if (fs.existsSync(REVERSED_FILE_PATH)) {
       reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
     }
 
-    // HTML Response
-    res.send(`
+    return reply.type('text/html').send(`
       <!DOCTYPE html>
       <html>
       <head>
@@ -236,42 +222,40 @@ ${reversedContents}
       </html>
     `);
   } catch (err) {
-    console.error(err);
-    res.status(500).send(`Error: ${err.message}`);
+    request.log.error(err);
+    throw err;
   }
 });
 
-/**
- * GET/dashboard: Implement the log file dashboard to this end point.
- */
-app.get('/dashboard', async (req, res) => {
-  try{
-    res.send('Hi; I am Log System Dashboard. I am being built so bare with me until then. (::)');
-  }catch (err) {
-    // Handle any errors
-    console.error(err);
-    res.status(500).send('Internal Server Error');
-  }
+fastify.get('/dashboard', async (request, reply) => {
+  return reply.send('Hi; I am Log System Dashboard. I am being built so bare with me until then. (::)');
 });
 
-
-/**
- * GET /raw : Returns just the reversed text (newest at top).
- */
-app.get('/raw', async (req, res) => {
+fastify.get('/raw', async (request, reply) => {
   try {
-    if (fs.existsSync(REVERSED_FILE_PATH)) {
-      res.type('text/plain').send(fs.readFileSync(REVERSED_FILE_PATH, 'utf8'));
-    } else {
-      res.status(404).send("No file found.");
+    if (await fs.access(REVERSED_FILE_PATH).then(() => true).catch(() => false)) {
+      const contents = await fs.readFile(REVERSED_FILE_PATH, 'utf8');
+      return reply.type('text/plain').send(contents);
     }
+    return reply.code(404).send("No file found.");
   } catch (err) {
-    console.error(err);
-    res.status(500).send(`Error: ${err.message}`);
+    request.log.error(err);
+    throw err;
   }
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Initialize file fetching
+const start = async () => {
+  try {
+    await fetchAndUpdateFile(); // Initial fetch
+    setInterval(fetchAndUpdateFile, 60000); // Check every minute
+    
+    await fastify.listen({ port: PORT });
+    fastify.log.info(`Server running on port ${PORT}`);
+  } catch (err) {
+    fastify.log.error(err);
+    process.exit(1);
+  }
+};
+
+start();

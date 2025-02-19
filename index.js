@@ -15,6 +15,9 @@ const PORT = process.env.PORT || 3000;
 // File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 
+// 15 minutes in milliseconds
+const INACTIVE_THRESHOLD = 15 * 60 * 1000;
+
 // Initialize Express app
 const app = express();
 
@@ -47,6 +50,7 @@ async function getMostRecentFile() {
 
 let lastModifiedTime = null;
 let logFileName = null;
+let experimentRunning = false;
 
 /**
  * Fetches file contents from Google Drive using streaming
@@ -113,10 +117,25 @@ async function fetchFileContents(fileId) {
 async function fetchAndUpdateFile() {
   try {
     const mostRecentFile = await getMostRecentFile();
-    if (!mostRecentFile) return false;
+    if (!mostRecentFile) {
+      experimentRunning = false;
+      return false;
+    }
+
+    const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
+    const currentTime = Date.now();
+    
+    // Check if file hasn't been modified in last 15 minutes
+    // KEEP THIS FOR FUTURE NEED FOR AFTER DEVELOPMENT FINISHED
+    // if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
+    //   experimentRunning = false;
+    //   console.log("Experiment not running - no updates in 15 minutes");
+    //   return false;
+    // }
 
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       console.log("No new updates. Using cached file.");
+      experimentRunning = true; // Still running if within threshold
       return false;
     }
 
@@ -129,11 +148,13 @@ async function fetchAndUpdateFile() {
     
     lastModifiedTime = mostRecentFile.modifiedTime;
     logFileName = mostRecentFile.name;
+    experimentRunning = true;
 
     console.log("File updated successfully.");
     return true;
   } catch (err) {
     console.error(`Error processing file: ${err.message}`);
+    experimentRunning = false;
     return false;
   }
 }
@@ -147,15 +168,37 @@ setInterval(fetchAndUpdateFile, 60000); // Check every minute
  */
 app.get('/', async (req, res) => {
   try {
-    let reversedContents = "No data available.";
+    if (!experimentRunning) {
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Reversed Log Viewer</title>
+          <script type="text/javascript">
+            setTimeout(function() {
+              location.reload();
+            }, 60000);
+          </script>
+        </head>
+        <body>
+          <h1>Experiment Status</h1>
+          <p style="font-size: 1.5em; color: red;">Experiment is not running.</p>
+        </body>
+        </html>
+      `);
+      return;
+    }
+
+    // let reversedContents = "No data available.";
 
     // Fetch the latest file in the background
     // fetchAndUpdateFile();
 
     // Serve cached file if available
-    if (fs.existsSync(REVERSED_FILE_PATH)) {
-      reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
-    }
+    // if (fs.existsSync(REVERSED_FILE_PATH)) {
+    //   reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
+    // }
 
     // HTML Response
     res.send(`

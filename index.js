@@ -121,9 +121,10 @@ async function fetchAndUpdateFile() {
       experimentRunning = false;
       return false;
     }
-
+    
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
-    const currentTime = Date.now();
+    const currentTime = new Date().getTime(); // Ensures UTC comparison
+    
     
     // Check if file hasn't been modified in last 15 minutes
     // KEEP THIS FOR FUTURE NEED FOR AFTER DEVELOPMENT FINISHED

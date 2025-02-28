@@ -258,15 +258,45 @@ app.get('/dashboard', async (req, res) => {
     // HTML Response
     res.send(`
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
       <head>
-        <meta charset="utf-8" />
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Log System Dashboard</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <style>
-          body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-          h1 { color: #333; }
-          pre { white-space: pre-wrap; font-family: monospace; text-align: left; display: inline-block; padding: 10px; background: #f4f4f4; border: 1px solid #ddd; border-radius: 5px; }
-          .refresh { margin-top: 20px; padding: 10px 20px; font-size: 1em; cursor: pointer; }
+          body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(to right, #141e30, #243b55);
+            color: white;
+            padding: 20px;
+          }
+          .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+          }
+          pre {
+            white-space: pre-wrap;
+            font-family: monospace;
+            text-align: left;
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+          }
+          .refresh {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+          }
         </style>
         <script>
           function refreshPage() {
@@ -276,21 +306,23 @@ app.get('/dashboard', async (req, res) => {
         </script>
       </head>
       <body>
-        <h1>Reversed Log Viewer</h1>
-        <p>File Last Modified: ${lastModifiedTime}</p>
-        <p>Last Updated: ${new Date().toLocaleString('en-US', {
-          timeZone: 'America/Chicago',
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true
-        })}</p>
-        <pre>${reversedContents}</pre>
-        <button class="refresh" onclick="refreshPage()">Refresh</button>
+        <div class="container">
+          <h1 class="mb-3">Reversed Log Viewer</h1>
+          <p class="lead">File Last Modified: ${lastModifiedTime}</p>
+          <p class="small">Last Updated: ${new Date().toLocaleString('en-US', {
+            timeZone: 'America/Chicago',
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          })}</p>
+          <pre>${reversedContents}</pre>
+          <button class="btn btn-primary refresh" onclick="refreshPage()">Refresh</button>
+        </div>
       </body>
       </html>
     `);

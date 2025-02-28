@@ -245,6 +245,7 @@ ${reversedContents}
 /**
  * GET/dashboard: Implement the log file dashboard to this end point.
  */
+// HTML Response
 app.get('/dashboard', async (req, res) => {
   try {
     let reversedContents = "No data available.";
@@ -273,8 +274,8 @@ app.get('/dashboard', async (req, res) => {
             border-radius: 12px;
             box-shadow: 0px 4px 15px rgba(255, 255, 255, 0.2);
             color: white;
-            width: 100%; /* Full width */
-            margin: 0; /* No margin */
+            width: 100%;
+            margin: 0;
           }
 
           /* Page Styling */
@@ -284,7 +285,27 @@ app.get('/dashboard', async (req, res) => {
             background: linear-gradient(to right, rgb(6, 6, 6), rgb(49, 119, 200));
             color: white;
             padding: 20px;
-            margin: 0; /* Remove extra space */
+            margin: 0;
+          }
+
+          /* Cards Styling */
+          .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+          }
+          .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+          }
+          .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0px 4px 15px rgba(255, 255, 255, 0.3);
           }
 
           /* Logs Styling */
@@ -324,9 +345,22 @@ app.get('/dashboard', async (req, res) => {
         </script>
       </head>
       <body>
-        <div class="container-fluid mt-4"> <!-- Use container-fluid for full width -->
+        <div class="container-fluid mt-4">
+          <!-- Cards Row -->
+          <div class="card-container">
+            <div class="card">Hi, I am Card 1</div>
+            <div class="card">Hi, I am Card 2</div>
+            <div class="card">Hi, I am Card 3</div>
+            <div class="card">Hi, I am Card 4</div>
+            <div class="card">Hi, I am Card 5</div>
+            <div class="card">Hi, I am Card 6</div>
+            <div class="card">Hi, I am Card 7</div>
+            <div class="card">Hi, I am Card 8</div>
+          </div>
+
+          <!-- Log Viewer -->
           <div class="row justify-content-center">
-            <div class="col-lg-12"> <!-- Take full width on large screens -->
+            <div class="col-lg-12">
               <div class="glass-container p-4">
                 <h2>🔹 Reversed Log Viewer</h2>
                 <p><strong>File Last Modified:</strong> ${lastModifiedTime}</p>
@@ -345,6 +379,7 @@ app.get('/dashboard', async (req, res) => {
     res.status(500).send(`Error: ${err.message}`);
   }
 });
+    
 
 
 /**

@@ -268,13 +268,14 @@ app.get('/dashboard', async (req, res) => {
           body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background: linear-gradient(to right, #141e30,rgb(49, 119, 200));
+            background: linear-gradient(to right, rgb(3, 16, 90), rgb(3, 116, 245));
             color: white;
             padding: 20px;
           }
           .container {
-            max-width: 90%;
-            margin: auto;
+            max-width: 100%; /* Expand container to nearly full width */
+            margin-left: auto;
+            margin-right: auto;
             padding: 15px;
             background: rgba(0, 0, 0, 0.8);
             border-radius: 8px;
@@ -300,7 +301,7 @@ app.get('/dashboard', async (req, res) => {
           }
           @media (min-width: 1200px) {
             .container {
-              max-width: 70%;
+              max-width: 90%; /* Keep it wider on large screens */
             }
           }
         </style>

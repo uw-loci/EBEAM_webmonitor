@@ -273,8 +273,8 @@ app.get('/dashboard', async (req, res) => {
             border-radius: 12px;
             box-shadow: 0px 4px 15px rgba(255, 255, 255, 0.2);
             color: white;
-            max-width: 98%; /* Expanded width */
-            margin: auto;
+            width: 100%; /* Full width */
+            margin: 0; /* No margin */
           }
 
           /* Page Styling */
@@ -284,6 +284,7 @@ app.get('/dashboard', async (req, res) => {
             background: linear-gradient(to right, rgb(6, 6, 6), rgb(49, 119, 200));
             color: white;
             padding: 20px;
+            margin: 0; /* Remove extra space */
           }
 
           /* Logs Styling */
@@ -300,10 +301,18 @@ app.get('/dashboard', async (req, res) => {
             font-size: 1.3em;
           }
 
+          /* Remove container max-width */
+          .container {
+            width: 100%;
+            max-width: 100%;
+            padding: 0;
+            margin: 0;
+          }
+
           /* Responsive Adjustments */
           @media (max-width: 768px) {
             .glass-container {
-              max-width: 95%;
+              padding: 10px;
             }
           }
         </style>
@@ -315,9 +324,9 @@ app.get('/dashboard', async (req, res) => {
         </script>
       </head>
       <body>
-        <div class="container mt-4">
+        <div class="container-fluid mt-4"> <!-- Use container-fluid for full width -->
           <div class="row justify-content-center">
-            <div class="col-lg-12">
+            <div class="col-lg-12"> <!-- Take full width on large screens -->
               <div class="glass-container p-4">
                 <h2>🔹 Reversed Log Viewer</h2>
                 <p><strong>File Last Modified:</strong> ${lastModifiedTime}</p>
@@ -336,6 +345,7 @@ app.get('/dashboard', async (req, res) => {
     res.status(500).send(`Error: ${err.message}`);
   }
 });
+
 
 /**
  * GET /raw : Returns just the reversed text (newest at top).

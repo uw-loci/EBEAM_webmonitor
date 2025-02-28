@@ -247,7 +247,6 @@ ${reversedContents}
  */
 app.get('/dashboard', async (req, res) => {
   try {
-
     let reversedContents = "No data available.";
 
     // Serve cached file if available
@@ -265,43 +264,46 @@ app.get('/dashboard', async (req, res) => {
         <title>Log System Dashboard</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <style>
+          /* Glassmorphism Effect */
+          .glass-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 15px rgba(255, 255, 255, 0.2);
+            color: white;
+            max-width: 98%; /* Expanded width */
+            margin: auto;
+          }
+
+          /* Page Styling */
           body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background: linear-gradient(to right, rgb(3, 16, 90), rgb(3, 116, 245));
+            background: linear-gradient(to right, rgb(6, 6, 6), rgb(49, 119, 200));
             color: white;
             padding: 20px;
           }
-          .container {
-            max-width: 100%; /* Expand container to nearly full width */
-            margin-left: auto;
-            margin-right: auto;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 8px;
-            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
-          }
+
+          /* Logs Styling */
           pre {
             white-space: pre-wrap;
             font-family: monospace;
             text-align: left;
-            background: #2c3e50;
+            background: rgba(0, 0, 0, 0.6);
             color: #ecf0f1;
             padding: 15px;
-            border-radius: 5px;
+            border-radius: 10px;
             max-height: 600px;
             overflow-y: auto;
-            font-size: 1.2em; /* Increased font size */
+            font-size: 1.3em;
           }
-          .refresh {
-            margin-top: 20px;
-            padding: 12px 25px;
-            font-size: 1.1em;
-            cursor: pointer;
-          }
-          @media (min-width: 1200px) {
-            .container {
-              max-width: 90%; /* Keep it wider on large screens */
+
+          /* Responsive Adjustments */
+          @media (max-width: 768px) {
+            .glass-container {
+              max-width: 95%;
             }
           }
         </style>
@@ -313,22 +315,18 @@ app.get('/dashboard', async (req, res) => {
         </script>
       </head>
       <body>
-        <div class="container">
-          <h1 class="mb-3">Reversed Log Viewer</h1>
-          <p class="lead">File Last Modified: ${lastModifiedTime}</p>
-          <p class="small">Last Updated: ${new Date().toLocaleString('en-US', {
-            timeZone: 'America/Chicago',
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true
-          })}</p>
-          <pre>${reversedContents}</pre>
-          <button class="btn btn-primary refresh" onclick="refreshPage()">Refresh</button>
+        <div class="container mt-4">
+          <div class="row justify-content-center">
+            <div class="col-lg-12">
+              <div class="glass-container p-4">
+                <h2>🔹 Reversed Log Viewer</h2>
+                <p><strong>File Last Modified:</strong> ${lastModifiedTime}</p>
+                <p><strong>Last Updated:</strong> ${new Date().toLocaleString()}</p>
+                <pre>${reversedContents}</pre>
+                <button class="btn btn-primary mt-3" onclick="refreshPage()">Refresh</button>
+              </div>
+            </div>
+          </div>
         </div>
       </body>
       </html>
@@ -338,7 +336,6 @@ app.get('/dashboard', async (req, res) => {
     res.status(500).send(`Error: ${err.message}`);
   }
 });
-
 
 /**
  * GET /raw : Returns just the reversed text (newest at top).

@@ -268,17 +268,17 @@ app.get('/dashboard', async (req, res) => {
           body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background: linear-gradient(to right, #141e30, #243b55);
+            background: linear-gradient(to right, #141e30,rgb(49, 119, 200));
             color: white;
             padding: 20px;
           }
           .container {
-            max-width: 800px;
+            max-width: 90%;
             margin: auto;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 10px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
           }
           pre {
             white-space: pre-wrap;
@@ -286,16 +286,22 @@ app.get('/dashboard', async (req, res) => {
             text-align: left;
             background: #2c3e50;
             color: #ecf0f1;
-            padding: 10px;
+            padding: 15px;
             border-radius: 5px;
-            max-height: 400px;
+            max-height: 600px;
             overflow-y: auto;
+            font-size: 1.2em; /* Increased font size */
           }
           .refresh {
             margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 1em;
+            padding: 12px 25px;
+            font-size: 1.1em;
             cursor: pointer;
+          }
+          @media (min-width: 1200px) {
+            .container {
+              max-width: 70%;
+            }
           }
         </style>
         <script>

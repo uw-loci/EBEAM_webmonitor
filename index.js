@@ -281,7 +281,7 @@ app.get('/dashboard', async (req, res) => {
           body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background: linear-gradient(to right, rgb(6, 6, 6), rgb(49, 119, 200));
+            background: linear-gradient(to right, rgb(6, 6, 6), rgb(3, 55, 114));
             color: white;
             padding: 20px;
             margin: 0;

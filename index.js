@@ -245,7 +245,6 @@ ${reversedContents}
 /**
  * GET/dashboard: Implement the log file dashboard to this end point.
  */
-// HTML Response
 app.get('/dashboard', async (req, res) => {
   try {
     let reversedContents = "No data available.";
@@ -288,24 +287,34 @@ app.get('/dashboard', async (req, res) => {
             margin: 0;
           }
 
+          /* Title Styling */
+          .dashboard-title {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+          }
+
           /* Cards Styling */
           .card-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
+            padding: 20px;
           }
           .card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.7); /* Darker background for visibility */
+            color: white;
             padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.3);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+            font-weight: bold;
           }
           .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0px 4px 15px rgba(255, 255, 255, 0.3);
+            box-shadow: 0px 4px 15px rgba(255, 255, 255, 0.4);
           }
 
           /* Logs Styling */
@@ -335,6 +344,9 @@ app.get('/dashboard', async (req, res) => {
             .glass-container {
               padding: 10px;
             }
+            .card-container {
+              grid-template-columns: repeat(2, 1fr); /* 2 columns for smaller screens */
+            }
           }
         </style>
         <script>
@@ -346,7 +358,10 @@ app.get('/dashboard', async (req, res) => {
       </head>
       <body>
         <div class="container-fluid mt-4">
-          <!-- Cards Row -->
+          <!-- Dashboard Title -->
+          <h2 class="dashboard-title">🔹 Reversed Log Viewer</h2>
+
+          <!-- Cards Row (Now Right Below Title) -->
           <div class="card-container">
             <div class="card">Hi, I am Card 1</div>
             <div class="card">Hi, I am Card 2</div>
@@ -362,7 +377,6 @@ app.get('/dashboard', async (req, res) => {
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
-                <h2>🔹 Reversed Log Viewer</h2>
                 <p><strong>File Last Modified:</strong> ${lastModifiedTime}</p>
                 <p><strong>Last Updated:</strong> ${new Date().toLocaleString()}</p>
                 <pre>${reversedContents}</pre>
@@ -379,6 +393,7 @@ app.get('/dashboard', async (req, res) => {
     res.status(500).send(`Error: ${err.message}`);
   }
 });
+
     
 
 

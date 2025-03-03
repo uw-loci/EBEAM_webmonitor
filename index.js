@@ -307,11 +307,6 @@ app.get('/dashboard', async (req, res) => {
             text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
                         0px 0px 20px rgba(214, 234, 255, 0.4);
           }
-
-
-
-
-
           .dashboard-title::after {
             content: "";
             display: block;

@@ -295,11 +295,32 @@ app.get('/dashboard', async (req, res) => {
           }
 
           /* Dashboard Title with Neon Glow */
+          @keyframes flicker {
+            0% { opacity: 1; text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.6); }
+            50% { opacity: 0.9; text-shadow: 0px 0px 15px rgba(255, 255, 255, 0.5); }
+            100% { opacity: 1; text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.6); }
+          }
           .dashboard-title {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-shadow: 0px 0px 20px rgba(0, 255, 255, 0.9);
+            font-size: 3.5em;
+            font-weight: 900;
+            color: #d6eaff;
+            text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
+                        0px 0px 20px rgba(214, 234, 255, 0.4);
+          }
+
+
+
+
+
+          .dashboard-title::after {
+            content: "";
+            display: block;
+            width: 60%;
+            height: 5px;
+            background: rgba(0, 255, 255, 0.8);
+            margin: 10px auto;
+            box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
+            border-radius: 10px;
           }
 
           /* Subtitle */

@@ -264,120 +264,135 @@ app.get('/dashboard', async (req, res) => {
         <title>Log System Dashboard</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <style>
+          /* Futuristic Animated Background */
+          body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(-45deg, #001f3f, #003366, #005a9e);
+            background-size: 400% 400%;
+            animation: gradientMove 12s ease infinite;
+            color: white;
+            padding: 20px;
+            margin: 0;
+          }
+          @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+
           /* Glassmorphism Effect */
           .glass-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0px 4px 15px rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15);
             color: white;
             width: 100%;
             margin: 0;
           }
 
-          /* Page Styling */
-          body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: linear-gradient(to right, rgb(6, 6, 6), rgb(3, 55, 114));
-            color: white;
-            padding: 20px;
-            margin: 0;
-          }
-
-          /* Title Styling */
+          /* Dashboard Title with Neon Glow */
           .dashboard-title {
-            font-size: 2em;
+            font-size: 2.5em;
             font-weight: bold;
             margin-bottom: 10px;
+            text-shadow: 0px 0px 20px rgba(0, 255, 255, 0.9);
           }
 
-          /* Subtitle Styling */
+          /* Subtitle */
           .dashboard-subtitle {
             font-size: 1.2em;
             font-weight: normal;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.8);
           }
 
-          /* Cards Styling */
+          /* Neon Glow Cards */
           .card-container {
             display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 4 columns per row */
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             margin-bottom: 30px;
             padding: 20px;
             justify-content: center;
           }
           .card {
-            background: rgba(0, 0, 0, 0.7); /* Darker background for visibility */
+            background: rgba(0, 0, 0, 0.8);
             color: white;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            box-shadow: 0px 0px 15px rgba(0, 255, 255, 0.7);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             text-align: center;
             font-weight: bold;
           }
           .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0px 4px 15px rgba(255, 255, 255, 0.4);
+            box-shadow: 0px 0px 25px rgba(0, 255, 255, 1);
           }
 
-          /* Logs Styling */
+          /* Log Viewer with Higher Contrast */
           pre {
             white-space: pre-wrap;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             text-align: left;
-            background: rgba(0, 0, 0, 0.6);
-            color: #ecf0f1;
-            padding: 15px;
-            border-radius: 10px;
+            background: rgba(10, 10, 10, 0.85);
+            color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
             max-height: 600px;
             overflow-y: auto;
-            font-size: 1.3em;
+            font-size: 1.2em;
+            box-shadow: 0px 0px 15px rgba(0, 255, 255, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.5);
           }
 
-          /* Remove container max-width */
-          .container {
-            width: 100%;
-            max-width: 100%;
-            padding: 0;
-            margin: 0;
-          }
-
-          /* Responsive Adjustments */
+          /* Responsive Layout */
           @media (max-width: 992px) {
             .card-container {
-              grid-template-columns: repeat(2, 1fr); /* 2 columns per row on smaller screens */
+              grid-template-columns: repeat(2, 1fr);
             }
           }
           @media (max-width: 600px) {
             .card-container {
-              grid-template-columns: repeat(1, 1fr); /* 1 column per row on very small screens */
+              grid-template-columns: repeat(1, 1fr);
             }
+          }
+
+          /* Refresh Button */
+          .btn-refresh {
+            background: rgba(0, 255, 255, 0.5);
+            color: white;
+            border: 1px solid rgba(0, 255, 255, 0.8);
+            border-radius: 8px;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+          }
+          .btn-refresh:hover {
+            background: rgba(0, 255, 255, 0.8);
+            box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
           }
         </style>
         <script>
           function refreshPage() {
             location.reload();
           }
-          setTimeout(refreshPage, 60000); // Auto-refresh every 60 seconds
+          setTimeout(refreshPage, 60000);
         </script>
       </head>
       <body>
         <div class="container-fluid mt-4">
-          <!-- Dashboard Title -->
           <h2 class="dashboard-title">🔹 Reversed Log Viewer</h2>
-          
-          <!-- Subtitle (Now Above Cards) -->
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${lastModifiedTime} | 
             <strong>Last Updated:</strong> ${new Date().toLocaleString()}
           </p>
 
-          <!-- Cards Row (Now in a 4x4 grid) -->
           <div class="card-container">
             <div class="card">Hi, I am Card 1</div>
             <div class="card">Hi, I am Card 2</div>
@@ -389,12 +404,11 @@ app.get('/dashboard', async (req, res) => {
             <div class="card">Hi, I am Card 8</div>
           </div>
 
-          <!-- Log Viewer -->
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
                 <pre>${reversedContents}</pre>
-                <button class="btn btn-primary mt-3" onclick="refreshPage()">Refresh</button>
+                <button class="btn btn-refresh mt-3" onclick="refreshPage()">Refresh</button>
               </div>
             </div>
           </div>

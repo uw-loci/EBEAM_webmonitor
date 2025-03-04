@@ -429,7 +429,7 @@ app.get('/', async (req, res) => {
           <h2 class="dashboard-title"> E-beam Web Monitor</h2>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
-            <strong>Last Updated:</strong> ${new Date().toLocaleString()}
+            <strong>Last Updated:</strong>  ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}
           </p>
 
           <div class="card-container">

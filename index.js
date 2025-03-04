@@ -428,7 +428,7 @@ app.get('/', async (req, res) => {
         <div class="container-fluid mt-4">
           <h2 class="dashboard-title"> E-beam Web Monitor</h2>
           <p class="dashboard-subtitle">
-            <strong>File Last Modified:</strong> ${lastModifiedTime} | 
+            <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
             <strong>Last Updated:</strong> ${new Date().toLocaleString()}
           </p>
 

@@ -164,11 +164,90 @@ async function fetchAndUpdateFile() {
 fetchAndUpdateFile(); // Initial fetch
 setInterval(fetchAndUpdateFile, 60000); // Check every minute
 
+// /**
+//  * GET / : Serve the HTML page with reversed log lines.
+//  */
+// app.get('/', async (req, res) => {
+//   try {
+//     if (!experimentRunning) {
+//       res.send(`
+//         <!DOCTYPE html>
+//         <html>
+//         <head>
+//           <meta charset="utf-8" />
+//           <title>Reversed Log Viewer</title>
+//           <script type="text/javascript">
+//             setTimeout(function() {
+//               location.reload();
+//             }, 60000);
+//           </script>
+//         </head>
+//         <body>
+//           <h1>Experiment Status</h1>
+//           <p style="font-size: 1.5em; color: red;">Experiment is not running.</p>
+//         </body>
+//         </html>
+//       `);
+//       return;
+//     }
+
+//     let reversedContents = "No data available.";
+
+//     // Fetch the latest file in the background
+//     // fetchAndUpdateFile();
+
+//     // Serve cached file if available
+//     if (fs.existsSync(REVERSED_FILE_PATH)) {
+//       reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
+//     }
+
+//     // HTML Response
+//     res.send(`
+//       <!DOCTYPE html>
+//       <html>
+//       <head>
+//         <meta charset="utf-8" />
+//         <title>Reversed Log Viewer</title>
+//         <script type="text/javascript">
+//           setTimeout(function() {
+//             location.reload();
+//           }, 60000);
+//         </script>
+//       </head>
+//       <body>
+//         <h1>Reversed Log Viewer</h1>
+//         <p>Most Recent File: ${logFileName}</p>
+//         <p>File Last Modified: ${lastModifiedTime}</p>
+//         <p>Last Updated: ${new Date().toLocaleString('en-US', {
+//             timeZone: 'America/Chicago',
+//             weekday: 'long',
+//             year: 'numeric',
+//             month: 'long',
+//             day: 'numeric',
+//             hour: '2-digit',
+//             minute: '2-digit',
+//             second: '2-digit',
+//             hour12: true
+//           })}
+//         </p>
+//         <pre style="white-space: pre-wrap; font-family: monospace;">
+// ${reversedContents}
+//         </pre>
+//       </body>
+//       </html>
+//     `);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send(`Error: ${err.message}`);
+//   }
+// });
+
 /**
- * GET / : Serve the HTML page with reversed log lines.
+ * GET/: Implement the log file dashboard to this end point.
  */
 app.get('/', async (req, res) => {
   try {
+    // if experiemnt is not running then we print "Experiment is not running."
     if (!experimentRunning) {
       res.send(`
         <!DOCTYPE html>
@@ -191,62 +270,6 @@ app.get('/', async (req, res) => {
       return;
     }
 
-    let reversedContents = "No data available.";
-
-    // Fetch the latest file in the background
-    // fetchAndUpdateFile();
-
-    // Serve cached file if available
-    if (fs.existsSync(REVERSED_FILE_PATH)) {
-      reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
-    }
-
-    // HTML Response
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>Reversed Log Viewer</title>
-        <script type="text/javascript">
-          setTimeout(function() {
-            location.reload();
-          }, 60000);
-        </script>
-      </head>
-      <body>
-        <h1>Reversed Log Viewer</h1>
-        <p>Most Recent File: ${logFileName}</p>
-        <p>File Last Modified: ${lastModifiedTime}</p>
-        <p>Last Updated: ${new Date().toLocaleString('en-US', {
-            timeZone: 'America/Chicago',
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true
-          })}
-        </p>
-        <pre style="white-space: pre-wrap; font-family: monospace;">
-${reversedContents}
-        </pre>
-      </body>
-      </html>
-    `);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send(`Error: ${err.message}`);
-  }
-});
-
-/**
- * GET/dashboard: Implement the log file dashboard to this end point.
- */
-app.get('/dashboard', async (req, res) => {
-  try {
     let reversedContents = "No data available.";
 
     // Serve cached file if available

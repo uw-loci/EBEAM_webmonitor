@@ -403,7 +403,7 @@ app.get('/dashboard', async (req, res) => {
       </head>
       <body>
         <div class="container-fluid mt-4">
-          <h2 class="dashboard-title">🔹 Log Dashboard</h2>
+          <h2 class="dashboard-title"> Log Dashboard</h2>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${lastModifiedTime} | 
             <strong>Last Updated:</strong> ${new Date().toLocaleString()}

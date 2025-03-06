@@ -3,6 +3,7 @@ const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const lockFile = require('proper-lockfile');
 
 
 // Load environment variables
@@ -115,6 +116,9 @@ async function fetchFileContents(fileId) {
  * @returns {Promise<boolean>} True if file was updated, false otherwise
  */
 async function fetchAndUpdateFile() {
+
+  let release; // Declare release variable outside try block
+
   try {
     const mostRecentFile = await getMostRecentFile();
     if (!mostRecentFile) {
@@ -125,7 +129,8 @@ async function fetchAndUpdateFile() {
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
     const currentTime = new Date().getTime(); // Ensures UTC comparison
     
-    
+    /////uncomment this after the development of the webpage///////
+    // 
     // Check if file hasn't been modified in last 15 minutes
     // KEEP THIS FOR FUTURE NEED FOR AFTER DEVELOPMENT FINISHED
     // if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
@@ -133,30 +138,38 @@ async function fetchAndUpdateFile() {
     //   console.log("Experiment not running - no updates in 15 minutes");
     //   return false;
     // }
+    //////////////////////////////////////////////////////////////
 
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       console.log("No new updates. Using cached file.");
-      experimentRunning = true; // Still running if within threshold
+      experimentRunning = true;
       return false;
     }
 
     console.log("Fetching new file...");
-    
     const lines = await fetchFileContents(mostRecentFile.id);
     
-    // Write reversed lines in one operation
+    // Try to acquire a lock before modifying the file
+    const release = await lockFile.lock(REVERSED_FILE_PATH);
+
+    // Ensure atomic write operation
     fs.writeFileSync(REVERSED_FILE_PATH, lines.reverse().join('\n'));
-    
+
     lastModifiedTime = mostRecentFile.modifiedTime;
     logFileName = mostRecentFile.name;
     experimentRunning = true;
 
+    // await release(); // Release the lock
     console.log("File updated successfully.");
     return true;
   } catch (err) {
     console.error(`Error processing file: ${err.message}`);
     experimentRunning = false;
     return false;
+  } finally {
+      if (release) {
+      await release(); // Release the lock
+    }
   }
 }
 

@@ -164,7 +164,7 @@ async function fetchAndUpdateFile() {
     return true;
   } catch (err) {
     console.error(`Error processing file: ${err.message}`);
-    experimentRunning = false;
+    //experimentRunning = false;
     return false;
   } finally {
       if (release) {

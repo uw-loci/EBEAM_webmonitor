@@ -51,7 +51,7 @@ async function getMostRecentFile() {
 
 let lastModifiedTime = null;
 let logFileName = null;
-let experimentRunning = false;
+let experimentRunning = true;
 
 /**
  * Fetches file contents from Google Drive using streaming

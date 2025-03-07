@@ -261,27 +261,27 @@ setInterval(fetchAndUpdateFile, 60000); // Check every minute
 app.get('/', async (req, res) => {
   try {
     // if experiemnt is not running then we print "Experiment is not running."
-    if (!experimentRunning) {
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>Reversed Log Viewer</title>
-          <script type="text/javascript">
-            setTimeout(function() {
-              location.reload();
-            }, 60000);
-          </script>
-        </head>
-        <body>
-          <h1>Experiment Status</h1>
-          <p style="font-size: 1.5em; color: red;">Experiment is not running.</p>
-        </body>
-        </html>
-      `);
-      return;
-    }
+    // if (!experimentRunning) {
+    //   res.send(`
+    //     <!DOCTYPE html>
+    //     <html>
+    //     <head>
+    //       <meta charset="utf-8" />
+    //       <title>Reversed Log Viewer</title>
+    //       <script type="text/javascript">
+    //         setTimeout(function() {
+    //           location.reload();
+    //         }, 60000);
+    //       </script>
+    //     </head>
+    //     <body>
+    //       <h1>Experiment Status</h1>
+    //       <p style="font-size: 1.5em; color: red;">Experiment is not running.</p>
+    //     </body>
+    //     </html>
+    //   `);
+    //   return;
+    // }
 
     let reversedContents = "No data available.";
 
@@ -440,6 +440,7 @@ app.get('/', async (req, res) => {
       <body>
         <div class="container-fluid mt-4">
           <h2 class="dashboard-title"> E-beam Web Monitor</h2>
+          <p id="experimentRunning" style="display:none;"></p>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
             <strong>Last Updated:</strong>  ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}
@@ -465,6 +466,13 @@ app.get('/', async (req, res) => {
             </div>
           </div>
         </div>
+        <script>
+          if(${!experimentRunning}) {
+            const contentDiv = document.getElementById('experimentRunning');
+            contentDiv.style.cssText = 'font-size: 1.5em; color: red;';
+            contentDiv.textContent = 'Experiment is not running';
+          }
+        </script>
       </body>
       </html>
     `);

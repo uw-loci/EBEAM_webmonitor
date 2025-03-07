@@ -260,7 +260,7 @@ setInterval(fetchAndUpdateFile, 60000); // Check every minute
  */
 app.get('/', async (req, res) => {
   try {
-    // if experiemnt is not running then we print "Experiment is not running."
+    // if experiment is not running then we print "Experiment is not running."
     // if (!experimentRunning) {
     //   res.send(`
     //     <!DOCTYPE html>
@@ -467,7 +467,7 @@ app.get('/', async (req, res) => {
           </div>
         </div>
         <script>
-          if(${!experimentRunning}) {
+          if(${experimentRunning}) {
             const contentDiv = document.getElementById('experimentRunning');
             contentDiv.style.cssText = 'font-size: 1.5em; color: red;';
             contentDiv.textContent = 'Experiment is not running';

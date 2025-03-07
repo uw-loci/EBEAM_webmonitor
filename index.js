@@ -153,13 +153,12 @@ async function fetchAndUpdateFile() {
     const release = await lockFile.lock(REVERSED_FILE_PATH);
 
     // Ensure atomic write operation
-    fs.writeFileSync(REVERSED_FILE_PATH, lines.reverse().join('\n'));
+    fs.writeFileSync(REVERSED_FILE_PATH, lines.reverse().join('\n'), { flag: 'wx' });
 
     lastModifiedTime = mostRecentFile.modifiedTime;
     logFileName = mostRecentFile.name;
     experimentRunning = true;
 
-    // await release(); // Release the lock
     console.log("File updated successfully.");
     return true;
   } catch (err) {

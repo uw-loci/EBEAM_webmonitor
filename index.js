@@ -149,8 +149,8 @@ async function fetchAndUpdateFile() {
     console.log("Fetching new file...");
     const lines = await fetchFileContents(mostRecentFile.id);
     
-    // Try to acquire a lock before modifying the file
-    const release = await lockFile.lock(REVERSED_FILE_PATH);
+    // // Try to acquire a lock before modifying the file
+    // const release = await lockFile.lock(REVERSED_FILE_PATH);
 
     // Ensure atomic write operation
     fs.writeFileSync(REVERSED_FILE_PATH, lines.reverse().join('\n'));
@@ -159,17 +159,17 @@ async function fetchAndUpdateFile() {
     logFileName = mostRecentFile.name;
     experimentRunning = true;
 
-    // await release(); // Release the lock
+    // await release(); // Release the loc
     console.log("File updated successfully.");
     return true;
   } catch (err) {
     console.error(`Error processing file: ${err.message}`);
     //experimentRunning = false;
     return false;
-  } finally {
-      if (release) {
-      await release(); // Release the lock
-    }
+  // } finally {
+  //     if (release) {
+  //     await release(); // Release the lock
+  //   }
   }
 }
 
@@ -260,6 +260,9 @@ setInterval(fetchAndUpdateFile, 60000); // Check every minute
  */
 app.get('/', async (req, res) => {
   try {
+
+    let reversedContents = "No data available.";
+
     // Serve cached file if available
     if (fs.existsSync(REVERSED_FILE_PATH)) {
       reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');

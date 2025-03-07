@@ -442,7 +442,7 @@ app.get('/', async (req, res) => {
           </div>
         </div>
         <script>
-          if(${experimentRunning}) {
+          if(${!experimentRunning}) {
             const contentDiv = document.getElementById('experimentRunning');
             contentDiv.style.cssText = 'font-size: 1.5em; color: red;';
             contentDiv.textContent = 'Experiment is not running';

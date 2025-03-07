@@ -122,7 +122,7 @@ async function fetchAndUpdateFile() {
   try {
     const mostRecentFile = await getMostRecentFile();
     if (!mostRecentFile) {
-      experimentRunning = false;
+      //experimentRunning = false;
       return false;
     }
     

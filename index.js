@@ -260,31 +260,6 @@ setInterval(fetchAndUpdateFile, 60000); // Check every minute
  */
 app.get('/', async (req, res) => {
   try {
-    // if experiment is not running then we print "Experiment is not running."
-    // if (!experimentRunning) {
-    //   res.send(`
-    //     <!DOCTYPE html>
-    //     <html>
-    //     <head>
-    //       <meta charset="utf-8" />
-    //       <title>Reversed Log Viewer</title>
-    //       <script type="text/javascript">
-    //         setTimeout(function() {
-    //           location.reload();
-    //         }, 60000);
-    //       </script>
-    //     </head>
-    //     <body>
-    //       <h1>Experiment Status</h1>
-    //       <p style="font-size: 1.5em; color: red;">Experiment is not running.</p>
-    //     </body>
-    //     </html>
-    //   `);
-    //   return;
-    // }
-
-    let reversedContents = "No data available.";
-
     // Serve cached file if available
     if (fs.existsSync(REVERSED_FILE_PATH)) {
       reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');

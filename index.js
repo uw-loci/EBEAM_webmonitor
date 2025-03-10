@@ -148,9 +148,14 @@ async function fetchAndUpdateFile() {
 
     console.log("Fetching new file...");
     const lines = await fetchFileContents(mostRecentFile.id);
+
+    // Ensure the file exists before locking
+      if (!fs.existsSync(REVERSED_FILE_PATH)) {
+        fs.writeFileSync(REVERSED_FILE_PATH, '', { flag: 'w' });
+    }
     
-    // // Try to acquire a lock before modifying the file
-    // const release = await lockFile.lock(REVERSED_FILE_PATH);
+    // Try to acquire a lock before modifying the file
+    const release = await lockFile.lock(REVERSED_FILE_PATH);
 
     // Ensure atomic write operation
     fs.writeFileSync(REVERSED_FILE_PATH, lines.reverse().join('\n'));
@@ -166,10 +171,10 @@ async function fetchAndUpdateFile() {
     console.error(`Error processing file: ${err.message}`);
     experimentRunning = false;
     return false;
-  // } finally {
-  //     if (release) {
-  //     await release(); // Release the lock
-  //   }
+  } finally {
+      if (release) {
+      await release(); // Release the lock
+    }
   }
 }
 

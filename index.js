@@ -155,7 +155,7 @@ async function fetchAndUpdateFile() {
     }
     
     // Try to acquire a lock before modifying the file
-    const release = await lockFile.lock(REVERSED_FILE_PATH);
+    release = await lockFile.lock(REVERSED_FILE_PATH);
 
     // Ensure atomic write operation
     fs.writeFileSync(REVERSED_FILE_PATH, lines.reverse().join('\n'));

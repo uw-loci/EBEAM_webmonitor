@@ -51,7 +51,7 @@ async function getMostRecentFile() {
 
 let lastModifiedTime = null;
 let logFileName = null;
-let experimentRunning = true;
+let experimentRunning = false;
 
 /**
  * Fetches file contents from Google Drive using streaming
@@ -122,7 +122,7 @@ async function fetchAndUpdateFile() {
   try {
     const mostRecentFile = await getMostRecentFile();
     if (!mostRecentFile) {
-      //experimentRunning = false;
+      experimentRunning = false;
       return false;
     }
     
@@ -164,7 +164,7 @@ async function fetchAndUpdateFile() {
     return true;
   } catch (err) {
     console.error(`Error processing file: ${err.message}`);
-    //experimentRunning = false;
+    experimentRunning = false;
     return false;
   // } finally {
   //     if (release) {

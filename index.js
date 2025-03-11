@@ -452,10 +452,11 @@ app.get('/', async (req, res) => {
           // Initialize with only first 20 lines
           const contentElement = document.getElementById('reversedContents');
           const allContent = ${reversedContents};
-          const contentLines = allContent.split('\n');
+          // const contentLines = allContent.split('\n');
           
           // Show first 20 lines initially
-          contentElement.textContent = contentLines.slice(0, 20).join('\n');
+          // contentElement.textContent = contentLines.slice(0, 20).join('\n');
+          contentElement.textContent = allContent; 
         </script>
         <script>
           if(${!experimentRunning}) {

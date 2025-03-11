@@ -443,16 +443,16 @@ app.get('/', async (req, res) => {
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
-                <pre id="reversedContents"></pre>
+                <pre>${reversedContents}</pre>
                 <script>
                   // Initialize with only first 20 lines
-                  const contentElement = document.getElementById('reversedContents');
-                  const allContent = ${JSON.stringify(reversedContents)};;
+                  //const contentElement = document.getElementById('reversedContents');
+                  //const allContent = ${JSON.stringify(reversedContents)};;
                   // const contentLines = allContent.split('\n');
                   
                   // Show first 20 lines initially
                   // contentElement.textContent = contentLines.slice(0, 20).join('\n');
-                  contentElement.textContent = allContent; 
+                  //contentElement.textContent = allContent; 
                 </script>
               </div>
             </div>

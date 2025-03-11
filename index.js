@@ -115,9 +115,9 @@ async function fetchFileContents(fileId) {
  * Fetches and updates the log file if there's a new version
  * @returns {Promise<boolean>} True if file was updated, false otherwise
  */
-async function fetchAndUpdateFile() {
 
-  let release; // Declare release variable outside try block
+async function fetchAndUpdateFile() {
+  let release; // Declare lock variable before try block
 
   try {
     const mostRecentFile = await getMostRecentFile();
@@ -125,10 +125,10 @@ async function fetchAndUpdateFile() {
       experimentRunning = false;
       return false;
     }
-    
+
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
-    const currentTime = new Date().getTime(); // Ensures UTC comparison
-    
+    const currentTime = new Date().getTime();
+
     /////uncomment this after the development of the webpage///////
     // 
     // Check if file hasn't been modified in last 15 minutes
@@ -148,21 +148,21 @@ async function fetchAndUpdateFile() {
 
     console.log("Fetching new file...");
     let lines = await fetchFileContents(mostRecentFile.id);
-    lines.reverse(); // Reverse the lines directly
+    lines.reverse(); // Reverse file contents
 
-    // Ensure the file exists before locking
     if (!fs.existsSync(REVERSED_FILE_PATH)) {
       fs.writeFileSync(REVERSED_FILE_PATH, '', { flag: 'w' });
     }
 
-    // Try to acquire a lock before modifying the file
-    release = await lockFile.lock(REVERSED_FILE_PATH);
+    // Acquire a lock before modifying the file
+    release = await lockFile.lock(REVERSED_FILE_PATH); //Don't redeclare `release`
 
     // Create a writable stream
     const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
     let hasError = false; // Track if an error occurs
 
-    return new Promise((resolve, reject) => {
+    // FIXED: Ensure function waits for the stream to finish
+    return await new Promise((resolve, reject) => { 
       let i = 0;
 
       function writeNext() {
@@ -188,6 +188,8 @@ async function fetchAndUpdateFile() {
         lastModifiedTime = mostRecentFile.modifiedTime;
         logFileName = mostRecentFile.name;
         experimentRunning = true;
+        
+        if (release) await release(); // Release lock only after writing completes
         resolve(true);
       });
 
@@ -195,6 +197,8 @@ async function fetchAndUpdateFile() {
       writeStream.on('error', async (err) => {
         console.error('Error writing file:', err);
         hasError = true;
+        
+        if (release) await release(); // Ensure lock is released even on error
         reject(false);
       });
     });
@@ -203,12 +207,14 @@ async function fetchAndUpdateFile() {
     console.error(`Error processing file: ${err.message}`);
     experimentRunning = false;
     return false;
-  } finally {
-    if (release) {
-      await release(); // Ensure lock is always released
-    }
   }
+  //  finally {
+  //   if (release) {
+  //     await release(); // Ensure lock is always released
+  //   }
+  // }
 }
+
 
 // Schedule updates
 fetchAndUpdateFile(); // Initial fetch

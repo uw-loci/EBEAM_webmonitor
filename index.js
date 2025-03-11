@@ -156,7 +156,7 @@ async function fetchAndUpdateFile() {
     }
 
     // Try to acquire a lock before modifying the file
-    let release = await lockFile.lock(REVERSED_FILE_PATH);
+    release = await lockFile.lock(REVERSED_FILE_PATH);
 
     // Create a writable stream
     const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });

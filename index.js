@@ -444,7 +444,6 @@ app.get('/', async (req, res) => {
             <div class="col-lg-12">
               <div class="glass-container p-4">
                 <pre id="reversedContents"></pre>
-                <button id="showMoreBtn" class="btn btn-load mt-3">Show All Lines</button>
               </div>
             </div>
           </div>
@@ -457,12 +456,6 @@ app.get('/', async (req, res) => {
           
           // Show first 20 lines initially
           contentElement.textContent = contentLines.slice(0, 20).join('\n');
-          
-          // Show more button functionality
-          document.getElementById('showMoreBtn').addEventListener('click', function() {
-            contentElement.textContent = allContent;
-            this.style.display = 'none'; // Hide button after showing all
-          });
         </script>
         <script>
           if(${!experimentRunning}) {

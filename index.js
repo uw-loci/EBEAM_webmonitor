@@ -399,7 +399,7 @@ app.get('/', async (req, res) => {
           }
 
           /* Refresh Button */
-          .btn-refresh {
+          .btn-load {
             background: rgba(0, 255, 255, 0.5);
             color: white;
             border: 1px solid rgba(0, 255, 255, 0.8);
@@ -408,7 +408,7 @@ app.get('/', async (req, res) => {
             font-size: 1.1em;
             transition: background 0.3s ease, box-shadow 0.3s ease;
           }
-          .btn-refresh:hover {
+          .btn-load:hover {
             background: rgba(0, 255, 255, 0.8);
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
           }
@@ -443,12 +443,27 @@ app.get('/', async (req, res) => {
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
-                <pre>${reversedContents}</pre>
-                <button class="btn btn-refresh mt-3" onclick="refreshPage()">Refresh</button>
+                <pre id="reversedContents"></pre>
+                <button id="showMoreBtn" class="btn btn-load mt-3">Show All Lines</button>
               </div>
             </div>
           </div>
         </div>
+        <script>
+          // Initialize with only first 20 lines
+          const contentElement = document.getElementById('reversedContents');
+          const allContent = ${reversedContents};
+          const contentLines = allContent.split('\n');
+          
+          // Show first 20 lines initially
+          contentElement.textContent = contentLines.slice(0, 20).join('\n');
+          
+          // Show more button functionality
+          document.getElementById('showMoreBtn').addEventListener('click', function() {
+            contentElement.textContent = allContent;
+            this.style.display = 'none'; // Hide button after showing all
+          });
+        </script>
         <script>
           if(${!experimentRunning}) {
             const contentDiv = document.getElementById('experimentRunning');

@@ -117,7 +117,7 @@ async function fetchFileContents(fileId) {
  */
 async function fetchAndUpdateFile() {
 
-  let release; // Declare release variable outside try block
+  // let release; // Declare release variable outside try block
 
   try {
     const mostRecentFile = await getMostRecentFile();
@@ -147,34 +147,58 @@ async function fetchAndUpdateFile() {
     }
 
     console.log("Fetching new file...");
-    const lines = await fetchFileContents(mostRecentFile.id);
+    let lines = await fetchFileContents(mostRecentFile.id); // Change `const` to `let`
+    lines.reverse(); // Reverse the lines directly
 
     // Ensure the file exists before locking
-      if (!fs.existsSync(REVERSED_FILE_PATH)) {
-        fs.writeFileSync(REVERSED_FILE_PATH, '', { flag: 'w' });
+    if (!fs.existsSync(REVERSED_FILE_PATH)) {
+      fs.writeFileSync(REVERSED_FILE_PATH, '', { flag: 'w' });
     }
-    
-    // Try to acquire a lock before modifying the file
-    release = await lockFile.lock(REVERSED_FILE_PATH);
 
-    // Ensure atomic write operation
-    fs.writeFileSync(REVERSED_FILE_PATH, lines.reverse().join('\n'));
+    // Try to acquire a lock before modifying the file
+    let release = await lockFile.lock(REVERSED_FILE_PATH);
+
+    // Create a writable stream
+    const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
+
+    // Write each line and ensure stream handles flow control
+    let i = 0;
+    function writeNext() {
+      let ok = true;
+      while (i < lines.length && ok) {
+        ok = writeStream.write(lines[i] + '\n');
+        i++;
+      }
+      if (i < lines.length) {
+        writeStream.once('drain', writeNext); // Wait until stream is ready
+      } else {
+        writeStream.end(); // Close stream after writing everything
+      }
+    }
+
+    writeNext(); // Start writing
+
+    // Handle stream events
+    writeStream.on('finish', async () => {
+      console.log('Finished writing reversed lines.');
+      if (release) await release(); // Release lock after writing is done
+    });
+
+    writeStream.on('error', async (err) => {
+      console.error('Error writing file:', err);
+      if (release) await release(); // Ensure lock is released on error
+    });
 
     lastModifiedTime = mostRecentFile.modifiedTime;
     logFileName = mostRecentFile.name;
     experimentRunning = true;
 
-    // await release(); // Release the loc
-    console.log("File updated successfully.");
+    // console.log("File updated successfully.");
     return true;
   } catch (err) {
     console.error(`Error processing file: ${err.message}`);
     experimentRunning = false;
     return false;
-  } finally {
-      if (release) {
-      await release(); // Release the lock
-    }
   }
 }
 

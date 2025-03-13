@@ -482,6 +482,7 @@ app.get('/', async (req, res) => {
             <div class="col-lg-12">
               <div class="glass-container p-4">
                 <pre id="reversedtext"></pre>
+                <pre id="reversedtext">qwertyqwertyqwerty</pre>
               </div>
             </div>
           </div>

@@ -482,19 +482,26 @@ app.get('/', async (req, res) => {
             <div class="col-lg-12">
               <div class="glass-container p-4">
                 <pre id="reversedtext"></pre>
-                <pre id="reversedtext">qwertyqwertyqwerty</pre>
+                <pre id="qwerty">qwertyqwertyqwerty</pre>
               </div>
             </div>
           </div>
         </div>
         <script>
           // Initialize with only first 20 lines
-          const contentElement = document.getElementById('reversedtext');
+          //const contentElement = document.getElementById('reversedtext');
           //const allContent = ${JSON.stringify(reversedContents)};;
           // const contentLines = allContent.split('\n');
 
           //const allContent = JSON.stringify(reversedContents).slice(1, -1); 
-          contentElement.textContent = "asdfasdfasdfasdfasdf"; 
+          //contentElement.textContent = "asdfasdfasdfasdfasdf"; 
+          document.addEventListener('DOMContentLoaded', function () {
+            const contentElement = document.getElementById('reversedtext');
+            contentElement.textContent = 'asdfasdfasdf';  // Example content
+          });
+
+          const preElement = document.getElementById("qwerty");
+          preElement.style.color = "red";
           
           // Show first 20 lines initially
           // contentElement.textContent = contentLines.slice(0, 20).join('\n');

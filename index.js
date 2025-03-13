@@ -481,21 +481,24 @@ app.get('/', async (req, res) => {
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
-                <pre>${reversedContents}</pre>
-                <script>
-                  // Initialize with only first 20 lines
-                  //const contentElement = document.getElementById('reversedContents');
-                  //const allContent = ${JSON.stringify(reversedContents)};;
-                  // const contentLines = allContent.split('\n');
-                  
-                  // Show first 20 lines initially
-                  // contentElement.textContent = contentLines.slice(0, 20).join('\n');
-                  //contentElement.textContent = allContent; 
-                </script>
+                <pre id="reversedtext"></pre>
               </div>
             </div>
           </div>
         </div>
+        <script>
+          // Initialize with only first 20 lines
+          const contentElement = document.getElementById('reversedtext');
+          //const allContent = ${JSON.stringify(reversedContents)};;
+          // const contentLines = allContent.split('\n');
+
+          const allContent = JSON.parse('${JSON.stringify(reversedContents)}');
+          contentElement.textContent = allContent; 
+          
+          // Show first 20 lines initially
+          // contentElement.textContent = contentLines.slice(0, 20).join('\n');
+          //contentElement.textContent = allContent; 
+        </script>
         <script>
           if(${!experimentRunning}) {
             const contentDiv = document.getElementById('experimentRunning');

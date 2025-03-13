@@ -481,7 +481,7 @@ app.get('/', async (req, res) => {
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
-                <div id="reversedtext"></div>
+                <pre id="reversedtext"></pre>
               </div>
             </div>
           </div>
@@ -492,8 +492,8 @@ app.get('/', async (req, res) => {
           //const allContent = ${JSON.stringify(reversedContents)};;
           // const contentLines = allContent.split('\n');
 
-          const allContent = JSON.stringify(reversedContents).slice(1, -1); 
-          contentElement.textContent = allContent; 
+          //const allContent = JSON.stringify(reversedContents).slice(1, -1); 
+          contentElement.textContent = "asdfasdfasdfasdfasdf"; 
           
           // Show first 20 lines initially
           // contentElement.textContent = contentLines.slice(0, 20).join('\n');

@@ -482,7 +482,7 @@ app.get('/', async (req, res) => {
             <div class="col-lg-12">
               <div class="glass-container p-4">
                 <p id="reversedtext"></p>
-                <p id="qwerty">qwertyqwertyqwerty11</p>
+                <p id="qwerty">qwertyqwertyqwerty12</p>
               </div>
             </div>
           </div>
@@ -495,10 +495,9 @@ app.get('/', async (req, res) => {
 
           //const allContent = JSON.stringify(reversedContents).slice(1, -1); 
           //contentElement.textContent = "asdfasdfasdfasdfasdf"; 
-          document.addEventListener('DOMContentLoaded', function () {
-            const contentElement = document.getElementById('reversedtext');
-            contentElement.textContent = 'asdfasdfasdf';  // Example content
-          });
+          
+          const contentElement = document.getElementById('reversedtext');
+          contentElement.textContent = 'asdfasdfasdf12';  // Example content
 
           const preElement = document.getElementById("qwerty");
           preElement.style.color = "red";

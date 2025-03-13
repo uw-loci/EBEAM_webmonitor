@@ -451,12 +451,6 @@ app.get('/', async (req, res) => {
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
           }
         </style>
-        <script>
-          function refreshPage() {
-            location.reload();
-          }
-          setTimeout(refreshPage, 60000);
-        </script>
       </head>
       <body>
         <div class="container-fluid mt-4">
@@ -481,13 +475,16 @@ app.get('/', async (req, res) => {
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
-                <p id="reversedtext"></p>
-                <pre id="qwerty">qwertyqwertyqwerty13</pre>
+                <pre id="reversedtext">Loading text...</pre>
+                <pre id="qwerty">qwertyqwertyqwerty14</pre>
               </div>
             </div>
           </div>
         </div>
         <script>
+          // Function to set up the page content
+          document.addEventListener('DOMContentLoaded', function() {
+            
           // Initialize with only first 20 lines
           //const contentElement = document.getElementById('reversedtext');
           //const allContent = ${JSON.stringify(reversedContents)};;
@@ -495,20 +492,31 @@ app.get('/', async (req, res) => {
 
           //const allContent = JSON.stringify(reversedContents).slice(1, -1); 
           //contentElement.textContent = "asdfasdfasdfasdfasdf"; 
-          document.addEventListener('DOMContentLoaded', function () {
-            const contentElement = document.getElementById('reversedtext');
-            contentElement.textContent = 'asdfasdfasdf13';
-          }
-          
+
           // Show first 20 lines initially
           // contentElement.textContent = contentLines.slice(0, 20).join('\n');
           //contentElement.textContent = allContent; 
 
-          if(${!experimentRunning}) {
-            const contentDiv = document.getElementById('experimentRunning');
-            contentDiv.style.cssText = 'font-size: 1.5em; color: red;';
-            contentDiv.textContent = 'Experiment is not running';
-          }
+
+
+
+          // Set the paragraph text
+            const contentElement = document.getElementById('reversedtext');
+            contentElement.textContent = 'asdfasdfasdf14';
+            
+            // Auto-refresh
+            setTimeout(function() {
+              location.reload();
+            }, 60000);
+            
+            // Show experiment status if needed
+            if(${!experimentRunning}) {
+              const contentDiv = document.getElementById('experimentRunning');
+              contentDiv.style.display = 'block';
+              contentDiv.style.cssText = 'font-size: 1.5em; color: red;';
+              contentDiv.textContent = 'Experiment is not running';
+            }
+          });
         </script>
       </body>
       </html>

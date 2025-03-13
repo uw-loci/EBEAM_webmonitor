@@ -476,7 +476,7 @@ app.get('/', async (req, res) => {
             <div class="col-lg-12">
               <div class="glass-container p-4">
                 <pre id="reversedtext">Loading text...</pre>
-                <pre id="qwerty">qwertyqwertyqwerty14</pre>
+                <pre>${reversedContents}</pre>
               </div>
             </div>
           </div>
@@ -502,7 +502,7 @@ app.get('/', async (req, res) => {
 
           // Set the paragraph text
             const contentElement = document.getElementById('reversedtext');
-            contentElement.textContent = 'asdfasdfasdf14';
+            contentElement.textContent = 'asdfasdfasdf15';
             
             // Auto-refresh
             setTimeout(function() {

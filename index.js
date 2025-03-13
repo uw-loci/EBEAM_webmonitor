@@ -481,8 +481,8 @@ app.get('/', async (req, res) => {
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
-                <pre id="reversedtext"></pre>
-                <pre id="qwerty">qwertyqwertyqwerty</pre>
+                <p id="reversedtext"></p>
+                <p id="qwerty">qwertyqwertyqwerty11</p>
               </div>
             </div>
           </div>

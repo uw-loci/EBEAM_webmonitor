@@ -476,12 +476,13 @@ app.get('/', async (req, res) => {
             <div class="col-lg-12">
               <div class="glass-container p-4">
                 <pre id="reversedtext">Loading text...</pre>
-                <pre>${reversedContents}</pre>
               </div>
             </div>
           </div>
         </div>
         <script>
+          const fileContent = ${JSON.stringify(reversedContents)};
+
           // Function to set up the page content
           document.addEventListener('DOMContentLoaded', function() {
             
@@ -501,16 +502,24 @@ app.get('/', async (req, res) => {
 
 
           // Set the paragraph text
+            // const contentElement = document.getElementById('reversedtext');
+            // contentElement.textContent = 'asdfasdfasdf15';
+
             const contentElement = document.getElementById('reversedtext');
-            contentElement.textContent = 'asdfasdfasdf15';
-            
+            if (contentElement) {
+              contentElement.textContent = fileContent;
+            }
+            else {
+              contentElement.textContent = "modifiedText16";
+            }
+
             // Auto-refresh
             setTimeout(function() {
               location.reload();
             }, 60000);
             
             // Show experiment status if needed
-            if(${!experimentRunning}) {
+            if(${experimentRunning}) {
               const contentDiv = document.getElementById('experimentRunning');
               contentDiv.style.display = 'block';
               contentDiv.style.cssText = 'font-size: 1.5em; color: red;';

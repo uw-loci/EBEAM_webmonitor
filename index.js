@@ -303,7 +303,6 @@ setInterval(fetchAndUpdateFile, 60000); // Check every minute
  */
 app.get('/', async (req, res) => {
   try {
-
     let reversedContents = "No data available.";
 
     // Serve cached file if available
@@ -311,7 +310,12 @@ app.get('/', async (req, res) => {
       reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
     }
 
-    // HTML Response
+    // Truncate very large content for debugging
+    const displayContent = reversedContents.length > 1000 
+      ? reversedContents.substring(0, 1000) + "... (content truncated for display)"
+      : reversedContents;
+
+    // HTML Response with extensive debugging
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
@@ -424,6 +428,18 @@ app.get('/', async (req, res) => {
             border: 1px solid rgba(0, 255, 255, 0.5);
           }
 
+          /* Debug panel */
+          .debug-panel {
+            background: rgba(255, 255, 0, 0.2);
+            border: 1px solid yellow;
+            color: white;
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 8px;
+            text-align: left;
+            font-family: monospace;
+          }
+
           /* Responsive Layout */
           @media (max-width: 992px) {
             .card-container {
@@ -454,11 +470,11 @@ app.get('/', async (req, res) => {
       </head>
       <body>
         <div class="container-fluid mt-4">
-          <h2 class="dashboard-title"> E-beam Web Monitor</h2>
+          <h2 class="dashboard-title">E-beam Web Monitor</h2>
           <p id="experimentRunning" style="display:none;"></p>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
-            <strong>Last Updated:</strong>  ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}
+            <strong>Last Updated:</strong> ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}
           </p>
 
           <div class="card-container">
@@ -475,57 +491,118 @@ app.get('/', async (req, res) => {
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
+                <!-- Debug panel to show what's happening -->
+                <div id="debug-panel" class="debug-panel">
+                  Debug information will appear here
+                </div>
+                
+                <!-- Button to manually update content -->
+                <button id="update-button" class="btn btn-primary mb-3">Update Content</button>
+                
                 <pre id="reversedtext">Loading text...</pre>
               </div>
             </div>
           </div>
         </div>
+        
         <script>
-          const fileContent = ${JSON.stringify(reversedContents)};
-
-          // Function to set up the page content
-          document.addEventListener('DOMContentLoaded', function() {
-            
-          // Initialize with only first 20 lines
-          //const contentElement = document.getElementById('reversedtext');
-          //const allContent = ${JSON.stringify(reversedContents)};;
-          // const contentLines = allContent.split('\n');
-
-          //const allContent = JSON.stringify(reversedContents).slice(1, -1); 
-          //contentElement.textContent = "asdfasdfasdfasdfasdf"; 
-
-          // Show first 20 lines initially
-          // contentElement.textContent = contentLines.slice(0, 20).join('\n');
-          //contentElement.textContent = allContent; 
-
-
-
-
-          // Set the paragraph text
-            // const contentElement = document.getElementById('reversedtext');
-            // contentElement.textContent = 'asdfasdfasdf15';
-
-            const contentElement = document.getElementById('reversedtext');
-            if (contentElement) {
-              contentElement.textContent = fileContent;
+          // Debug helper
+          function debugLog(message) {
+            const debugPanel = document.getElementById('debug-panel');
+            if (debugPanel) {
+              debugPanel.innerHTML += "<div>" + message + "</div>";
             }
-            else {
-              contentElement.textContent = "modifiedText16";
+            console.log(message); // Also log to console
+          }
+          
+          // Direct approach - set content immediately
+          (function() {
+            try {
+              debugLog("🔍 Script loaded and executing");
+              
+              // Directly set content (no waiting for DOMContentLoaded)
+              const directElement = document.getElementById('reversedtext');
+              if (directElement) {
+                debugLog("✅ Found element directly");
+                directElement.textContent = "${displayContent.replace(/"/g, '\\"').replace(/\n/g, '\\n')}";
+                debugLog("✅ Set content directly");
+              } else {
+                debugLog("❌ Element not found directly");
+              }
+            } catch (err) {
+              debugLog("❌ Error in direct execution: " + err.message);
             }
-
-            // Auto-refresh
-            setTimeout(function() {
-              location.reload();
-            }, 60000);
-            
-            // Show experiment status if needed
-            if(${experimentRunning}) {
-              const contentDiv = document.getElementById('experimentRunning');
-              contentDiv.style.display = 'block';
-              contentDiv.style.cssText = 'font-size: 1.5em; color: red;';
-              contentDiv.textContent = 'Experiment is not running';
+          })();
+          
+          // Add event listener for update button
+          document.getElementById('update-button').addEventListener('click', function() {
+            try {
+              debugLog("🔘 Update button clicked");
+              const element = document.getElementById('reversedtext');
+              if (element) {
+                element.textContent = "${displayContent.replace(/"/g, '\\"').replace(/\n/g, '\\n')}";
+                debugLog("✅ Content updated via button click");
+              } else {
+                debugLog("❌ Element not found in button handler");
+              }
+            } catch (err) {
+              debugLog("❌ Error in button handler: " + err.message);
             }
           });
+          
+          // DOMContentLoaded approach
+          document.addEventListener('DOMContentLoaded', function() {
+            try {
+              debugLog("🌐 DOMContentLoaded event fired");
+              
+              const domElement = document.getElementById('reversedtext');
+              if (domElement) {
+                debugLog("✅ Found element in DOMContentLoaded");
+                domElement.textContent = "${displayContent.replace(/"/g, '\\"').replace(/\n/g, '\\n')}";
+                debugLog("✅ Set content in DOMContentLoaded");
+              } else {
+                debugLog("❌ Element not found in DOMContentLoaded");
+              }
+              
+              // Auto-refresh
+              setTimeout(function() {
+                debugLog("⏱️ Auto-refresh timer triggered");
+                // location.reload(); // Uncomment for production
+              }, 60000);
+              
+              // Show experiment status if needed
+              if(!${experimentRunning}) {
+                debugLog("⚠️ Experiment not running");
+                const contentDiv = document.getElementById('experimentRunning');
+                if (contentDiv) {
+                  contentDiv.style.display = 'block';
+                  contentDiv.style.cssText = 'font-size: 1.5em; color: red;';
+                  contentDiv.textContent = 'Experiment is not running';
+                  debugLog("✅ Experiment status updated");
+                }
+              }
+            } catch (err) {
+              debugLog("❌ Error in DOMContentLoaded: " + err.message);
+            }
+          });
+          
+          // Window load approach
+          window.onload = function() {
+            try {
+              debugLog("🏁 Window onload event fired");
+              
+              const windowElement = document.getElementById('reversedtext');
+              if (windowElement) {
+                debugLog("✅ Found element in window.onload");
+                windowElement.textContent = "${displayContent.replace(/"/g, '\\"').replace(/\n/g, '\\n')}";
+                debugLog("✅ Set content in window.onload");
+              } else {
+                debugLog("❌ Element not found in window.onload");
+              }
+            } catch (err) {
+              debugLog("❌ Error in window.onload: " + err.message);
+            }
+          };
         </script>
       </body>
       </html>

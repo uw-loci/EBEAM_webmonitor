@@ -5,7 +5,6 @@ const path = require('path');
 const https = require('https');
 const lockFile = require('proper-lockfile');
 
-
 // Load environment variables
 require('dotenv').config();
 
@@ -115,7 +114,6 @@ async function fetchFileContents(fileId) {
  * Fetches and updates the log file if there's a new version
  * @returns {Promise<boolean>} True if file was updated, false otherwise
  */
-
 async function fetchAndUpdateFile() {
   let release; // Declare lock variable before try block
 
@@ -129,16 +127,12 @@ async function fetchAndUpdateFile() {
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
     const currentTime = new Date().getTime();
 
-    /////uncomment this after the development of the webpage///////
-    // 
     // Check if file hasn't been modified in last 15 minutes
-    // KEEP THIS FOR FUTURE NEED FOR AFTER DEVELOPMENT FINISHED
-    // if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
-    //   experimentRunning = false;
-    //   console.log("Experiment not running - no updates in 15 minutes");
-    //   return false;
-    // }
-    //////////////////////////////////////////////////////////////
+    if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
+      experimentRunning = false;
+      console.log("Experiment not running - no updates in 15 minutes");
+      return false;
+    }
 
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       console.log("No new updates. Using cached file.");
@@ -155,13 +149,13 @@ async function fetchAndUpdateFile() {
     }
 
     // Acquire a lock before modifying the file
-    release = await lockFile.lock(REVERSED_FILE_PATH); //Don't redeclare `release`
+    release = await lockFile.lock(REVERSED_FILE_PATH);
 
     // Create a writable stream
     const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
     let hasError = false; // Track if an error occurs
 
-    // FIXED: Ensure function waits for the stream to finish
+    // Ensure function waits for the stream to finish
     return await new Promise((resolve, reject) => { 
       let i = 0;
 
@@ -215,88 +209,9 @@ async function fetchAndUpdateFile() {
   // }
 }
 
-
 // Schedule updates
 fetchAndUpdateFile(); // Initial fetch
 setInterval(fetchAndUpdateFile, 60000); // Check every minute
-
-// /**
-//  * GET / : Serve the HTML page with reversed log lines.
-//  */
-// app.get('/', async (req, res) => {
-//   try {
-//     if (!experimentRunning) {
-//       res.send(`
-//         <!DOCTYPE html>
-//         <html>
-//         <head>
-//           <meta charset="utf-8" />
-//           <title>Reversed Log Viewer</title>
-//           <script type="text/javascript">
-//             setTimeout(function() {
-//               location.reload();
-//             }, 60000);
-//           </script>
-//         </head>
-//         <body>
-//           <h1>Experiment Status</h1>
-//           <p style="font-size: 1.5em; color: red;">Experiment is not running.</p>
-//         </body>
-//         </html>
-//       `);
-//       return;
-//     }
-
-//     let reversedContents = "No data available.";
-
-//     // Fetch the latest file in the background
-//     // fetchAndUpdateFile();
-
-//     // Serve cached file if available
-//     if (fs.existsSync(REVERSED_FILE_PATH)) {
-//       reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
-//     }
-
-//     // HTML Response
-//     res.send(`
-//       <!DOCTYPE html>
-//       <html>
-//       <head>
-//         <meta charset="utf-8" />
-//         <title>Reversed Log Viewer</title>
-//         <script type="text/javascript">
-//           setTimeout(function() {
-//             location.reload();
-//           }, 60000);
-//         </script>
-//       </head>
-//       <body>
-//         <h1>Reversed Log Viewer</h1>
-//         <p>Most Recent File: ${logFileName}</p>
-//         <p>File Last Modified: ${lastModifiedTime}</p>
-//         <p>Last Updated: ${new Date().toLocaleString('en-US', {
-//             timeZone: 'America/Chicago',
-//             weekday: 'long',
-//             year: 'numeric',
-//             month: 'long',
-//             day: 'numeric',
-//             hour: '2-digit',
-//             minute: '2-digit',
-//             second: '2-digit',
-//             hour12: true
-//           })}
-//         </p>
-//         <pre style="white-space: pre-wrap; font-family: monospace;">
-// ${reversedContents}
-//         </pre>
-//       </body>
-//       </html>
-//     `);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).send(`Error: ${err.message}`);
-//   }
-// });
 
 /**
  * GET/: Implement the log file dashboard to this end point.
@@ -314,6 +229,17 @@ app.get('/', async (req, res) => {
     const displayContent = reversedContents.length > 1000 
       ? reversedContents.substring(0, 1000) + "... (content truncated for display)"
       : reversedContents;
+
+    // **** NEW: Compute current experiment status ****
+    let isExperimentRunning = true;
+    if (lastModifiedTime) {
+      const fileTime = new Date(lastModifiedTime).getTime();
+      const now = new Date().getTime();
+      if (now - fileTime > INACTIVE_THRESHOLD) {
+        isExperimentRunning = false;
+      }
+    }
+    // ************************************************
 
     // HTML Response with extensive debugging
     res.send(`
@@ -570,8 +496,8 @@ app.get('/', async (req, res) => {
                 // location.reload(); // Uncomment for production
               }, 60000);
               
-              // Show experiment status if needed
-              if(!${experimentRunning}) {
+              // Show experiment status if needed using the computed variable "isExperimentRunning"
+              if(!${isExperimentRunning}) {
                 debugLog("⚠️ Experiment not running");
                 const contentDiv = document.getElementById('experimentRunning');
                 if (contentDiv) {
@@ -612,10 +538,6 @@ app.get('/', async (req, res) => {
     res.status(500).send(`Error: ${err.message}`);
   }
 });
-
-
-    
-
 
 /**
  * GET /raw : Returns just the reversed text (newest at top).

@@ -228,7 +228,11 @@ app.get('/', async (req, res) => {
       reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
     }
 
-    // HTML Response with button toggle functionality
+    // Split content into lines for preview
+    // const contentLines = reversedContents.split('\n');
+    const previewContent = contentLines.slice(0, 20).join('\n');
+    
+    // HTML Response with preview toggle functionality
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
@@ -403,15 +407,17 @@ app.get('/', async (req, res) => {
             <div class="col-lg-12">
               <div class="glass-container p-4">
                 <!-- Toggle button -->
-                <button id="toggleButton" class="btn-toggle">Show Log Contents</button>
+                <button id="toggleButton" class="btn-toggle">Show Full Log</button>
                 
                 <!-- Content sections -->
-                <div id="dummyContent" class="content-section active">
-                  <pre>Dummy text</pre>
+                <div id="previewContent" class="content-section active">
+                  <pre>${previewContent}</pre>
+                  <p class="text-center text-info mt-2">Showing first 20 lines. Click the button above to see the full log.</p>
                 </div>
                 
-                <div id="logContent" class="content-section">
+                <div id="fullContent" class="content-section">
                   <pre>${reversedContents}</pre>
+                  <p class="text-center text-info mt-2">Showing full log. Click the button above to see the preview.</p>
                 </div>
               </div>
             </div>
@@ -427,28 +433,28 @@ app.get('/', async (req, res) => {
           
           // Get elements
           const toggleButton = document.getElementById('toggleButton');
-          const dummySection = document.getElementById('dummyContent');
-          const logSection = document.getElementById('logContent');
+          const previewSection = document.getElementById('previewContent');
+          const fullSection = document.getElementById('fullContent');
           
           // Initial state
-          let showingLog = false;
+          let showingFull = false;
           
           // Toggle function
           function toggleContent() {
-            if (showingLog) {
-              // Switch to dummy
-              dummySection.className = 'content-section active';
-              logSection.className = 'content-section';
-              toggleButton.textContent = 'Show Log Contents';
+            if (showingFull) {
+              // Switch to preview
+              previewSection.className = 'content-section active';
+              fullSection.className = 'content-section';
+              toggleButton.textContent = 'Show Full Log';
             } else {
-              // Switch to log
-              dummySection.className = 'content-section';
-              logSection.className = 'content-section active';
-              toggleButton.textContent = 'Show Dummy Text';
+              // Switch to full
+              previewSection.className = 'content-section';
+              fullSection.className = 'content-section active';
+              toggleButton.textContent = 'Show Preview';
             }
             
             // Toggle state
-            showingLog = !showingLog;
+            showingFull = !showingFull;
           }
           
           // Add click handler

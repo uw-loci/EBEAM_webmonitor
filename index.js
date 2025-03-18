@@ -229,7 +229,7 @@ app.get('/', async (req, res) => {
     }
 
     // Split content into lines for preview
-    // const contentLines = reversedContents.split('\n');
+    const contentLines = reversedContents.split('\n');
     const previewContent = contentLines.slice(0, 20).join('\n');
     
     // HTML Response with preview toggle functionality

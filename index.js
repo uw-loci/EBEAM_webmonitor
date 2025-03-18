@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const lockFile = require('proper-lockfile');
+const { PassThrough } = require('stream');
 
 // Load environment variables
 require('dotenv').config();
@@ -129,21 +130,23 @@ async function fetchAndUpdateFile() {
     const currentTime = new Date().getTime();
 
     // Check if file hasn't been modified in last 15 minutes
-    if (!fs.existsSync(REVERSED_FILE_PATH)) { // fix: for server restart make sure there is one copy on server to display
-      fs.writeFileSync(REVERSED_FILE_PATH, '', { flag: 'w' });
-    } else if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
+    if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
       experimentRunning = false;
-      console.log(currentTime);
-      console.log(new Date(fileModifiedTime).getTime());
-
+      if (!fs.existsSync(REVERSED_FILE_PATH)) { // just pass through for once
+      } else {
       console.log("Experiment not running - no updates in 15 minutes");
       return false;
+      }
     }
-
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       console.log("No new updates. Using cached file.");
       experimentRunning = true;
       return false;
+    }
+
+    // Making sure there is reverse.txt on server
+    if (!fs.existsSync(REVERSED_FILE_PATH)) { 
+      fs.writeFileSync(REVERSED_FILE_PATH, '', { flag: 'w' });
     }
 
     console.log("Fetching new file...");

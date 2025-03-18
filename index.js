@@ -130,8 +130,8 @@ async function fetchAndUpdateFile() {
     // Check if file hasn't been modified in last 15 minutes
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
       experimentRunning = false;
-      console.log(new Date().getTime());
-      console.log(new Date(lastModifiedTime).getTime());
+      console.log(currentTime);
+      console.log(new Date(fileModifiedTime).getTime());
 
       console.log("Experiment not running - no updates in 15 minutes");
       return false;

@@ -384,42 +384,38 @@ app.get('/', async (req, res) => {
               grid-template-columns: repeat(1, 1fr);
             }
           }
-          .neon-warning {
-          font-size: 1.5em;
-          color: #ff4444;
-          text-shadow: 
-            0 0 5px #ff4444,
-            0 0 10px #ff4444,
-            0 0 20px #ff4444,
-            0 0 40px #ff4444;
-          animation: neonFlicker 3s infinite alternate;
+          .fixed-top-right {
+            position: fixed;
+            top: 20px;
+            right: 25px;
+            padding: 10px 20px;
+            font-size: 1.3em;
+            background-color: rgba(255, 0, 0, 0.2);
+            border: 2px solid red;
+            border-radius: 8px;
+            box-shadow: 0 0 20px red;
+            text-shadow: 0 0 15px red;
+            color: white;
+            font-weight: bold;
+            animation: neonBlink 8s infinite alternate;
+            z-index: 9999; /* Always on top */
           }
 
-          @keyframes neonFlicker {
-            0% {
-              opacity: 1;
-              text-shadow: 0 0 10px #ff4444, 0 0 20px #ff4444, 0 0 40px #ff4444;
-            }
-            50% {
-              opacity: 0.9;
-              text-shadow: 0 0 5px #ff4444, 0 0 10px #ff4444, 0 0 20px #ff4444;
-            }
-            100% {
-              opacity: 1;
-              text-shadow: 0 0 10px #ff4444, 0 0 20px #ff4444, 0 0 40px #ff4444;
-            }
+          @keyframes neonBlink {
+            0% { opacity: 1; text-shadow: 0 0 10px red; }
+            50% { opacity: 0.8; text-shadow: 0 0 5px red; }
+            100% { opacity: 1; text-shadow: 0 0 10px red; }
           }
-
         </style>
       </head>
       <body>
         <div class="container-fluid mt-4">
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
           ${!experimentRunning ? `
-            <p class="neon-warning">
+            <div class="neon-warning fixed-top-right">
               Experiment is not running
-            </p>
-          ` : ''}                
+            </div>
+          ` : ''}
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
             <strong>Last Updated:</strong> ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}

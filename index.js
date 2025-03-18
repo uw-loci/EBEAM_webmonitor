@@ -384,12 +384,42 @@ app.get('/', async (req, res) => {
               grid-template-columns: repeat(1, 1fr);
             }
           }
+          .neon-warning {
+          font-size: 1.5em;
+          color: #ff4444;
+          text-shadow: 
+            0 0 5px #ff4444,
+            0 0 10px #ff4444,
+            0 0 20px #ff4444,
+            0 0 40px #ff4444;
+          animation: neonFlicker 3s infinite alternate;
+          }
+
+          @keyframes neonFlicker {
+            0% {
+              opacity: 1;
+              text-shadow: 0 0 10px #ff4444, 0 0 20px #ff4444, 0 0 40px #ff4444;
+            }
+            50% {
+              opacity: 0.9;
+              text-shadow: 0 0 5px #ff4444, 0 0 10px #ff4444, 0 0 20px #ff4444;
+            }
+            100% {
+              opacity: 1;
+              text-shadow: 0 0 10px #ff4444, 0 0 20px #ff4444, 0 0 40px #ff4444;
+            }
+          }
+
         </style>
       </head>
       <body>
         <div class="container-fluid mt-4">
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
-          ${!experimentRunning ? '<p style="font-size: 1.5em; color: red;">Experiment is not running</p>' : ''}
+          ${!experimentRunning ? `
+            <p class="neon-warning">
+              Experiment is not running
+            </p>
+          ` : ''}                
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
             <strong>Last Updated:</strong> ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}

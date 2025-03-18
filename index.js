@@ -132,7 +132,8 @@ async function fetchAndUpdateFile() {
     // Check if file hasn't been modified in last 15 minutes
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
       experimentRunning = false;
-      if (!fs.existsSync(REVERSED_FILE_PATH)) { // just pass through for once
+      
+      if (!fs.existsSync(REVERSED_FILE_PATH)) { console.log("Experiment not running but passing through"); // just pass through for once
       } else {
       console.log("Experiment not running - no updates in 15 minutes");
       return false;

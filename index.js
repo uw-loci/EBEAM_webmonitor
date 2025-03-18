@@ -1,3 +1,4 @@
+
 const express = require('express');
 const { google } = require('googleapis');
 const fs = require('fs');
@@ -128,10 +129,12 @@ async function fetchAndUpdateFile() {
     const currentTime = new Date().getTime();
 
     // Check if file hasn't been modified in last 15 minutes
-    if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
+    if (!fs.existsSync(REVERSED_FILE_PATH)) { // fix: for server restart make sure there is one copy on server to display
+      fs.writeFileSync(REVERSED_FILE_PATH, '', { flag: 'w' });
+    } else if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
       experimentRunning = false;
-      console.log(new Date().getTime());
-      console.log(new Date(lastModifiedTime).getTime());
+      console.log(currentTime);
+      console.log(new Date(fileModifiedTime).getTime());
 
       console.log("Experiment not running - no updates in 15 minutes");
       return false;
@@ -146,10 +149,6 @@ async function fetchAndUpdateFile() {
     console.log("Fetching new file...");
     let lines = await fetchFileContents(mostRecentFile.id);
     lines.reverse(); // Reverse file contents
-
-    if (!fs.existsSync(REVERSED_FILE_PATH)) {
-      fs.writeFileSync(REVERSED_FILE_PATH, '', { flag: 'w' });
-    }
 
     // Acquire a lock before modifying the file
     release = await lockFile.lock(REVERSED_FILE_PATH);

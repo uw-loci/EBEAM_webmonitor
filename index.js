@@ -385,7 +385,7 @@ app.get('/', async (req, res) => {
             }
           }
           .fixed-top-right {
-            position: fixed;
+            position: absolute;
             top: 20px;
             right: 25px;
             padding: 10px 20px;

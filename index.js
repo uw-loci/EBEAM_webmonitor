@@ -228,25 +228,7 @@ app.get('/', async (req, res) => {
       reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
     }
 
-    // Truncate very large content for debugging
-    const displayContent = reversedContents.length > 1000 
-      ? reversedContents.substring(0, 1000) + "... (content truncated for display)"
-      : reversedContents;
-
-    // **** NEW: Compute current experiment status ****
-    let isExperimentRunning = true;
-    if (lastModifiedTime) {
-      const fileTime = new Date(lastModifiedTime).getTime();
-      const now = new Date().getTime();
-      console.log(fileTime);
-
-      if (now - fileTime > INACTIVE_THRESHOLD) {
-        isExperimentRunning = false;
-      }
-    }
-    // ************************************************
-
-    // HTML Response with extensive debugging
+    // HTML Response with button toggle functionality
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
@@ -359,16 +341,29 @@ app.get('/', async (req, res) => {
             border: 1px solid rgba(0, 255, 255, 0.5);
           }
 
-          /* Debug panel */
-          .debug-panel {
-            background: rgba(255, 255, 0, 0.2);
-            border: 1px solid yellow;
+          /* Content sections */
+          .content-section {
+            display: none; /* Hide by default */
+          }
+          
+          .content-section.active {
+            display: block; /* Show when active */
+          }
+
+          /* Toggle Button */
+          .btn-toggle {
+            background: rgba(0, 255, 255, 0.5);
             color: white;
-            padding: 10px;
-            margin: 15px 0;
+            border: 1px solid rgba(0, 255, 255, 0.8);
             border-radius: 8px;
-            text-align: left;
-            font-family: monospace;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+          }
+          .btn-toggle:hover {
+            background: rgba(0, 255, 255, 0.8);
+            box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
           }
 
           /* Responsive Layout */
@@ -382,27 +377,12 @@ app.get('/', async (req, res) => {
               grid-template-columns: repeat(1, 1fr);
             }
           }
-
-          /* Refresh Button */
-          .btn-load {
-            background: rgba(0, 255, 255, 0.5);
-            color: white;
-            border: 1px solid rgba(0, 255, 255, 0.8);
-            border-radius: 8px;
-            padding: 12px 25px;
-            font-size: 1.1em;
-            transition: background 0.3s ease, box-shadow 0.3s ease;
-          }
-          .btn-load:hover {
-            background: rgba(0, 255, 255, 0.8);
-            box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
-          }
         </style>
       </head>
       <body>
         <div class="container-fluid mt-4">
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
-          <p id="experimentRunning" style="display:none;"></p>
+          ${!experimentRunning ? '<p style="font-size: 1.5em; color: red;">Experiment is not running</p>' : ''}
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
             <strong>Last Updated:</strong> ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}
@@ -422,118 +402,57 @@ app.get('/', async (req, res) => {
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
-                <!-- Debug panel to show what's happening -->
-                <div id="debug-panel" class="debug-panel">
-                  Debug information will appear here
+                <!-- Toggle button -->
+                <button id="toggleButton" class="btn-toggle">Show Log Contents</button>
+                
+                <!-- Content sections -->
+                <div id="dummyContent" class="content-section active">
+                  <pre>Dummy text</pre>
                 </div>
                 
-                <!-- Button to manually update content -->
-                <button id="update-button" class="btn btn-primary mb-3">Update Content</button>
-                
-                <pre id="reversedtext">Loading text...</pre>
+                <div id="logContent" class="content-section">
+                  <pre>${reversedContents}</pre>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        
+
+        <!-- Simple toggling script -->
         <script>
-          // Debug helper
-          function debugLog(message) {
-            const debugPanel = document.getElementById('debug-panel');
-            if (debugPanel) {
-              debugPanel.innerHTML += "<div>" + message + "</div>";
+          // Auto-refresh
+          setTimeout(function() {
+            location.reload();
+          }, 60000);
+          
+          // Get elements
+          const toggleButton = document.getElementById('toggleButton');
+          const dummySection = document.getElementById('dummyContent');
+          const logSection = document.getElementById('logContent');
+          
+          // Initial state
+          let showingLog = false;
+          
+          // Toggle function
+          function toggleContent() {
+            if (showingLog) {
+              // Switch to dummy
+              dummySection.className = 'content-section active';
+              logSection.className = 'content-section';
+              toggleButton.textContent = 'Show Log Contents';
+            } else {
+              // Switch to log
+              dummySection.className = 'content-section';
+              logSection.className = 'content-section active';
+              toggleButton.textContent = 'Show Dummy Text';
             }
-            console.log(message); // Also log to console
+            
+            // Toggle state
+            showingLog = !showingLog;
           }
           
-          // Direct approach - set content immediately
-          (function() {
-            try {
-              debugLog("🔍 Script loaded and executing");
-              
-              // Directly set content (no waiting for DOMContentLoaded)
-              const directElement = document.getElementById('reversedtext');
-              if (directElement) {
-                debugLog("✅ Found element directly");
-                directElement.textContent = "${displayContent.replace(/"/g, '\\"').replace(/\n/g, '\\n')}";
-                debugLog("✅ Set content directly");
-              } else {
-                debugLog("❌ Element not found directly");
-              }
-            } catch (err) {
-              debugLog("❌ Error in direct execution: " + err.message);
-            }
-          })();
-          
-          // Add event listener for update button
-          document.getElementById('update-button').addEventListener('click', function() {
-            try {
-              debugLog("🔘 Update button clicked");
-              const element = document.getElementById('reversedtext');
-              if (element) {
-                element.textContent = "${displayContent.replace(/"/g, '\\"').replace(/\n/g, '\\n')}";
-                debugLog("✅ Content updated via button click");
-              } else {
-                debugLog("❌ Element not found in button handler");
-              }
-            } catch (err) {
-              debugLog("❌ Error in button handler: " + err.message);
-            }
-          });
-          
-          // DOMContentLoaded approach
-          document.addEventListener('DOMContentLoaded', function() {
-            try {
-              debugLog("🌐 DOMContentLoaded event fired");
-              
-              const domElement = document.getElementById('reversedtext');
-              if (domElement) {
-                debugLog("✅ Found element in DOMContentLoaded");
-                domElement.textContent = "${displayContent.replace(/"/g, '\\"').replace(/\n/g, '\\n')}";
-                debugLog("✅ Set content in DOMContentLoaded");
-              } else {
-                debugLog("❌ Element not found in DOMContentLoaded");
-              }
-              
-              // Auto-refresh
-              setTimeout(function() {
-                debugLog("⏱️ Auto-refresh timer triggered");
-                // location.reload(); // Uncomment for production
-              }, 60000);
-              
-              // Show experiment status if needed using the computed variable "isExperimentRunning"
-              if(!${isExperimentRunning}) {
-                debugLog("⚠️ Experiment not running");
-                const contentDiv = document.getElementById('experimentRunning');
-                if (contentDiv) {
-                  contentDiv.style.display = 'block';
-                  contentDiv.style.cssText = 'font-size: 1.5em; color: red;';
-                  contentDiv.textContent = 'Experiment is not running';
-                  debugLog("✅ Experiment status updated");
-                }
-              }
-            } catch (err) {
-              debugLog("❌ Error in DOMContentLoaded: " + err.message);
-            }
-          });
-          
-          // Window load approach
-          window.onload = function() {
-            try {
-              debugLog("🏁 Window onload event fired");
-              
-              const windowElement = document.getElementById('reversedtext');
-              if (windowElement) {
-                debugLog("✅ Found element in window.onload");
-                windowElement.textContent = "${displayContent.replace(/"/g, '\\"').replace(/\n/g, '\\n')}";
-                debugLog("✅ Set content in window.onload");
-              } else {
-                debugLog("❌ Element not found in window.onload");
-              }
-            } catch (err) {
-              debugLog("❌ Error in window.onload: " + err.message);
-            }
-          };
+          // Add click handler
+          toggleButton.onclick = toggleContent;
         </script>
       </body>
       </html>

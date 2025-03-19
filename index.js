@@ -406,16 +406,34 @@ app.get('/', async (req, res) => {
             50% { opacity: 0.8; text-shadow: 0 0 5px red; }
             100% { opacity: 1; text-shadow: 0 0 10px red; }
           }
+
+          /* Responsive adjustments for mobile */
+          @media (max-width: 768px) {
+            .fixed-top-right {
+              position: static; /* Change from fixed to static position */
+              display: block;
+              margin: 10px auto 20px;
+              width: fit-content;
+              font-size: 1.1em;
+              padding: 8px 16px;
+            }
+            
+            /* Adjust dashboard title spacing on mobile */
+            .dashboard-title {
+              margin-top: 10px;
+              font-size: 2.5em;
+            }
+          }
         </style>
       </head>
       <body>
         <div class="container-fluid mt-4">
-          <h2 class="dashboard-title">E-beam Web Monitor</h2>
           ${!experimentRunning ? `
             <div class="neon-warning fixed-top-right">
               Experiment is not running
             </div>
           ` : ''}
+          <h2 class="dashboard-title">E-beam Web Monitor</h2>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
             <strong>Last Updated:</strong> ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}

@@ -421,7 +421,7 @@ app.get('/', async (req, res) => {
             /* Adjust dashboard title spacing on mobile */
             .dashboard-title {
               margin-top: 10px;
-              font-size: 2.5em;
+              font-size: 3.0em;
             }
           }
         </style>

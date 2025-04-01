@@ -480,6 +480,8 @@ app.get('/', async (req, res) => {
             <strong>File Last Modified:</strong> ${fileModified} | 
             <strong>Last Updated:</strong> ${currentTime}
           </p>
+
+
           <!--
           <div class="card-container">
             <div class="card">Hi, I am Card 1</div>
@@ -492,6 +494,14 @@ app.get('/', async (req, res) => {
             <div class="card">Hi, I am Card 8</div>
           </div>
           -->
+
+          <!--
+          using Bootstrap background class
+          bg-success -- green
+          bg-warning -- orange
+          bg-danger -- red
+          -->
+
           <div class="interlocks-section">
             <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
             <div class="interlocks-container">

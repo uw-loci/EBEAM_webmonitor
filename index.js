@@ -234,15 +234,21 @@ app.get('/', async (req, res) => {
     const contentLines = reversedContents.split('\n');
     const previewContent = contentLines.slice(0, 20).join('\n');
 
-    // HTML Response
+    // Format time values (handle potential null values)
+    const fileModified = lastModifiedTime 
+      ? new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })
+      : "N/A";
+    const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+
+    // Send complete HTML response
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
       <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Log System Dashboard</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
         <style>
           /* Futuristic Animated Background */
           body {
@@ -260,27 +266,34 @@ app.get('/', async (req, res) => {
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
           }
-
-          /* Glassmorphism Effect */
-          .glass-container {
+          
+          /* Glassmorphism Effect (for logs and status sections) */
+          .glass-container,
+          .interlocks-section {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 30px;
             border-radius: 15px;
-            box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15);
-            color: white;
-            width: 100%;
-            margin: 0;
           }
-
+          .glass-container {
+            padding: 30px;
+            box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15);
+            width: 100%;
+            margin: 0 auto;
+          }
+          .interlocks-section {
+            padding: 20px;
+            margin: 30px auto;
+            width: 90%;
+          }
+          
           /* Dashboard Title with Neon Glow */
           .dashboard-title {
             font-size: 3.5em;
             font-weight: 900;
             color: #d6eaff;
             text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
-                        0px 0px 20px rgba(214, 234, 255, 0.4);
+                         0px 0px 20px rgba(214, 234, 255, 0.4);
           }
           .dashboard-title::after {
             content: "";
@@ -292,7 +305,7 @@ app.get('/', async (req, res) => {
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
             border-radius: 10px;
           }
-
+          
           /* Subtitle */
           .dashboard-subtitle {
             font-size: 1.2em;
@@ -301,7 +314,7 @@ app.get('/', async (req, res) => {
             opacity: 0.9;
             color: rgba(255, 255, 255, 0.8);
           }
-
+          
           /* Neon Glow Cards */
           .card-container {
             display: grid;
@@ -325,30 +338,50 @@ app.get('/', async (req, res) => {
             transform: translateY(-5px);
             box-shadow: 0px 0px 25px rgba(0, 255, 255, 1);
           }
-
-          /* Interlocks Section */
-          h3.dashboard-subtitle.interlocks-title {
-            margin-top: 30px;
-            margin-bottom: 10px;
+          
+          /* Interlocks Section Styling */
+          .interlocks-title {
+            font-weight: bold;
+            transition: text-shadow 0.3s ease;
+            cursor: pointer;
+          }
+          .interlocks-title:hover {
+            text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
           }
           .interlocks-container {
             display: flex;
-            justify-content: center;
+            justify-content: space-around;
             align-items: center;
             flex-wrap: wrap;
-            margin-bottom: 30px;
           }
           .interlock-item {
             text-align: center;
-            margin: 0 10px;
+            margin: 10px;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            cursor: pointer;
+          }
+          .interlock-item:hover {
+            transform: translateY(-5px);
+            filter: brightness(1.3);
+          }
+          .interlock-item div:last-child {
+            transition: font-weight 0.3s ease;
+          }
+          .interlock-item:hover div:last-child {
+            font-weight: bold;
           }
           .circle {
-            width: 30px;
-            height: 30px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             margin: 0 auto 5px auto;
+            transition: transform 0.3s ease, filter 0.3s ease;
           }
-
+          .interlock-item:hover .circle {
+            transform: scale(1.1);
+            filter: brightness(1.3);
+          }
+          
           /* Log Viewer with Higher Contrast */
           pre {
             white-space: pre-wrap;
@@ -364,15 +397,15 @@ app.get('/', async (req, res) => {
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 0.3);
             border: 1px solid rgba(0, 255, 255, 0.5);
           }
-
-          /* Content sections */
+          
+          /* Content Sections */
           .content-section {
-            display: none; /* Hide by default */
+            display: none;
           }
           .content-section.active {
-            display: block; /* Show when active */
+            display: block;
           }
-
+          
           /* Toggle Button */
           .btn-toggle {
             background: rgba(0, 255, 255, 0.5);
@@ -388,7 +421,7 @@ app.get('/', async (req, res) => {
             background: rgba(0, 255, 255, 0.8);
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
           }
-
+          
           /* Responsive Layout */
           @media (max-width: 992px) {
             .card-container {
@@ -400,7 +433,7 @@ app.get('/', async (req, res) => {
               grid-template-columns: repeat(1, 1fr);
             }
           }
-
+          
           /* Experiment Running Notice */
           .fixed-top-right {
             position: absolute;
@@ -416,15 +449,13 @@ app.get('/', async (req, res) => {
             color: white;
             font-weight: bold;
             animation: neonBlink 8s infinite alternate;
-            z-index: 9999; /* Always on top */
+            z-index: 9999;
           }
           @keyframes neonBlink {
             0% { opacity: 1; text-shadow: 0 0 10px red; }
             50% { opacity: 0.8; text-shadow: 0 0 5px red; }
             100% { opacity: 1; text-shadow: 0 0 10px red; }
           }
-
-          /* Responsive adjustments for mobile */
           @media (max-width: 768px) {
             .fixed-top-right {
               position: static;
@@ -443,66 +474,12 @@ app.get('/', async (req, res) => {
       </head>
       <body>
         <div class="container-fluid mt-4">
-          ${!experimentRunning ? `
-            <div class="neon-warning fixed-top-right">
-              Experiment is not running
-            </div>
-          ` : ''}
-
-          <!-- Title and Subtitle -->
+          ${!experimentRunning ? `<div class="neon-warning fixed-top-right">Experiment is not running</div>` : ''}
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
           <p class="dashboard-subtitle">
-            <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
-            <strong>Last Updated:</strong> ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}
+            <strong>File Last Modified:</strong> ${fileModified} | 
+            <strong>Last Updated:</strong> ${currentTime}
           </p>
-          
-          <!-- Interlocks Section -->
-          <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
-          <div class="interlocks-container">
-            <!-- 
-              Hardcoded as per your screenshot:
-              - Orange (bg-warning) or Green (bg-success).
-              Adjust as needed. 
-            -->
-            <div class="interlock-item">
-              <div class="circle bg-warning"></div>
-              <div>Vacuum</div>
-            </div>
-            <div class="interlock-item">
-              <div class="circle bg-success"></div>
-              <div>Water</div>
-            </div>
-            <div class="interlock-item">
-              <div class="circle bg-success"></div>
-              <div>Door</div>
-            </div>
-            <div class="interlock-item">
-              <div class="circle bg-success"></div>
-              <div>Timer</div>
-            </div>
-            <div class="interlock-item">
-              <div class="circle bg-success"></div>
-              <div>Oil High</div>
-            </div>
-            <div class="interlock-item">
-              <div class="circle bg-success"></div>
-              <div>Oil Low</div>
-            </div>
-            <div class="interlock-item">
-              <div class="circle bg-warning"></div>
-              <div>E-stop Ext</div>
-            </div>
-            <div class="interlock-item">
-              <div class="circle bg-warning"></div>
-              <div>E-stop Int</div>
-            </div>
-            <div class="interlock-item">
-              <div class="circle bg-success"></div>
-              <div>QGSP Active</div>
-            </div>
-          </div>
-
-          <!-- Example Cards -->
           <div class="card-container">
             <div class="card">Hi, I am Card 1</div>
             <div class="card">Hi, I am Card 2</div>
@@ -513,24 +490,57 @@ app.get('/', async (req, res) => {
             <div class="card">Hi, I am Card 7</div>
             <div class="card">Hi, I am Card 8</div>
           </div>
-
-          
-
-          <!-- Log Preview and Full Log -->
+          <div class="interlocks-section">
+            <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
+            <div class="interlocks-container">
+              <div class="interlock-item">
+                <div class="circle bg-warning"></div>
+                <div>Vacuum</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>Water</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>Door</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>Timer</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>Oil High</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>Oil Low</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-warning"></div>
+                <div>E-stop Ext</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-warning"></div>
+                <div>E-stop Int</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>QGSP Active</div>
+              </div>
+            </div>
+          </div>
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
-                <!-- Toggle button -->
                 <button id="toggleButton" class="btn-toggle">Show Full Log</button>
-                
-                <!-- Content sections -->
                 <div id="previewContent" class="content-section active">
                   <pre>${previewContent}</pre>
                   <p class="text-center text-info mt-2">
                     Showing first 20 lines. Click the button above to see the full log.
                   </p>
                 </div>
-                
                 <div id="fullContent" class="content-section">
                   <pre>${reversedContents}</pre>
                   <p class="text-center text-info mt-2">
@@ -541,35 +551,29 @@ app.get('/', async (req, res) => {
             </div>
           </div>
         </div>
-
-        <!-- Simple toggling script -->
         <script>
           // Auto-refresh every minute
           setTimeout(function() {
             location.reload();
           }, 60000);
           
-          // Toggling preview vs full log
+          // Toggle log view
           const toggleButton = document.getElementById('toggleButton');
           const previewSection = document.getElementById('previewContent');
           const fullSection = document.getElementById('fullContent');
           let showingFull = false;
-          
           function toggleContent() {
             if (showingFull) {
-              // Switch to preview
               previewSection.className = 'content-section active';
               fullSection.className = 'content-section';
               toggleButton.textContent = 'Show Full Log';
             } else {
-              // Switch to full
               previewSection.className = 'content-section';
               fullSection.className = 'content-section active';
               toggleButton.textContent = 'Show Preview';
             }
             showingFull = !showingFull;
           }
-          
           toggleButton.onclick = toggleContent;
         </script>
       </body>
@@ -580,6 +584,7 @@ app.get('/', async (req, res) => {
     res.status(500).send(`Error: ${err.message}`);
   }
 });
+
 
 
 /**

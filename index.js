@@ -423,6 +423,17 @@ app.get('/', async (req, res) => {
               margin-top: 10px;
               font-size: 3.0em;
             }
+
+             /* New Status Bar styling */
+            .status-bar {
+              margin: 20px 0;
+            }
+            .status-item {
+              font-size: 1.2em;
+              font-weight: bold;
+              min-width: 150px;
+              text-align: center;
+            }
           }
         </style>
       </head>
@@ -438,6 +449,16 @@ app.get('/', async (req, res) => {
             <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
             <strong>Last Updated:</strong> ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}
           </p>
+
+          <!-- Status Bar Section -->
+          <div class="status-bar d-flex justify-content-center align-items-center my-3">
+            <div class="status-item bg-success text-white p-3 rounded mx-2">
+              Good Data
+            </div>
+            <div class="status-item bg-danger text-white p-3 rounded mx-2">
+              Not Good Data
+            </div>
+          </div>
 
           <div class="card-container">
             <div class="card">Hi, I am Card 1</div>

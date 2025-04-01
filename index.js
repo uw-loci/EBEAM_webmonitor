@@ -224,23 +224,21 @@ setInterval(fetchAndUpdateFile, 60000); // Check every minute
  */
 app.get('/', async (req, res) => {
   try {
-    // Read reversed contents if available
+    // 1. Read reversed contents if available
     let reversedContents = "No data available.";
     if (fs.existsSync(REVERSED_FILE_PATH)) {
       reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
     }
-
-    // Split content into lines for preview
     const contentLines = reversedContents.split('\n');
     const previewContent = contentLines.slice(0, 20).join('\n');
 
-    // Format time values (handle potential null values)
+    // 2. Format time values (handle potential null values)
     const fileModified = lastModifiedTime 
       ? new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })
       : "N/A";
     const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
 
-    // Send complete HTML response
+    // 3. Send the complete HTML response
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
@@ -250,7 +248,9 @@ app.get('/', async (req, res) => {
         <title>Log System Dashboard</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
         <style>
-          /* Futuristic Animated Background */
+          /* =========================
+             FUTURISTIC BACKGROUND
+          ========================== */
           body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -266,28 +266,36 @@ app.get('/', async (req, res) => {
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
           }
-          
-          /* Glassmorphism Effect (for logs and status sections) */
-          .glass-container,
-          .interlocks-section {
+
+          /* =========================
+             GLASSMORPHISM
+          ========================== */
+          .glass-container {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-radius: 15px;
-          }
-          .glass-container {
             padding: 30px;
             box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15);
             width: 100%;
             margin: 0 auto;
           }
-          .interlocks-section {
+
+          /* We’ll also use glassmorphism for the Interlocks and Environmental sections */
+          .interlocks-section,
+          .env-section {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 15px;
             padding: 20px;
             margin: 30px auto;
             width: 90%;
           }
-          
-          /* Dashboard Title with Neon Glow */
+
+          /* =========================
+             TITLES / HEADERS
+          ========================== */
           .dashboard-title {
             font-size: 3.5em;
             font-weight: 900;
@@ -305,17 +313,16 @@ app.get('/', async (req, res) => {
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
             border-radius: 10px;
           }
-          
-          /* Subtitle */
           .dashboard-subtitle {
             font-size: 1.2em;
-            font-weight: normal;
             margin-bottom: 25px;
             opacity: 0.9;
             color: rgba(255, 255, 255, 0.8);
           }
-          
-          /* Neon Glow Cards */
+
+          /* =========================
+             CARDS (IF YOU WANT THEM)
+          ========================== */
           .card-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -338,8 +345,10 @@ app.get('/', async (req, res) => {
             transform: translateY(-5px);
             box-shadow: 0px 0px 25px rgba(0, 255, 255, 1);
           }
-          
-          /* Interlocks Section Styling */
+
+          /* =========================
+             INTERLOCKS SECTION
+          ========================== */
           .interlocks-title {
             font-weight: bold;
             transition: text-shadow 0.3s ease;
@@ -381,8 +390,74 @@ app.get('/', async (req, res) => {
             transform: scale(1.1);
             filter: brightness(1.3);
           }
-          
-          /* Log Viewer with Higher Contrast */
+
+          /* =========================
+             ENVIRONMENTAL SECTION
+          ========================== */
+          .env-title {
+            font-weight: bold;
+            transition: text-shadow 0.3s ease;
+            cursor: pointer;
+          }
+          .env-title:hover {
+            text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
+          }
+          .env-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            flex-wrap: wrap;
+          }
+          .env-item {
+            position: relative;
+            margin: 15px;
+            width: 60px;  /* width for each bar column */
+            text-align: center;
+          }
+          .env-item-header {
+            margin-bottom: 10px;
+            font-weight: bold;
+            min-height: 1.5em;
+          }
+          /* The scale+bar wrapper, so we can line them up properly */
+          .env-bar-scale {
+            display: flex;
+            align-items: flex-end;
+            height: 200px; /* total height of the chart */
+          }
+          /* The vertical scale on the left side */
+          .env-scale {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            margin-right: 5px;
+            height: 100%;
+          }
+          .env-scale span {
+            color: #fff;
+            font-size: 0.8em;
+          }
+          /* Outer bar container */
+          .env-bar-outer {
+            width: 30px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid #fff;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+          }
+          /* The fill portion of the bar */
+          .env-bar-inner {
+            background: #00c8ff;
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            transition: height 0.3s ease;
+          }
+
+          /* =========================
+             LOG VIEWER
+          ========================== */
           pre {
             white-space: pre-wrap;
             font-family: 'Courier New', monospace;
@@ -397,16 +472,12 @@ app.get('/', async (req, res) => {
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 0.3);
             border: 1px solid rgba(0, 255, 255, 0.5);
           }
-          
-          /* Content Sections */
           .content-section {
             display: none;
           }
           .content-section.active {
             display: block;
           }
-          
-          /* Toggle Button */
           .btn-toggle {
             background: rgba(0, 255, 255, 0.5);
             color: white;
@@ -421,8 +492,10 @@ app.get('/', async (req, res) => {
             background: rgba(0, 255, 255, 0.8);
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
           }
-          
-          /* Responsive Layout */
+
+          /* =========================
+             RESPONSIVE LAYOUT
+          ========================== */
           @media (max-width: 992px) {
             .card-container {
               grid-template-columns: repeat(2, 1fr);
@@ -433,8 +506,10 @@ app.get('/', async (req, res) => {
               grid-template-columns: repeat(1, 1fr);
             }
           }
-          
-          /* Experiment Running Notice */
+
+          /* =========================
+             EXPERIMENT-RUNNING NOTICE
+          ========================== */
           .fixed-top-right {
             position: absolute;
             top: 20px;
@@ -474,39 +549,31 @@ app.get('/', async (req, res) => {
       </head>
       <body>
         <div class="container-fluid mt-4">
+          <!-- If experiment isn't running, show a neon warning -->
           ${!experimentRunning ? `<div class="neon-warning fixed-top-right">Experiment is not running</div>` : ''}
+
+          <!-- Title & Subtitle -->
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${fileModified} | 
             <strong>Last Updated:</strong> ${currentTime}
           </p>
 
-
-          <!--
+          <!-- Example Cards (Optional) 
           <div class="card-container">
             <div class="card">Hi, I am Card 1</div>
             <div class="card">Hi, I am Card 2</div>
             <div class="card">Hi, I am Card 3</div>
             <div class="card">Hi, I am Card 4</div>
-            <div class="card">Hi, I am Card 5</div>
-            <div class="card">Hi, I am Card 6</div>
-            <div class="card">Hi, I am Card 7</div>
-            <div class="card">Hi, I am Card 8</div>
           </div>
           -->
 
-          <!--
-          using Bootstrap background class
-          bg-success -- green
-          bg-warning -- orange
-          bg-danger -- red
-          -->
-
+          <!-- Interlocks Section -->
           <div class="interlocks-section">
             <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
             <div class="interlocks-container">
               <div class="interlock-item">
-                <div class="circle bg-warning"></div>
+                <div class="circle bg-danger"></div>
                 <div>Vacuum</div>
               </div>
               <div class="interlock-item">
@@ -530,11 +597,11 @@ app.get('/', async (req, res) => {
                 <div>Oil Low</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-warning"></div>
+                <div class="circle bg-danger"></div>
                 <div>E-stop Ext</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-warning"></div>
+                <div class="circle bg-danger"></div>
                 <div>E-stop Int</div>
               </div>
               <div class="interlock-item">
@@ -543,6 +610,107 @@ app.get('/', async (req, res) => {
               </div>
             </div>
           </div>
+
+          <!-- Environmental Section (New) -->
+          <div class="env-section">
+            <h3 class="dashboard-subtitle env-title">Environmental</h3>
+            <div class="env-container">
+              <!-- Bar 1: Solenoid 1 -->
+              <div class="env-item">
+                <div class="env-item-header">Solenoid 1</div>
+                <div class="env-bar-scale">
+                  <!-- Scale on the left -->
+                  <div class="env-scale">
+                    <span>100</span>
+                    <span>80</span>
+                    <span>60</span>
+                    <span>40</span>
+                    <span>20</span>
+                    <span>0</span>
+                  </div>
+                  <!-- The bar -->
+                  <div class="env-bar-outer">
+                    <!-- Adjust "height" to match the actual reading -->
+                    <div class="env-bar-inner" style="height: 20%;"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Bar 2: Solenoid 2 -->
+              <div class="env-item">
+                <div class="env-item-header">Solenoid 2</div>
+                <div class="env-bar-scale">
+                  <div class="env-scale">
+                    <span>100</span>
+                    <span>80</span>
+                    <span>60</span>
+                    <span>40</span>
+                    <span>20</span>
+                    <span>0</span>
+                  </div>
+                  <div class="env-bar-outer">
+                    <div class="env-bar-inner" style="height: 40%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bar 3: Chmbr Bot -->
+              <div class="env-item">
+                <div class="env-item-header">Chmbr Bot</div>
+                <div class="env-bar-scale">
+                  <div class="env-scale">
+                    <span>100</span>
+                    <span>80</span>
+                    <span>60</span>
+                    <span>40</span>
+                    <span>20</span>
+                    <span>0</span>
+                  </div>
+                  <div class="env-bar-outer">
+                    <div class="env-bar-inner" style="height: 100%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bar 4: Chmbr Top -->
+              <div class="env-item">
+                <div class="env-item-header">Chmbr Top</div>
+                <div class="env-bar-scale">
+                  <div class="env-scale">
+                    <span>100</span>
+                    <span>80</span>
+                    <span>60</span>
+                    <span>40</span>
+                    <span>20</span>
+                    <span>0</span>
+                  </div>
+                  <div class="env-bar-outer">
+                    <div class="env-bar-inner" style="height: 100%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bar 5: Air temp -->
+              <div class="env-item">
+                <div class="env-item-header">Air temp</div>
+                <div class="env-bar-scale">
+                  <div class="env-scale">
+                    <span>100</span>
+                    <span>80</span>
+                    <span>60</span>
+                    <span>40</span>
+                    <span>20</span>
+                    <span>0</span>
+                  </div>
+                  <div class="env-bar-outer">
+                    <div class="env-bar-inner" style="height: 60%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Log Viewer -->
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
@@ -563,17 +731,20 @@ app.get('/', async (req, res) => {
             </div>
           </div>
         </div>
+
+        <!-- Auto-refresh & Toggle Script -->
         <script>
-          // Auto-refresh every minute
+          // Refresh every minute
           setTimeout(function() {
             location.reload();
           }, 60000);
-          
-          // Toggle log view
+
+          // Toggle between preview/full log
           const toggleButton = document.getElementById('toggleButton');
           const previewSection = document.getElementById('previewContent');
           const fullSection = document.getElementById('fullContent');
           let showingFull = false;
+          
           function toggleContent() {
             if (showingFull) {
               previewSection.className = 'content-section active';
@@ -596,7 +767,6 @@ app.get('/', async (req, res) => {
     res.status(500).send(`Error: ${err.message}`);
   }
 });
-
 
 
 /**

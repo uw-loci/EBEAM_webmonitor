@@ -559,13 +559,24 @@ app.get('/', async (req, res) => {
             <strong>Last Updated:</strong> ${currentTime}
           </p>
 
-          <!-- Example Cards (Optional) 
+          <!--
           <div class="card-container">
             <div class="card">Hi, I am Card 1</div>
             <div class="card">Hi, I am Card 2</div>
             <div class="card">Hi, I am Card 3</div>
             <div class="card">Hi, I am Card 4</div>
+            <div class="card">Hi, I am Card 5</div>
+            <div class="card">Hi, I am Card 6</div>
+            <div class="card">Hi, I am Card 7</div>
+            <div class="card">Hi, I am Card 8</div>
           </div>
+          -->
+
+          <!--
+          using Bootstrap background class
+          bg-success -- green
+          bg-warning -- orange
+          bg-danger -- red
           -->
 
           <!-- Interlocks Section -->

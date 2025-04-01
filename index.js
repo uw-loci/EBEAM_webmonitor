@@ -480,6 +480,7 @@ app.get('/', async (req, res) => {
             <strong>File Last Modified:</strong> ${fileModified} | 
             <strong>Last Updated:</strong> ${currentTime}
           </p>
+          <!--
           <div class="card-container">
             <div class="card">Hi, I am Card 1</div>
             <div class="card">Hi, I am Card 2</div>
@@ -490,6 +491,7 @@ app.get('/', async (req, res) => {
             <div class="card">Hi, I am Card 7</div>
             <div class="card">Hi, I am Card 8</div>
           </div>
+          -->
           <div class="interlocks-section">
             <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
             <div class="interlocks-container">

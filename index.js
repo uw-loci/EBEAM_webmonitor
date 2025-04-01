@@ -455,19 +455,7 @@ app.get('/', async (req, res) => {
             <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
             <strong>Last Updated:</strong> ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}
           </p>
-
-          <!-- Example Cards -->
-          <div class="card-container">
-            <div class="card">Hi, I am Card 1</div>
-            <div class="card">Hi, I am Card 2</div>
-            <div class="card">Hi, I am Card 3</div>
-            <div class="card">Hi, I am Card 4</div>
-            <div class="card">Hi, I am Card 5</div>
-            <div class="card">Hi, I am Card 6</div>
-            <div class="card">Hi, I am Card 7</div>
-            <div class="card">Hi, I am Card 8</div>
-          </div>
-
+          
           <!-- Interlocks Section -->
           <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
           <div class="interlocks-container">
@@ -513,6 +501,20 @@ app.get('/', async (req, res) => {
               <div>QGSP Active</div>
             </div>
           </div>
+
+          <!-- Example Cards -->
+          <div class="card-container">
+            <div class="card">Hi, I am Card 1</div>
+            <div class="card">Hi, I am Card 2</div>
+            <div class="card">Hi, I am Card 3</div>
+            <div class="card">Hi, I am Card 4</div>
+            <div class="card">Hi, I am Card 5</div>
+            <div class="card">Hi, I am Card 6</div>
+            <div class="card">Hi, I am Card 7</div>
+            <div class="card">Hi, I am Card 8</div>
+          </div>
+
+          
 
           <!-- Log Preview and Full Log -->
           <div class="row justify-content-center">

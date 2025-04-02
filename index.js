@@ -283,7 +283,7 @@ app.get('/', async (req, res) => {
           /* For sections like Interlocks, Environmental, and Green Indicators */
           .interlocks-section,
           .env-section,
-          .green-indicators-section {
+          .vacuum-indicators{
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -368,40 +368,40 @@ app.get('/', async (req, res) => {
           /* =========================
              GREEN INDICATORS SECTION
           ========================== */
-          .green-indicators-title {
+          .vacuum-indicators-title {
             font-weight: bold;
             transition: text-shadow 0.3s ease;
             cursor: pointer;
           }
-          .green-indicators-title:hover {
+          .vacuum-indicators-title:hover {
             text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
           }
           /* Reusing the interlocks container style for consistency */
-          .green-indicators-container {
+          .vacuum-indicators-container {
             display: flex;
             justify-content: space-around;
             align-items: center;
             flex-wrap: wrap;
           }
           /* Items here are the same as interlock items but will only use green circles */
-          .green-indicator-item {
+          .vacuum-indicators-item {
             text-align: center;
             margin: 10px;
             transition: transform 0.3s ease, filter 0.3s ease;
             cursor: pointer;
           }
-          .green-indicator-item:hover {
+          .vacuum-indicators-item:hover {
             transform: translateY(-5px);
             filter: brightness(1.3);
           }
-          .green-indicator-item div:last-child {
+          .vacuum-indicators-item div:last-child {
             transition: font-weight 0.3s ease;
           }
-          .green-indicator-item:hover div:last-child {
+          .vacuum-indicators-item:hover div:last-child {
             font-weight: bold;
           }
           /* Use same circle styling */
-          .green-indicator-circle {
+          .vacuum-indicators-circle {
             width: 40px;
             height: 40px;
             border-radius: 50%;
@@ -409,7 +409,7 @@ app.get('/', async (req, res) => {
             background-color: #28a745; /* Green */
             transition: transform 0.3s ease, filter 0.3s ease;
           }
-          .green-indicator-item:hover .green-indicator-circle {
+          .vacuum-indicators-item:hover .vacuum-indicators-circle {
             transform: scale(1.1);
             filter: brightness(1.3);
           }
@@ -639,33 +639,32 @@ app.get('/', async (req, res) => {
             </div>
           </div>
 
-          <!-- New Green Indicators Section -->
-          <div class="green-indicators-section">
-            <h3 class="dashboard-subtitle green-indicators-title">Green Indicators</h3>
-            <div class="green-indicators-container">
-              <!-- Only include the items that are green -->
-              <div class="green-indicator-item">
-                <div class="green-indicator-circle"></div>
+          <!-- Vacuum Indicators Section -->
+          <div class="vacuum-indicators">
+            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators</h3>
+            <div class="vacuum-indicators-container">
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
                 <div>Water</div>
               </div>
-              <div class="green-indicator-item">
-                <div class="green-indicator-circle"></div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
                 <div>Door</div>
               </div>
-              <div class="green-indicator-item">
-                <div class="green-indicator-circle"></div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
                 <div>Timer</div>
               </div>
-              <div class="green-indicator-item">
-                <div class="green-indicator-circle"></div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
                 <div>Oil High</div>
               </div>
-              <div class="green-indicator-item">
-                <div class="green-indicator-circle"></div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
                 <div>Oil Low</div>
               </div>
-              <div class="green-indicator-item">
-                <div class="green-indicator-circle"></div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
                 <div>QGSP Active</div>
               </div>
             </div>

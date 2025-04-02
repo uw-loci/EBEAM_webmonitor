@@ -268,7 +268,7 @@ app.get('/', async (req, res) => {
           }
 
           /* =========================
-             GLASSMORPHISM
+             GLASSMORPHISM CONTAINERS
           ========================== */
           .glass-container {
             background: rgba(255, 255, 255, 0.08);
@@ -280,10 +280,10 @@ app.get('/', async (req, res) => {
             width: 100%;
             margin: 0 auto;
           }
-
-          /* We’ll also use glassmorphism for the Interlocks and Environmental sections */
+          /* For sections like Interlocks, Environmental, and Green Indicators */
           .interlocks-section,
-          .env-section {
+          .env-section,
+          .green-indicators-section {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -318,32 +318,6 @@ app.get('/', async (req, res) => {
             margin-bottom: 25px;
             opacity: 0.9;
             color: rgba(255, 255, 255, 0.8);
-          }
-
-          /* =========================
-             CARDS (IF YOU WANT THEM)
-          ========================== */
-          .card-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
-            padding: 20px;
-            justify-content: center;
-          }
-          .card {
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0px 0px 15px rgba(0, 255, 255, 0.7);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            text-align: center;
-            font-weight: bold;
-          }
-          .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0px 0px 25px rgba(0, 255, 255, 1);
           }
 
           /* =========================
@@ -392,6 +366,55 @@ app.get('/', async (req, res) => {
           }
 
           /* =========================
+             GREEN INDICATORS SECTION
+          ========================== */
+          .green-indicators-title {
+            font-weight: bold;
+            transition: text-shadow 0.3s ease;
+            cursor: pointer;
+          }
+          .green-indicators-title:hover {
+            text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
+          }
+          /* Reusing the interlocks container style for consistency */
+          .green-indicators-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+          }
+          /* Items here are the same as interlock items but will only use green circles */
+          .green-indicator-item {
+            text-align: center;
+            margin: 10px;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            cursor: pointer;
+          }
+          .green-indicator-item:hover {
+            transform: translateY(-5px);
+            filter: brightness(1.3);
+          }
+          .green-indicator-item div:last-child {
+            transition: font-weight 0.3s ease;
+          }
+          .green-indicator-item:hover div:last-child {
+            font-weight: bold;
+          }
+          /* Use same circle styling */
+          .green-indicator-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 auto 5px auto;
+            background-color: #28a745; /* Green */
+            transition: transform 0.3s ease, filter 0.3s ease;
+          }
+          .green-indicator-item:hover .green-indicator-circle {
+            transform: scale(1.1);
+            filter: brightness(1.3);
+          }
+
+          /* =========================
              ENVIRONMENTAL SECTION
           ========================== */
           .env-title {
@@ -419,13 +442,13 @@ app.get('/', async (req, res) => {
             font-weight: bold;
             min-height: 1.5em;
           }
-          /* The scale+bar wrapper, so we can line them up properly */
+          /* The scale+bar wrapper */
           .env-bar-scale {
             display: flex;
             align-items: flex-end;
             height: 200px; /* total height of the chart */
           }
-          /* The vertical scale on the left side */
+          /* Vertical scale */
           .env-scale {
             display: flex;
             flex-direction: column;
@@ -446,7 +469,7 @@ app.get('/', async (req, res) => {
             position: relative;
             overflow: hidden;
           }
-          /* The fill portion of the bar */
+          /* The fill portion */
           .env-bar-inner {
             background: #00c8ff;
             width: 100%;
@@ -559,6 +582,7 @@ app.get('/', async (req, res) => {
             <strong>Last Updated:</strong> ${currentTime}
           </p>
 
+          <!-- Example Cards (Optional) -->
           <!--
           <div class="card-container">
             <div class="card">Hi, I am Card 1</div>
@@ -570,13 +594,6 @@ app.get('/', async (req, res) => {
             <div class="card">Hi, I am Card 7</div>
             <div class="card">Hi, I am Card 8</div>
           </div>
-          -->
-
-          <!--
-          using Bootstrap background class
-          bg-success -- green
-          bg-warning -- orange
-          bg-danger -- red
           -->
 
           <!-- Interlocks Section -->
@@ -622,7 +639,39 @@ app.get('/', async (req, res) => {
             </div>
           </div>
 
-          <!-- Environmental Section (New) -->
+          <!-- New Green Indicators Section -->
+          <div class="green-indicators-section">
+            <h3 class="dashboard-subtitle green-indicators-title">Green Indicators</h3>
+            <div class="green-indicators-container">
+              <!-- Only include the items that are green -->
+              <div class="green-indicator-item">
+                <div class="green-indicator-circle"></div>
+                <div>Water</div>
+              </div>
+              <div class="green-indicator-item">
+                <div class="green-indicator-circle"></div>
+                <div>Door</div>
+              </div>
+              <div class="green-indicator-item">
+                <div class="green-indicator-circle"></div>
+                <div>Timer</div>
+              </div>
+              <div class="green-indicator-item">
+                <div class="green-indicator-circle"></div>
+                <div>Oil High</div>
+              </div>
+              <div class="green-indicator-item">
+                <div class="green-indicator-circle"></div>
+                <div>Oil Low</div>
+              </div>
+              <div class="green-indicator-item">
+                <div class="green-indicator-circle"></div>
+                <div>QGSP Active</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Environmental Section -->
           <div class="env-section">
             <h3 class="dashboard-subtitle env-title">Environmental</h3>
             <div class="env-container">
@@ -630,7 +679,6 @@ app.get('/', async (req, res) => {
               <div class="env-item">
                 <div class="env-item-header">Solenoid 1</div>
                 <div class="env-bar-scale">
-                  <!-- Scale on the left -->
                   <div class="env-scale">
                     <span>100</span>
                     <span>80</span>
@@ -639,9 +687,7 @@ app.get('/', async (req, res) => {
                     <span>20</span>
                     <span>0</span>
                   </div>
-                  <!-- The bar -->
                   <div class="env-bar-outer">
-                    <!-- Adjust "height" to match the actual reading -->
                     <div class="env-bar-inner" style="height: 20%;"></div>
                   </div>
                 </div>
@@ -778,6 +824,7 @@ app.get('/', async (req, res) => {
     res.status(500).send(`Error: ${err.message}`);
   }
 });
+
 
 
 /**

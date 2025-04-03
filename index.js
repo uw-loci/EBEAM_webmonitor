@@ -645,27 +645,35 @@ app.get('/', async (req, res) => {
             <div class="vacuum-indicators-container">
               <div class="vacuum-indicators-item">
                 <div class="vacuum-indicators-circle"></div>
-                <div>Water</div>
+                <div>Pumps Power ON</div>
               </div>
               <div class="vacuum-indicators-item">
                 <div class="vacuum-indicators-circle"></div>
-                <div>Door</div>
+                <div>Turbo Rotor ON</div>
               </div>
               <div class="vacuum-indicators-item">
                 <div class="vacuum-indicators-circle"></div>
-                <div>Timer</div>
+                <div>Turbo Vent Open</div>
               </div>
               <div class="vacuum-indicators-item">
                 <div class="vacuum-indicators-circle"></div>
-                <div>Oil High</div>
+                <div>972b Power On</div>
               </div>
               <div class="vacuum-indicators-item">
                 <div class="vacuum-indicators-circle"></div>
-                <div>Oil Low</div>
+                <div>Turbo Gate Valve Closed</div>
               </div>
               <div class="vacuum-indicators-item">
                 <div class="vacuum-indicators-circle"></div>
-                <div>QGSP Active</div>
+                <div>Turbo Gate Valve Open</div>
+              </div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
+                <div>Argon Gate Valve Open</div>
+              </div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
+                <div>Argon Gate Valve Closed</div>
               </div>
             </div>
           </div>

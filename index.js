@@ -16,6 +16,8 @@ const PORT = process.env.PORT || 3000;
 
 // File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
+// Temp_File paths for local storage
+const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'reversed.tmp.txt');
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
@@ -112,12 +114,14 @@ async function fetchFileContents(fileId) {
   }
 }
 
+
+
 /**
  * Fetches and updates the log file if there's a new version
  * @returns {Promise<boolean>} True if file was updated, false otherwise
  */
 async function fetchAndUpdateFile() {
-  let release; // Declare lock variable before try block
+  let release;
 
   try {
     const mostRecentFile = await getMostRecentFile();
@@ -129,44 +133,37 @@ async function fetchAndUpdateFile() {
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
     const currentTime = new Date().getTime();
 
-    // Check if file hasn't been modified in last 15 minutes
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
       experimentRunning = false;
-      
-      if (!fs.existsSync(REVERSED_FILE_PATH)) { console.log("Experiment not running but passing through"); // just pass through for once
+
+      if (!fs.existsSync(REVERSED_FILE_PATH)) {
+        console.log("Experiment not running but passing through");
       } else {
-      console.log("Experiment not running - no updates in 15 minutes");
-      return false;
+        console.log("Experiment not running - no updates in 15 minutes");
+        return false;
       }
     }
+
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       console.log("No new updates. Using cached file.");
       experimentRunning = true;
       return false;
     }
 
-    // Making sure there is reverse.txt on server
-    if (!fs.existsSync(REVERSED_FILE_PATH)) { 
-      fs.writeFileSync(REVERSED_FILE_PATH, '', { flag: 'w' });
-    }
-
     console.log("Fetching new file...");
     let lines = await fetchFileContents(mostRecentFile.id);
-    lines.reverse(); // Reverse file contents
+    lines.reverse();
 
-    // Acquire a lock before modifying the file
-    release = await lockFile.lock(REVERSED_FILE_PATH);
+    // Write to temporary file first
+    release = await lockFile.lock(REVERSED_FILE_PATH); // lock original path
 
-    // Create a writable stream
-    const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
-    let hasError = false; // Track if an error occurs
+    const writeStream = fs.createWriteStream(REVERSED_TEMP_FILE_PATH, { flags: 'w' });
+    let hasError = false;
 
-    // Ensure function waits for the stream to finish
-    return await new Promise((resolve, reject) => { 
+    await new Promise((resolve, reject) => {
       let i = 0;
-
       function writeNext() {
-        if (hasError) return; // Stop writing if an error occurred
+        if (hasError) return;
 
         let ok = true;
         while (i < lines.length && ok) {
@@ -174,31 +171,34 @@ async function fetchAndUpdateFile() {
           i++;
         }
         if (i < lines.length) {
-          writeStream.once('drain', writeNext); // Wait for stream to be ready
+          writeStream.once('drain', writeNext);
         } else {
-          writeStream.end(); // Close stream after writing everything
+          writeStream.end();
         }
       }
 
-      writeNext(); // Start writing
+      writeNext();
 
-      // Handle successful completion
       writeStream.on('finish', async () => {
-        console.log('Finished writing reversed lines.');
-        lastModifiedTime = mostRecentFile.modifiedTime;
-        logFileName = mostRecentFile.name;
-        experimentRunning = true;
-        
-        if (release) await release(); // Release lock only after writing completes
-        resolve(true);
+        try {
+          fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
+          console.log('Reversed log updated successfully.');
+          lastModifiedTime = mostRecentFile.modifiedTime;
+          logFileName = mostRecentFile.name;
+          experimentRunning = true;
+          // TODO: complete and uncomment the extraction API here, once Prat is done fixing it. 
+          // const response = await axios.get('http://localhost:3001/get-log-data');
+          // console.log('Map from API:', response.data);
+          resolve(true);
+        } catch (err) {
+          console.error('Rename failed:', err);
+          reject(false);
+        }
       });
 
-      // Handle errors
       writeStream.on('error', async (err) => {
         console.error('Error writing file:', err);
         hasError = true;
-        
-        if (release) await release(); // Ensure lock is released even on error
         reject(false);
       });
     });
@@ -207,12 +207,11 @@ async function fetchAndUpdateFile() {
     console.error(`Error processing file: ${err.message}`);
     experimentRunning = false;
     return false;
+  } finally {
+    if (release) {
+      await release(); // always release lock
+    }
   }
-  //  finally {
-  //   if (release) {
-  //     await release(); // Ensure lock is always released
-  //   }
-  // }
 }
 
 // Schedule updates
@@ -220,32 +219,40 @@ fetchAndUpdateFile(); // Initial fetch
 setInterval(fetchAndUpdateFile, 60000); // Check every minute
 
 /**
- * GET/: Implement the log file dashboard to this end point.
+ * GET/: Render log dashboard
  */
 app.get('/', async (req, res) => {
   try {
-    let reversedContents = "No data available.";
-
-    // Serve cached file if available
-    if (fs.existsSync(REVERSED_FILE_PATH)) {
-      reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
+    if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
+      // Temp write is in progress — delay response briefly
+      await new Promise((r) => setTimeout(r, 500));
     }
 
-    // Split content into lines for preview
+    let reversedContents = "No data available.";
+    if (fs.existsSync(REVERSED_FILE_PATH)) {
+      reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
+    }
+
     const contentLines = reversedContents.split('\n');
     const previewContent = contentLines.slice(0, 20).join('\n');
-    
-    // HTML Response with preview toggle functionality
+    const fileModified = lastModifiedTime 
+      ? new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })
+      : "N/A";
+    const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+
+    // 👇 keep your HTML generation as-is below this
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
       <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Log System Dashboard</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
         <style>
-          /* Futuristic Animated Background */
+          /* =========================
+             FUTURISTIC BACKGROUND
+          ========================== */
           body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -262,31 +269,41 @@ app.get('/', async (req, res) => {
             100% { background-position: 0% 50%; }
           }
 
-          /* Glassmorphism Effect */
+          /* =========================
+             GLASSMORPHISM CONTAINERS
+          ========================== */
           .glass-container {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 30px;
             border-radius: 15px;
+            padding: 30px;
             box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15);
-            color: white;
             width: 100%;
-            margin: 0;
+            margin: 0 auto;
+          }
+          /* For sections like Interlocks, Environmental, and Green Indicators */
+          .interlocks-section,
+          .env-section,
+          .vacuum-indicators{
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 30px auto;
+            width: 90%;
           }
 
-          /* Dashboard Title with Neon Glow */
-          @keyframes flicker {
-            0% { opacity: 1; text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.6); }
-            50% { opacity: 0.9; text-shadow: 0px 0px 15px rgba(255, 255, 255, 0.5); }
-            100% { opacity: 1; text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.6); }
-          }
+          /* =========================
+             TITLES / HEADERS
+          ========================== */
           .dashboard-title {
             font-size: 3.5em;
             font-weight: 900;
             color: #d6eaff;
             text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
-                        0px 0px 20px rgba(214, 234, 255, 0.4);
+                         0px 0px 20px rgba(214, 234, 255, 0.4);
           }
           .dashboard-title::after {
             content: "";
@@ -298,41 +315,174 @@ app.get('/', async (req, res) => {
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
             border-radius: 10px;
           }
-
-          /* Subtitle */
           .dashboard-subtitle {
             font-size: 1.2em;
-            font-weight: normal;
             margin-bottom: 25px;
             opacity: 0.9;
             color: rgba(255, 255, 255, 0.8);
           }
 
-          /* Neon Glow Cards */
-          .card-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
-            padding: 20px;
-            justify-content: center;
+          /* =========================
+             INTERLOCKS SECTION
+          ========================== */
+          .interlocks-title {
+            font-weight: bold;
+            transition: text-shadow 0.3s ease;
+            cursor: pointer;
           }
-          .card {
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0px 0px 15px rgba(0, 255, 255, 0.7);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+          .interlocks-title:hover {
+            text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
+          }
+          .interlocks-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+          }
+          .interlock-item {
             text-align: center;
+            margin: 10px;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            cursor: pointer;
+          }
+          .interlock-item:hover {
+            transform: translateY(-5px);
+            filter: brightness(1.3);
+          }
+          .interlock-item div:last-child {
+            transition: font-weight 0.3s ease;
+          }
+          .interlock-item:hover div:last-child {
             font-weight: bold;
           }
-          .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0px 0px 25px rgba(0, 255, 255, 1);
+          .circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 auto 5px auto;
+            transition: transform 0.3s ease, filter 0.3s ease;
+          }
+          .interlock-item:hover .circle {
+            transform: scale(1.1);
+            filter: brightness(1.3);
           }
 
-          /* Log Viewer with Higher Contrast */
+          /* =========================
+             GREEN INDICATORS SECTION
+          ========================== */
+          .vacuum-indicators-title {
+            font-weight: bold;
+            transition: text-shadow 0.3s ease;
+            cursor: pointer;
+          }
+          .vacuum-indicators-title:hover {
+            text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
+          }
+          /* Reusing the interlocks container style for consistency */
+          .vacuum-indicators-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+          }
+          /* Items here are the same as interlock items but will only use green circles */
+          .vacuum-indicators-item {
+            text-align: center;
+            margin: 10px;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            cursor: pointer;
+          }
+          .vacuum-indicators-item:hover {
+            transform: translateY(-5px);
+            filter: brightness(1.3);
+          }
+          .vacuum-indicators-item div:last-child {
+            transition: font-weight 0.3s ease;
+          }
+          .vacuum-indicators-item:hover div:last-child {
+            font-weight: bold;
+          }
+          /* Use same circle styling */
+          .vacuum-indicators-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 auto 5px auto;
+            background-color: #28a745; /* Green */
+            transition: transform 0.3s ease, filter 0.3s ease;
+          }
+          .vacuum-indicators-item:hover .vacuum-indicators-circle {
+            transform: scale(1.1);
+            filter: brightness(1.3);
+          }
+
+          /* =========================
+             ENVIRONMENTAL SECTION
+          ========================== */
+          .env-title {
+            font-weight: bold;
+            transition: text-shadow 0.3s ease;
+            cursor: pointer;
+          }
+          .env-title:hover {
+            text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
+          }
+          .env-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            flex-wrap: wrap;
+          }
+          .env-item {
+            position: relative;
+            margin: 15px;
+            width: 60px;  /* width for each bar column */
+            text-align: center;
+          }
+          .env-item-header {
+            margin-bottom: 10px;
+            font-weight: bold;
+            min-height: 1.5em;
+          }
+          /* The scale+bar wrapper */
+          .env-bar-scale {
+            display: flex;
+            align-items: flex-end;
+            height: 200px; /* total height of the chart */
+          }
+          /* Vertical scale */
+          .env-scale {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            margin-right: 5px;
+            height: 100%;
+          }
+          .env-scale span {
+            color: #fff;
+            font-size: 0.8em;
+          }
+          /* Outer bar container */
+          .env-bar-outer {
+            width: 30px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid #fff;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+          }
+          /* The fill portion */
+          .env-bar-inner {
+            background: #00c8ff;
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            transition: height 0.3s ease;
+          }
+
+          /* =========================
+             LOG VIEWER
+          ========================== */
           pre {
             white-space: pre-wrap;
             font-family: 'Courier New', monospace;
@@ -347,17 +497,12 @@ app.get('/', async (req, res) => {
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 0.3);
             border: 1px solid rgba(0, 255, 255, 0.5);
           }
-
-          /* Content sections */
           .content-section {
-            display: none; /* Hide by default */
+            display: none;
           }
-          
           .content-section.active {
-            display: block; /* Show when active */
+            display: block;
           }
-
-          /* Toggle Button */
           .btn-toggle {
             background: rgba(0, 255, 255, 0.5);
             color: white;
@@ -373,7 +518,9 @@ app.get('/', async (req, res) => {
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
           }
 
-          /* Responsive Layout */
+          /* =========================
+             RESPONSIVE LAYOUT
+          ========================== */
           @media (max-width: 992px) {
             .card-container {
               grid-template-columns: repeat(2, 1fr);
@@ -384,6 +531,10 @@ app.get('/', async (req, res) => {
               grid-template-columns: repeat(1, 1fr);
             }
           }
+
+          /* =========================
+             EXPERIMENT-RUNNING NOTICE
+          ========================== */
           .fixed-top-right {
             position: absolute;
             top: 20px;
@@ -398,27 +549,22 @@ app.get('/', async (req, res) => {
             color: white;
             font-weight: bold;
             animation: neonBlink 8s infinite alternate;
-            z-index: 9999; /* Always on top */
+            z-index: 9999;
           }
-
           @keyframes neonBlink {
             0% { opacity: 1; text-shadow: 0 0 10px red; }
             50% { opacity: 0.8; text-shadow: 0 0 5px red; }
             100% { opacity: 1; text-shadow: 0 0 10px red; }
           }
-
-          /* Responsive adjustments for mobile */
           @media (max-width: 768px) {
             .fixed-top-right {
-              position: static; /* Change from fixed to static position */
+              position: static;
               display: block;
               margin: 10px auto 20px;
               width: fit-content;
               font-size: 1.1em;
               padding: 8px 16px;
             }
-            
-            /* Adjust dashboard title spacing on mobile */
             .dashboard-title {
               margin-top: 10px;
               font-size: 3.0em;
@@ -428,17 +574,18 @@ app.get('/', async (req, res) => {
       </head>
       <body>
         <div class="container-fluid mt-4">
-          ${!experimentRunning ? `
-            <div class="neon-warning fixed-top-right">
-              Experiment is not running
-            </div>
-          ` : ''}
+          <!-- If experiment isn't running, show a neon warning -->
+          ${!experimentRunning ? `<div class="neon-warning fixed-top-right">Experiment is not running</div>` : ''}
+
+          <!-- Title & Subtitle -->
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
           <p class="dashboard-subtitle">
-            <strong>File Last Modified:</strong> ${new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })} | 
-            <strong>Last Updated:</strong> ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })}
+            <strong>File Last Modified:</strong> ${fileModified} | 
+            <strong>Last Updated:</strong> ${currentTime}
           </p>
 
+          <!-- Example Cards (Optional) -->
+          <!--
           <div class="card-container">
             <div class="card">Hi, I am Card 1</div>
             <div class="card">Hi, I am Card 2</div>
@@ -449,62 +596,233 @@ app.get('/', async (req, res) => {
             <div class="card">Hi, I am Card 7</div>
             <div class="card">Hi, I am Card 8</div>
           </div>
+          -->
 
+          <!-- Interlocks Section -->
+          <div class="interlocks-section">
+            <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
+            <div class="interlocks-container">
+              <div class="interlock-item">
+                <div class="circle bg-danger"></div>
+                <div>Vacuum</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>Water</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>Door</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>Timer</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>Oil High</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>Oil Low</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-danger"></div>
+                <div>E-stop Ext</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-danger"></div>
+                <div>E-stop Int</div>
+              </div>
+              <div class="interlock-item">
+                <div class="circle bg-success"></div>
+                <div>QGSP Active</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vacuum Indicators Section -->
+          <div class="vacuum-indicators">
+            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators</h3>
+            <div class="vacuum-indicators-container">
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
+                <div>Pumps Power ON</div>
+              </div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
+                <div>Turbo Rotor ON</div>
+              </div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
+                <div>Turbo Vent Open</div>
+              </div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
+                <div>972b Power On</div>
+              </div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
+                <div>Turbo Gate Valve Closed</div>
+              </div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
+                <div>Turbo Gate Valve Open</div>
+              </div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
+                <div>Argon Gate Valve Open</div>
+              </div>
+              <div class="vacuum-indicators-item">
+                <div class="vacuum-indicators-circle"></div>
+                <div>Argon Gate Valve Closed</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Environmental Section -->
+          <div class="env-section">
+            <h3 class="dashboard-subtitle env-title">Environmental</h3>
+            <div class="env-container">
+              <!-- Bar 1: Solenoid 1 -->
+              <div class="env-item">
+                <div class="env-item-header">Solenoid 1</div>
+                <div class="env-bar-scale">
+                  <div class="env-scale">
+                    <span>100</span>
+                    <span>80</span>
+                    <span>60</span>
+                    <span>40</span>
+                    <span>20</span>
+                    <span>0</span>
+                  </div>
+                  <div class="env-bar-outer">
+                    <div class="env-bar-inner" style="height: 20%;"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Bar 2: Solenoid 2 -->
+              <div class="env-item">
+                <div class="env-item-header">Solenoid 2</div>
+                <div class="env-bar-scale">
+                  <div class="env-scale">
+                    <span>100</span>
+                    <span>80</span>
+                    <span>60</span>
+                    <span>40</span>
+                    <span>20</span>
+                    <span>0</span>
+                  </div>
+                  <div class="env-bar-outer">
+                    <div class="env-bar-inner" style="height: 40%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bar 3: Chmbr Bot -->
+              <div class="env-item">
+                <div class="env-item-header">Chmbr Bot</div>
+                <div class="env-bar-scale">
+                  <div class="env-scale">
+                    <span>100</span>
+                    <span>80</span>
+                    <span>60</span>
+                    <span>40</span>
+                    <span>20</span>
+                    <span>0</span>
+                  </div>
+                  <div class="env-bar-outer">
+                    <div class="env-bar-inner" style="height: 100%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bar 4: Chmbr Top -->
+              <div class="env-item">
+                <div class="env-item-header">Chmbr Top</div>
+                <div class="env-bar-scale">
+                  <div class="env-scale">
+                    <span>100</span>
+                    <span>80</span>
+                    <span>60</span>
+                    <span>40</span>
+                    <span>20</span>
+                    <span>0</span>
+                  </div>
+                  <div class="env-bar-outer">
+                    <div class="env-bar-inner" style="height: 100%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bar 5: Air temp -->
+              <div class="env-item">
+                <div class="env-item-header">Air temp</div>
+                <div class="env-bar-scale">
+                  <div class="env-scale">
+                    <span>100</span>
+                    <span>80</span>
+                    <span>60</span>
+                    <span>40</span>
+                    <span>20</span>
+                    <span>0</span>
+                  </div>
+                  <div class="env-bar-outer">
+                    <div class="env-bar-inner" style="height: 60%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Log Viewer -->
           <div class="row justify-content-center">
             <div class="col-lg-12">
               <div class="glass-container p-4">
-                <!-- Toggle button -->
                 <button id="toggleButton" class="btn-toggle">Show Full Log</button>
-                
-                <!-- Content sections -->
                 <div id="previewContent" class="content-section active">
                   <pre>${previewContent}</pre>
-                  <p class="text-center text-info mt-2">Showing first 20 lines. Click the button above to see the full log.</p>
+                  <p class="text-center text-info mt-2">
+                    Showing first 20 lines. Click the button above to see the full log.
+                  </p>
                 </div>
-                
                 <div id="fullContent" class="content-section">
                   <pre>${reversedContents}</pre>
-                  <p class="text-center text-info mt-2">Showing full log. Click the button above to see the preview.</p>
+                  <p class="text-center text-info mt-2">
+                    Showing full log. Click the button above to see the preview.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Simple toggling script -->
+        <!-- Auto-refresh & Toggle Script -->
         <script>
-          // Auto-refresh
+          // Refresh every minute
           setTimeout(function() {
             location.reload();
           }, 60000);
-          
-          // Get elements
+
+          // Toggle between preview/full log
           const toggleButton = document.getElementById('toggleButton');
           const previewSection = document.getElementById('previewContent');
           const fullSection = document.getElementById('fullContent');
-          
-          // Initial state
           let showingFull = false;
           
-          // Toggle function
           function toggleContent() {
             if (showingFull) {
-              // Switch to preview
               previewSection.className = 'content-section active';
               fullSection.className = 'content-section';
               toggleButton.textContent = 'Show Full Log';
             } else {
-              // Switch to full
               previewSection.className = 'content-section';
               fullSection.className = 'content-section active';
               toggleButton.textContent = 'Show Preview';
             }
-            
-            // Toggle state
             showingFull = !showingFull;
           }
-          
-          // Add click handler
           toggleButton.onclick = toggleContent;
         </script>
       </body>
@@ -516,13 +834,20 @@ app.get('/', async (req, res) => {
   }
 });
 
+
+
 /**
  * GET /raw : Returns just the reversed text (newest at top).
  */
 app.get('/raw', async (req, res) => {
   try {
+    if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
     if (fs.existsSync(REVERSED_FILE_PATH)) {
-      res.type('text/plain').send(fs.readFileSync(REVERSED_FILE_PATH, 'utf8'));
+      const content = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
+      res.type('text/plain').send(content);
     } else {
       res.status(404).send("No file found.");
     }
@@ -531,6 +856,7 @@ app.get('/raw', async (req, res) => {
     res.status(500).send(`Error: ${err.message}`);
   }
 });
+
 
 // Start the server
 app.listen(PORT, () => {

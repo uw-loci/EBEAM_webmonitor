@@ -6,12 +6,16 @@ const path = require('path');
 const https = require('https');
 const lockFile = require('proper-lockfile');
 const { PassThrough } = require('stream');
+const logDataExtracApiRoutes = require('./log_data_extraction');
+
+app.use('/log-data-extraction', logDataExtracApiRoutes);
 
 // Load environment variables
 require('dotenv').config();
 
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
+const LOG_DATA_EXTRACTION_KEY = 'my-secret-key';
 const PORT = process.env.PORT || 3000;
 
 // File paths for local storage

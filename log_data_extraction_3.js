@@ -4,12 +4,12 @@ const path = require('path');
 
 const router = express.Router();
 
-const API_SECRET_KEY = 'my-secret-key';
+const LOG_DATA_EXTRACTION_KEY = 'my-secret-key';
 
 // Middleware to check the secret key in the request headers
 router.use('/data', (req, res, next) => {
     // If the API key doesn't match the expected key, deny access
-    if (req.headers['x-api-key'] !== API_SECRET_KEY) {
+    if (req.headers['x-api-key'] !== LOG_DATA_EXTRACTION_KEY) {
       return res.status(403).json({ error: 'Forbidden: Invalid API Key' });
     }
     

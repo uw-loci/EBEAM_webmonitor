@@ -186,7 +186,9 @@ async function fetchAndUpdateFile() {
           lastModifiedTime = mostRecentFile.modifiedTime;
           logFileName = mostRecentFile.name;
           experimentRunning = true;
-          // TODO: add the extraction API here, once Prat is done fixing it. 
+          // TODO: complete and uncomment the extraction API here, once Prat is done fixing it. 
+          // const response = await axios.get('http://localhost:3001/get-log-data');
+          // console.log('Map from API:', response.data);
           resolve(true);
         } catch (err) {
           console.error('Rename failed:', err);

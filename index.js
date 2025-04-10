@@ -16,6 +16,8 @@ const PORT = process.env.PORT || 3000;
 
 // File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
+// Temp_File paths for local storage
+const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'reversed.tmp.txt');
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
@@ -112,12 +114,14 @@ async function fetchFileContents(fileId) {
   }
 }
 
+
+
 /**
  * Fetches and updates the log file if there's a new version
  * @returns {Promise<boolean>} True if file was updated, false otherwise
  */
 async function fetchAndUpdateFile() {
-  let release; // Declare lock variable before try block
+  let release;
 
   try {
     const mostRecentFile = await getMostRecentFile();
@@ -129,44 +133,37 @@ async function fetchAndUpdateFile() {
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
     const currentTime = new Date().getTime();
 
-    // Check if file hasn't been modified in last 15 minutes
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
       experimentRunning = false;
-      
-      if (!fs.existsSync(REVERSED_FILE_PATH)) { console.log("Experiment not running but passing through"); // just pass through for once
+
+      if (!fs.existsSync(REVERSED_FILE_PATH)) {
+        console.log("Experiment not running but passing through");
       } else {
-      console.log("Experiment not running - no updates in 15 minutes");
-      return false;
+        console.log("Experiment not running - no updates in 15 minutes");
+        return false;
       }
     }
+
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       console.log("No new updates. Using cached file.");
       experimentRunning = true;
       return false;
     }
 
-    // Making sure there is reverse.txt on server
-    if (!fs.existsSync(REVERSED_FILE_PATH)) { 
-      fs.writeFileSync(REVERSED_FILE_PATH, '', { flag: 'w' });
-    }
-
     console.log("Fetching new file...");
     let lines = await fetchFileContents(mostRecentFile.id);
-    lines.reverse(); // Reverse file contents
+    lines.reverse();
 
-    // Acquire a lock before modifying the file
-    release = await lockFile.lock(REVERSED_FILE_PATH);
+    // Write to temporary file first
+    release = await lockFile.lock(REVERSED_FILE_PATH); // lock original path
 
-    // Create a writable stream
-    const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
-    let hasError = false; // Track if an error occurs
+    const writeStream = fs.createWriteStream(REVERSED_TEMP_FILE_PATH, { flags: 'w' });
+    let hasError = false;
 
-    // Ensure function waits for the stream to finish
-    return await new Promise((resolve, reject) => { 
+    await new Promise((resolve, reject) => {
       let i = 0;
-
       function writeNext() {
-        if (hasError) return; // Stop writing if an error occurred
+        if (hasError) return;
 
         let ok = true;
         while (i < lines.length && ok) {
@@ -174,31 +171,31 @@ async function fetchAndUpdateFile() {
           i++;
         }
         if (i < lines.length) {
-          writeStream.once('drain', writeNext); // Wait for stream to be ready
+          writeStream.once('drain', writeNext);
         } else {
-          writeStream.end(); // Close stream after writing everything
+          writeStream.end();
         }
       }
 
-      writeNext(); // Start writing
+      writeNext();
 
-      // Handle successful completion
       writeStream.on('finish', async () => {
-        console.log('Finished writing reversed lines.');
-        lastModifiedTime = mostRecentFile.modifiedTime;
-        logFileName = mostRecentFile.name;
-        experimentRunning = true;
-        
-        if (release) await release(); // Release lock only after writing completes
-        resolve(true);
+        try {
+          fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
+          console.log('Reversed log updated successfully.');
+          lastModifiedTime = mostRecentFile.modifiedTime;
+          logFileName = mostRecentFile.name;
+          experimentRunning = true;
+          resolve(true);
+        } catch (err) {
+          console.error('Rename failed:', err);
+          reject(false);
+        }
       });
 
-      // Handle errors
       writeStream.on('error', async (err) => {
         console.error('Error writing file:', err);
         hasError = true;
-        
-        if (release) await release(); // Ensure lock is released even on error
         reject(false);
       });
     });
@@ -207,12 +204,11 @@ async function fetchAndUpdateFile() {
     console.error(`Error processing file: ${err.message}`);
     experimentRunning = false;
     return false;
+  } finally {
+    if (release) {
+      await release(); // always release lock
+    }
   }
-  //  finally {
-  //   if (release) {
-  //     await release(); // Ensure lock is always released
-  //   }
-  // }
 }
 
 // Schedule updates
@@ -220,25 +216,28 @@ fetchAndUpdateFile(); // Initial fetch
 setInterval(fetchAndUpdateFile, 60000); // Check every minute
 
 /**
- * GET/: Implement the log file dashboard to this end point.
+ * GET/: Render log dashboard
  */
 app.get('/', async (req, res) => {
   try {
-    // 1. Read reversed contents if available
+    if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
+      // Temp write is in progress — delay response briefly
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
     let reversedContents = "No data available.";
     if (fs.existsSync(REVERSED_FILE_PATH)) {
-      reversedContents = fs.readFileSync(REVERSED_FILE_PATH, 'utf8');
+      reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
     }
+
     const contentLines = reversedContents.split('\n');
     const previewContent = contentLines.slice(0, 20).join('\n');
-
-    // 2. Format time values (handle potential null values)
     const fileModified = lastModifiedTime 
       ? new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })
       : "N/A";
     const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
 
-    // 3. Send the complete HTML response
+    // 👇 keep your HTML generation as-is below this
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
@@ -839,8 +838,13 @@ app.get('/', async (req, res) => {
  */
 app.get('/raw', async (req, res) => {
   try {
+    if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
     if (fs.existsSync(REVERSED_FILE_PATH)) {
-      res.type('text/plain').send(fs.readFileSync(REVERSED_FILE_PATH, 'utf8'));
+      const content = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
+      res.type('text/plain').send(content);
     } else {
       res.status(404).send("No file found.");
     }
@@ -849,6 +853,7 @@ app.get('/raw', async (req, res) => {
     res.status(500).send(`Error: ${err.message}`);
   }
 });
+
 
 // Start the server
 app.listen(PORT, () => {

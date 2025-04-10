@@ -186,6 +186,7 @@ async function fetchAndUpdateFile() {
           lastModifiedTime = mostRecentFile.modifiedTime;
           logFileName = mostRecentFile.name;
           experimentRunning = true;
+          // TODO: add the extraction API here, once Prat is done fixing it. 
           resolve(true);
         } catch (err) {
           console.error('Rename failed:', err);

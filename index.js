@@ -55,6 +55,7 @@ async function getMostRecentFile() {
 let lastModifiedTime = null;
 let logFileName = null;
 let experimentRunning = false;
+let response = null;
 
 /**
  * Fetches file contents from Google Drive using streaming
@@ -187,8 +188,48 @@ async function fetchAndUpdateFile() {
           logFileName = mostRecentFile.name;
           experimentRunning = true;
           // TODO: complete and uncomment the extraction API here, once Prat is done fixing it. 
-          // const response = await axios.get('http://localhost:3001/get-log-data');
+          // response = await axios.get('http://localhost:3001/get-log-data');
           // console.log('Map from API:', response.data);
+
+          // response = await axios.get('http://localhost:3000/log-data-extraction/data', {
+          //   headers: {
+          //     'x-api-key': LOG_DATA_EXTRACTION_SECRET_KEY
+          //   }});
+
+          // // extected repsonse var form the end point once fixed
+          // response = {
+          //     "Pressure": 1200,
+          //     "Safety Flags": [0, 0, 0, 0, 0, 0, 1],
+          //     "Temperatures": {
+          //        "1": "18.94",
+          //        "2": "19.00",
+          //        "3": "22.83",
+          //        "4": "20.38",
+          //        "5": "21.88",
+          //        "6": "19.31"
+          //     },
+          //     "NEW": "12:40"
+          //   }
+
+
+          // // Accessing each data field:
+          // const pressure = data.Pressure; // Access Pressure (e.g., 1200)
+          // const safetyFlags = data['Safety Flags']; // Access Safety Flags array
+          // const temperatures = data.Temperatures; // Access Temperatures object
+          // const timestamp = data.NEW; // Access the timestamp (or NEW field)
+          
+
+          // // For example, to access the first temperature reading:
+          // const temperatureSensor1 = temperatures["1"]; // "18.94"
+
+          // // You can now use these variables as needed in your front end.
+          // console.log('Pressure:', pressure);
+          // console.log('Safety Flags:', safetyFlags);
+          // console.log('Temperatures:', temperatures);
+          // console.log('Timestamp:', timestamp);
+          // console.log('Temperature from sensor 1:', temperatureSensor1);
+
+
           resolve(true);
         } catch (err) {
           console.error('Rename failed:', err);
@@ -240,7 +281,7 @@ app.get('/', async (req, res) => {
       : "N/A";
     const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
 
-    // 👇 keep your HTML generation as-is below this
+    //  keep your HTML generation as-is below this
     res.send(`
       <!DOCTYPE html>
       <html lang="en">

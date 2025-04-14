@@ -259,6 +259,7 @@ async function fetchAndUpdateFile() {
 fetchAndUpdateFile(); // Initial fetch
 setInterval(fetchAndUpdateFile, 60000); // Check every minute
 
+
 /**
  * GET/: Render log dashboard
  */

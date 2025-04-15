@@ -6,9 +6,9 @@ const path = require('path');
 const https = require('https');
 const lockFile = require('proper-lockfile');
 const { PassThrough } = require('stream');
-const logDataExtracApiRoutes = require('./log_data_extraction');
+const logDataExtractionApiRoutes = require('./log_data_extraction');
 
-app.use('/log-data-extraction', logDataExtracApiRoutes);
+app.use('/log-data-extraction', logDataExtractionApiRoutes);
 
 // Load environment variables
 require('dotenv').config();

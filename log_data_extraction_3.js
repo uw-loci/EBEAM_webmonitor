@@ -27,7 +27,7 @@ router.get('/data', (req, res) => {
   
     // Send the JSON object as the response
     res.json(data);
-  });
+});
 
 // Precompile regex patterns for better performance
 const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
@@ -66,7 +66,7 @@ function processLogLines(logLines) {
     for (const logLine of logLines) {
         // Extract timestamp
         const timestampMatch = logLine.match(TIMESTAMP_REGEX);
-        if (!timestampMatch) return;
+        if (!timestampMatch) continue;
         
         const timestamp = timestampMatch[1];
         const timestampInSeconds = timeToSeconds(timestamp);
@@ -156,6 +156,7 @@ function flushAndReset() {
             console.error('Failed to read log file:', err);
         } else {
             const logLines = data.split('\n').filter(line => line.trim() !== '');
+            console.log(logLines)
             processLogLines(logLines);
         }
         
@@ -224,7 +225,7 @@ function simulateLogProcessing() {
 startProcessing();
 
 // Simulate log processing (in a real scenario, you'd process logs as they arrive)
-simulateLogProcessing();
+//simulateLogProcessing();
 
 
 

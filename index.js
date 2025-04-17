@@ -6,9 +6,9 @@ const path = require('path');
 const https = require('https');
 const lockFile = require('proper-lockfile');
 const { PassThrough } = require('stream');
-const logDataExtractionApiRoutes = require('./log_data_extraction');
+const logDataExtractionApiRoutes = require('./log_data_extraction_3');
 
-app.use('/log-data-extraction', logDataExtractionApiRoutes);
+
 
 // Load environment variables
 require('dotenv').config();
@@ -28,6 +28,7 @@ const INACTIVE_THRESHOLD = 15 * 60 * 1000;
 
 // Initialize Express app
 const app = express();
+app.use('/log-data-extraction', logDataExtractionApiRoutes);
 
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });

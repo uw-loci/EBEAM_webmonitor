@@ -6,29 +6,6 @@ const router = express.Router();
 
 const LOG_DATA_EXTRACTION_KEY = 'my-secret-key';
 
-// Middleware to check the secret key in the request headers
-router.use('/data', (req, res, next) => {
-    // If the API key doesn't match the expected key, deny access
-    if (req.headers['x-api-key'] !== LOG_DATA_EXTRACTION_KEY) {
-      return res.status(403).json({ error: 'Forbidden: Invalid API Key' });
-    }
-    
-    // If the key matches, proceed to the actual API route handler
-    next();
-});
-
-// Define the /api/data endpoint that returns the JSON object
-router.get('/data', (req, res) => {
-    const data = {
-      message: 'Hello from the API!',
-      success: true,
-      timestamp: new Date().toISOString()
-    };
-  
-    // Send the JSON object as the response
-    res.json(data);
-});
-
 // Precompile regex patterns for better performance
 const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
 const LOG_TYPE_REGEX = / - (DEBUG: .+?):/;
@@ -227,7 +204,53 @@ startProcessing();
 // Simulate log processing (in a real scenario, you'd process logs as they arrive)
 //simulateLogProcessing();
 
+// Middleware to check the secret key in the request headers
+router.use('/data', (req, res, next) => {
+    // If the API key doesn't match the expected key, deny access
+    if (req.headers['x-api-key'] !== LOG_DATA_EXTRACTION_KEY) {
+      return res.status(403).json({ error: 'Forbidden: Invalid API Key' });
+    }
+    
+    // If the key matches, proceed to the actual API route handler
+    next();
+});
 
+// Define the /api/data endpoint that returns the JSON object
+router.get('/data', (req, res) => {
+    // const data = {
+    //   message: 'Hello from the API!',
+    //   success: true,
+    //   timestamp: new Date().toISOString()
+    // };
+  
+    // // Send the JSON object as the response
+    // res.json(data);
 
+    // Reset data for next interval
+    
+    
+    // Set the new interval time (in seconds)
+    currentTimeInSeconds = getCurrentTimeInSeconds();
+    
+    const logFilePath = path.join(__dirname, 'sample_logs.txt');
+    fs.readFile(logFilePath, 'utf-8', (err, data) => {
+        if (err) {
+            console.error('Failed to read log file:', err);
+            return res.status(500).json({ error: 'Failed to read log file' });
+        }
+
+        const logLines = data.split('\n').filter(line => line.trim() !== '');
+        console.log(logLines)
+        processLogLines(logLines);
+        // Send back the processed interval data
+        res.json(currentData);
+
+        currentData = {
+            pressure: null,
+            safetyFlags: null,
+            temperatures: null
+        };
+    });
+});
 
 module.exports = router;

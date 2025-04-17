@@ -61,6 +61,7 @@ let lastModifiedTime = null;
 let logFileName = null;
 let experimentRunning = false;
 let response = null;
+let shouldReload = false;
 
 /**
  * Fetches file contents from Google Drive using streaming
@@ -150,6 +151,7 @@ async function fetchAndUpdateFile() {
       } else {
         // if REVERSED_FILE_PATH.file exists then return, no need to read.
         console.log("Experiment not running - no updates in 15 minutes");
+        shouldReload = false;
         return false;
       }
     }
@@ -158,6 +160,7 @@ async function fetchAndUpdateFile() {
       // Use the cached file if it didn't change from last time instead of fetching again. 
       console.log("No new updates. Using cached file.");
       experimentRunning = true;
+      shouldReload = false;
       return false;
     }
     
@@ -198,6 +201,7 @@ async function fetchAndUpdateFile() {
           lastModifiedTime = mostRecentFile.modifiedTime;
           logFileName = mostRecentFile.name;  
           experimentRunning = true;
+          shouldReload = true;
           // TODO: complete and uncomment the extraction API here, once Prat is done fixing it. 
           // response = await axios.get('http://localhost:3001/get-log-data');
           // console.log('Map from API:', response.data);
@@ -855,7 +859,9 @@ app.get('/', async (req, res) => {
         <script>
           // Refresh every minute
           setTimeout(function() {
-            location.reload();
+            if (shouldReload) {
+              location.reload();
+            }
           }, 60000);
 
           // Toggle between preview/full log

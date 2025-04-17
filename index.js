@@ -138,24 +138,30 @@ async function fetchAndUpdateFile() {
 
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
     const currentTime = new Date().getTime();
+    
 
-    if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
-      experimentRunning = false;
-
+    // First check if the experiment is active
+    if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { 
+      // experiment is inactive and we are outside the 15 min. window
+      experimentRunning = false; // experiment is not running
       if (!fs.existsSync(REVERSED_FILE_PATH)) {
+        // We don't have a "REVERSED_FILE_PATH.file" on server so we fetch the file from google
         console.log("Experiment not running but passing through");
       } else {
+        // if REVERSED_FILE_PATH.file exists then return, no need to read.
         console.log("Experiment not running - no updates in 15 minutes");
         return false;
       }
     }
-
+    //The experiment is running
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
+      // Use the cached file if it didn't change from last time instead of fetching again. 
       console.log("No new updates. Using cached file.");
       experimentRunning = true;
       return false;
     }
-
+    
+    // fetch file
     console.log("Fetching new file...");
     let lines = await fetchFileContents(mostRecentFile.id);
     lines.reverse();
@@ -190,7 +196,7 @@ async function fetchAndUpdateFile() {
           fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
           console.log('Reversed log updated successfully.');
           lastModifiedTime = mostRecentFile.modifiedTime;
-          logFileName = mostRecentFile.name;
+          logFileName = mostRecentFile.name;  
           experimentRunning = true;
           // TODO: complete and uncomment the extraction API here, once Prat is done fixing it. 
           // response = await axios.get('http://localhost:3001/get-log-data');

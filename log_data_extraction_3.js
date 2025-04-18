@@ -232,7 +232,7 @@ router.get('/data', (req, res) => {
     // Set the new interval time (in seconds)
     currentTimeInSeconds = getCurrentTimeInSeconds();
     
-    const logFilePath = path.join(__dirname, 'sample_logs.txt');
+    const logFilePath = path.join(__dirname, 'test_logs', 'sample_logs.txt');
     fs.readFile(logFilePath, 'utf-8', (err, data) => {
         if (err) {
             console.error('Failed to read log file:', err);

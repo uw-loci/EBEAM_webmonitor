@@ -4,6 +4,7 @@ const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const axios = require('axios');
 const lockFile = require('proper-lockfile');
 const { PassThrough } = require('stream');
 const logDataExtractionApiRoutes = require('./log_data_extraction_3');
@@ -32,6 +33,7 @@ app.use('/log-data-extraction', logDataExtractionApiRoutes);
 
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });
+
 
 /**
  * Fetch the most recent file from Google Drive.
@@ -140,6 +142,23 @@ async function fetchAndUpdateFile() {
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
     const currentTime = new Date().getTime();
     
+    // trying it out.
+    // end point that can be accessed app.use('/log-data-extraction', logDataExtractionApiRoutes);
+
+    // response = await axios.get('http://localhost:3001/get-log-data');
+    // console.log('Map from API:', response.data);
+
+    // response = await axios.get('http://localhost:3000/log-data-extraction/data', {
+    //   headers: {
+    //     'x-api-key': LOG_DATA_EXTRACTION_SECRET_KEY
+    //   }});
+
+    // problem with the key
+
+    // Accessing each data field:
+    // const pressure = response.Pressure; // Access Pressure (e.g., 1200)
+    // console.log("hello i am running");
+    // console.log('Pressure:', pressure);
 
     // First check if the experiment is active
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { 
@@ -203,6 +222,8 @@ async function fetchAndUpdateFile() {
           experimentRunning = true;
           shouldReload = true;
           // TODO: complete and uncomment the extraction API here, once Prat is done fixing it. 
+          // end point that can be accessed app.use('/log-data-extraction', logDataExtractionApiRoutes);
+
           // response = await axios.get('http://localhost:3001/get-log-data');
           // console.log('Map from API:', response.data);
 
@@ -227,17 +248,17 @@ async function fetchAndUpdateFile() {
           //   }
 
 
-          // // Accessing each data field:
-          // const pressure = data.Pressure; // Access Pressure (e.g., 1200)
-          // const safetyFlags = data['Safety Flags']; // Access Safety Flags array
-          // const temperatures = data.Temperatures; // Access Temperatures object
-          // const timestamp = data.NEW; // Access the timestamp (or NEW field)
+          // Accessing each data field:
+          // const pressure = response.Pressure; // Access Pressure (e.g., 1200)
+          // const safetyFlags = response['Safety Flags']; // Access Safety Flags array
+          // const temperatures = response.Temperatures; // Access Temperatures object
+          // const timestamp = response.NEW; // Access the timestamp (or NEW field)
           
 
-          // // For example, to access the first temperature reading:
+          // For example, to access the first temperature reading:
           // const temperatureSensor1 = temperatures["1"]; // "18.94"
 
-          // // You can now use these variables as needed in your front end.
+          // You can now use these variables as needed in your front end.
           // console.log('Pressure:', pressure);
           // console.log('Safety Flags:', safetyFlags);
           // console.log('Temperatures:', temperatures);

@@ -7,7 +7,7 @@ const https = require('https');
 const axios = require('axios');
 const lockFile = require('proper-lockfile');
 const { PassThrough } = require('stream');
-const logDataExtractionApiRoutes = require('./log_data_extraction_3');
+const logDataExtractionApiRoutes = require('./log_data_extraction');
 
 
 

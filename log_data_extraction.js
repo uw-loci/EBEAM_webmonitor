@@ -127,7 +127,7 @@ function flushAndReset() {
     currentTimeInSeconds = getCurrentTimeInSeconds();
     
     // Schedule next flush
-    const logFilePath = path.join(__dirname, 'logs.txt');
+    const logFilePath = path.join(__dirname, 'reversed.txt');
     fs.readFile(logFilePath, 'utf-8', (err, data) => {
         if (err) {
             console.error('Failed to read log file:', err);
@@ -199,7 +199,7 @@ function simulateLogProcessing() {
 }
 
 // Start the processing
-startProcessing();
+//startProcessing();
 
 // Simulate log processing (in a real scenario, you'd process logs as they arrive)
 //simulateLogProcessing();
@@ -232,7 +232,7 @@ router.get('/data', (req, res) => {
     // Set the new interval time (in seconds)
     currentTimeInSeconds = getCurrentTimeInSeconds();
     
-    const logFilePath = path.join(__dirname, 'test_logs', 'sample_logs.txt');
+    const logFilePath = path.join(__dirname, 'test_logs', 'reversed.txt');
     fs.readFile(logFilePath, 'utf-8', (err, data) => {
         if (err) {
             console.error('Failed to read log file:', err);

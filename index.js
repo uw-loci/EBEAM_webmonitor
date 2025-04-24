@@ -157,8 +157,8 @@ async function extractData() {
 
   // Accessing each data field:
   const pressure = data.data.pressure; // Access Pressure (e.g., 1200)
-  // const safetyFlags = response['Safety Flags']; // Access Safety Flags array
-  // const temperatures = response.Temperatures; // Access Temperatures object
+  const safetyFlags = data.data.safetyFlags; // Access Safety Flags array
+  const temperatures = data.data.temperatures; // Access Temperatures object
   // const timestamp = response.NEW; // Access the timestamp (or NEW field)
   
 
@@ -167,8 +167,8 @@ async function extractData() {
 
   // You can now use these variables as needed in your front end.
   console.log('Pressure:', pressure);
-  // console.log('Safety Flags:', safetyFlags);
-  // console.log('Temperatures:', temperatures);
+  console.log('Safety Flags:', safetyFlags);
+  console.log('Temperatures:', temperatures['1']);
   // console.log('Timestamp:', timestamp);
   // console.log('Temperature from sensor 1:', temperatureSensor1);
   return data;
@@ -341,7 +341,7 @@ app.get('/', async (req, res) => {
 
     // Accessing each data field:
     const pressure = data.pressure; // Access Pressure (e.g., 1200)
-    // const safetyFlags = response['Safety Flags']; // Access Safety Flags array
+    // const safetyFlags = data.data.safetyFlags; // Access Safety Flags array
     // const temperatures = response.Temperatures; // Access Temperatures object
     // const timestamp = response.NEW; // Access the timestamp (or NEW field)
     

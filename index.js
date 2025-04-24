@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 // File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 // Temp_File paths for local storage
-// const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'reversed.tmp.txt');
+const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
@@ -151,7 +151,25 @@ async function extractData() {
       'x-api-key': LOG_DATA_EXTRACTION_KEY
     }});
   
-  console.log("Data: ", data);
+    // only for testing accessing
+  console.log("Data: ", data.data);
+
+  // Accessing each data field:
+  const pressure = data.Pressure; // Access Pressure (e.g., 1200)
+  // const safetyFlags = response['Safety Flags']; // Access Safety Flags array
+  // const temperatures = response.Temperatures; // Access Temperatures object
+  // const timestamp = response.NEW; // Access the timestamp (or NEW field)
+  
+
+  // For example, to access the first temperature reading:
+  // const temperatureSensor1 = temperatures["1"]; // "18.94"
+
+  // You can now use these variables as needed in your front end.
+  console.log('Pressure:', pressure);
+  // console.log('Safety Flags:', safetyFlags);
+  // console.log('Temperatures:', temperatures);
+  // console.log('Timestamp:', timestamp);
+  // console.log('Temperature from sensor 1:', temperatureSensor1);
   return data;
 }
 
@@ -214,7 +232,7 @@ async function fetchAndUpdateFile() {
     //   fs.writeFileSync(REVERSED_FILE_PATH, '', 'utf8');
     // }
 
-    // fs.writeFileSync(REVERSED_TEMP_FILE_PATH, '', 'utf8');
+    fs.writeFileSync(REVERSED_TEMP_FILE_PATH, 'hii ', 'utf8'); // only for debugging
 
     // release = await lockFile.lock(REVERSED_TEMP_FILE_PATH); // lock original path
 
@@ -305,6 +323,12 @@ app.get('/', async (req, res) => {
       reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server.`;
     }
 
+    if (!fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
+      reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server. \n no ${REVERSED_TEMP_FILE_PATH} on the server.`;
+    }else{
+      reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server.\n there is ${REVERSED_TEMP_FILE_PATH}`;
+    }
+
     const contentLines = reversedContents.split('\n');
     const previewContent = contentLines.slice(0, 20).join('\n');
     const fileModified = lastModifiedTime 
@@ -315,7 +339,7 @@ app.get('/', async (req, res) => {
     console.log("Data: ", data) // throwing an error on render.
 
     // Accessing each data field:
-    // const pressure = response.Pressure; // Access Pressure (e.g., 1200)
+    const pressure = data.Pressure; // Access Pressure (e.g., 1200)
     // const safetyFlags = response['Safety Flags']; // Access Safety Flags array
     // const temperatures = response.Temperatures; // Access Temperatures object
     // const timestamp = response.NEW; // Access the timestamp (or NEW field)
@@ -325,7 +349,7 @@ app.get('/', async (req, res) => {
     // const temperatureSensor1 = temperatures["1"]; // "18.94"
 
     // You can now use these variables as needed in your front end.
-    // console.log('Pressure:', pressure);
+    console.log('Pressure:', pressure);
     // console.log('Safety Flags:', safetyFlags);
     // console.log('Temperatures:', temperatures);
     // console.log('Timestamp:', timestamp);

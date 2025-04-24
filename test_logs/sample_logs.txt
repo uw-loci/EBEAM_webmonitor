@@ -1,6 +1,6 @@
-[12:03:35] - DEBUG: GUI updated with pressure: 1.20E+3 mbar"
+[12:46:35] - DEBUG: GUI updated with pressure: 1.20E+3 mbar"
 asdf
-[12:03:35] - DEBUG: Safety Output Terminal Data Flags: [0, 0, 0, 0, 0, 0, 1]
-[12:03:40] - DEBUG: PMON temps: {1: '18.94', 2: '19.00', 3: '22.83', 4: '20.38', 5: '21.88', 6: '19.31'}
+[12:46:35] - DEBUG: Safety Output Terminal Data Flags: [0, 0, 0, 0, 0, 0, 1]
+[12:46:40] - DEBUG: PMON temps: {1: '18.94', 2: '19.00', 3: '22.83', 4: '20.38', 5: '21.88', 6: '19.31'}
 
 sdf

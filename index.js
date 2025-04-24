@@ -158,7 +158,7 @@ async function extractData() {
 
     // Accessing each data field:
     const pressure = data.data.pressure; // Access Pressure (e.g., 1200)
-    const safetyFlags = data.data.safetyFlags; // Access Safety Flags array
+    const safetyFlags = data.data.safetyFlags[0]; // Access Safety Flags array
     const temperatures = data.data.temperatures; // Access Temperatures object
     // const timestamp = response.NEW; // Access the timestamp (or NEW field)
     

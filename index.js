@@ -306,10 +306,8 @@ app.get('/', async (req, res) => {
       : "N/A";
     const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
 
-    // console.log("Data: ", data.data)
+    // console.log("Data: ", data.data) // throwing an error on render.
 
-
-    
     // Accessing each data field:
     // const pressure = response.Pressure; // Access Pressure (e.g., 1200)
     // const safetyFlags = response['Safety Flags']; // Access Safety Flags array

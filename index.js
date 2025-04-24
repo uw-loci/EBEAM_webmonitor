@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 // File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 // Temp_File paths for local storage
-// const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'reversed.tmp.txt');
+const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'reversed.tmp.txt');
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
@@ -210,13 +210,11 @@ async function fetchAndUpdateFile() {
     lines.reverse();
 
     // Write to file first
-    if (!fs.existsSync(REVERSED_FILE_PATH)) {
-      fs.writeFileSync(REVERSED_FILE_PATH, '', 'utf8');
-    }  
+    fs.writeFileSync(REVERSED_TEMP_FILE_PATH, '', 'utf8');
 
-    release = await lockFile.lock(REVERSED_FILE_PATH); // lock original path
+    release = await lockFile.lock(REVERSED_TEMP_FILE_PATH); // lock original path
 
-    const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
+    const writeStream = fs.createWriteStream(REVERSED_TEMP_FILE_PATH, { flags: 'w' });
     let hasError = false;
 
     await new Promise((resolve, reject) => {
@@ -240,7 +238,7 @@ async function fetchAndUpdateFile() {
 
       writeStream.on('finish', async () => {
         try {
-          // fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
+          fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
           console.log('Reversed log updated successfully.');
           lastModifiedTime = mostRecentFile.modifiedTime;
           logFileName = mostRecentFile.name;
@@ -291,10 +289,10 @@ setInterval(fetchAndUpdateFile, 60000); // Check every minute
  */
 app.get('/', async (req, res) => {
   try {
-    // if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
-    //   // Temp write is in progress — delay response briefly
-    //   await new Promise((r) => setTimeout(r, 500));
-    // }
+    if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
+      // Temp write is in progress — delay response briefly
+      await new Promise((r) => setTimeout(r, 500));
+    }
 
     let reversedContents = "No data available.";
     if (fs.existsSync(REVERSED_FILE_PATH)) {
@@ -932,9 +930,9 @@ app.get('/', async (req, res) => {
  */
 app.get('/raw', async (req, res) => {
   try {
-    // if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
-    //   await new Promise((r) => setTimeout(r, 500));
-    // }
+    if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
 
     if (fs.existsSync(REVERSED_FILE_PATH)) {
       const content = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');

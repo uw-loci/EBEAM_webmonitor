@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 3000;
 // File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 // Temp_File paths for local storage
-const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'reversed.tmp.txt');
+// const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'reversed.tmp.txt');
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
@@ -148,17 +148,17 @@ async function fetchAndUpdateFile() {
     // response = await axios.get('http://localhost:3001/get-log-data');
     // console.log('Map from API:', response.data);
 
-    // response = await axios.get('http://localhost:3000/log-data-extraction/data', {
-    //   headers: {
-    //     'x-api-key': LOG_DATA_EXTRACTION_SECRET_KEY
-    //   }});
+    response = await axios.get('http://localhost:3000/log-data-extraction/data', {
+      headers: {
+        'x-api-key': LOG_DATA_EXTRACTION_KEY
+      }});
 
     // problem with the key
 
     // Accessing each data field:
-    // const pressure = response.Pressure; // Access Pressure (e.g., 1200)
-    // console.log("hello i am running");
-    // console.log('Pressure:', pressure);
+    const pressure = response.Pressure; // Access Pressure (e.g., 1200)
+    console.log("hello i am running");
+    console.log('Pressure:', response.data);
 
     // First check if the experiment is active
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { 
@@ -191,7 +191,7 @@ async function fetchAndUpdateFile() {
     // Write to temporary file first
     release = await lockFile.lock(REVERSED_FILE_PATH); // lock original path
 
-    const writeStream = fs.createWriteStream(REVERSED_TEMP_FILE_PATH, { flags: 'w' });
+    const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
     let hasError = false;
 
     await new Promise((resolve, reject) => {
@@ -215,7 +215,7 @@ async function fetchAndUpdateFile() {
 
       writeStream.on('finish', async () => {
         try {
-          fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
+          // fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
           console.log('Reversed log updated successfully.');
           lastModifiedTime = mostRecentFile.modifiedTime;
           logFileName = mostRecentFile.name;  
@@ -229,7 +229,7 @@ async function fetchAndUpdateFile() {
 
           // response = await axios.get('http://localhost:3000/log-data-extraction/data', {
           //   headers: {
-          //     'x-api-key': LOG_DATA_EXTRACTION_SECRET_KEY
+          //     'x-api-key': LOG_DATA_EXTRACTION_KEY
           //   }});
 
           // // extected repsonse var form the end point once fixed
@@ -301,10 +301,10 @@ setInterval(fetchAndUpdateFile, 60000); // Check every minute
  */
 app.get('/', async (req, res) => {
   try {
-    if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
-      // Temp write is in progress — delay response briefly
-      await new Promise((r) => setTimeout(r, 500));
-    }
+    // if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
+    //   // Temp write is in progress — delay response briefly
+    //   await new Promise((r) => setTimeout(r, 500));
+    // }
 
     let reversedContents = "No data available.";
     if (fs.existsSync(REVERSED_FILE_PATH)) {
@@ -921,9 +921,9 @@ app.get('/', async (req, res) => {
  */
 app.get('/raw', async (req, res) => {
   try {
-    if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
-      await new Promise((r) => setTimeout(r, 500));
-    }
+    // if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
+    //   await new Promise((r) => setTimeout(r, 500));
+    // }
 
     if (fs.existsSync(REVERSED_FILE_PATH)) {
       const content = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');

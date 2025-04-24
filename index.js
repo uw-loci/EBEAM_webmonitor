@@ -355,6 +355,10 @@ app.get('/', async (req, res) => {
     // console.log('Timestamp:', timestamp);
     // console.log('Temperature from sensor 1:', temperatureSensor1);
 
+    // temp var 
+    const temp = JSON.stringify(data.data);
+
+
     //  keep your HTML generation as-is below this
     res.send(`
       <!DOCTYPE html>
@@ -903,7 +907,8 @@ app.get('/', async (req, res) => {
                   </p>
                 </div>
                 <div id="fullContent" class="content-section">
-                  <pre>${reversedContents}</pre>
+                <!-- change the next line with reversedContents -->
+                  <pre>${temp}</pre>
                   <p class="text-center text-info mt-2">
                     Showing full log. Click the button above to see the preview.
                   </p>

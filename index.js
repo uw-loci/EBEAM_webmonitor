@@ -153,9 +153,10 @@ async function extractData() {
   
     // only for testing accessing
   console.log("Data: ", data.data);
+  // console.log("Data: ", data.data);
 
   // Accessing each data field:
-  const pressure = data.Pressure; // Access Pressure (e.g., 1200)
+  const pressure = data.data.pressure; // Access Pressure (e.g., 1200)
   // const safetyFlags = response['Safety Flags']; // Access Safety Flags array
   // const temperatures = response.Temperatures; // Access Temperatures object
   // const timestamp = response.NEW; // Access the timestamp (or NEW field)
@@ -339,7 +340,7 @@ app.get('/', async (req, res) => {
     console.log("Data: ", data) // throwing an error on render.
 
     // Accessing each data field:
-    const pressure = data.Pressure; // Access Pressure (e.g., 1200)
+    const pressure = data.pressure; // Access Pressure (e.g., 1200)
     // const safetyFlags = response['Safety Flags']; // Access Safety Flags array
     // const temperatures = response.Temperatures; // Access Temperatures object
     // const timestamp = response.NEW; // Access the timestamp (or NEW field)

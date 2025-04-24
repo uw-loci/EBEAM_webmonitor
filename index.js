@@ -297,7 +297,6 @@ app.get('/', async (req, res) => {
       reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
     }else{
       reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server.`;
-
     }
 
     const contentLines = reversedContents.split('\n');
@@ -307,7 +306,10 @@ app.get('/', async (req, res) => {
       : "N/A";
     const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
 
-    console.log("Data: ", data.data)
+    // console.log("Data: ", data.data)
+
+
+    
     // Accessing each data field:
     // const pressure = response.Pressure; // Access Pressure (e.g., 1200)
     // const safetyFlags = response['Safety Flags']; // Access Safety Flags array

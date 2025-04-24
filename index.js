@@ -323,12 +323,11 @@ app.get('/', async (req, res) => {
     // }
 
     let reversedContents = "No data available.";
-    reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
-    // if (fs.existsSync(REVERSED_FILE_PATH)) {
-    //   reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
-    // }else{
-    //   reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server.`;
-    // }
+    if (fs.existsSync(REVERSED_FILE_PATH)) {
+      reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
+    }else{
+      reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server.`;
+    }
 
     const contentLines = reversedContents.split('\n');
     const previewContent = contentLines.slice(0, 20).join('\n');

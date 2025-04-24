@@ -210,6 +210,10 @@ async function fetchAndUpdateFile() {
     lines.reverse();
 
     // Write to file first
+    // if (!fs.existsSync(REVERSED_FILE_PATH)) {
+    //   fs.writeFileSync(REVERSED_FILE_PATH, '', 'utf8');
+    // }
+
     fs.writeFileSync(REVERSED_TEMP_FILE_PATH, '', 'utf8');
 
     release = await lockFile.lock(REVERSED_TEMP_FILE_PATH); // lock original path

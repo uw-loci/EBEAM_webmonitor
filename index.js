@@ -146,35 +146,35 @@ async function fetchFileContents(fileId) {
  */
 async function extractData() {
 
-  // data = await axios.get('http://localhost:3000/log-data-extraction/data', {
-  //   headers: {
-  //     'x-api-key': LOG_DATA_EXTRACTION_KEY
-  //   }});
-  // try {
+  data = await axios.get('http://localhost:3000/log-data-extraction/data', {
+    headers: {
+      'x-api-key': LOG_DATA_EXTRACTION_KEY
+    }});
+  try {
 
-  //   // only for testing accessing
-  //   console.log("Data: ", data.data);
-  //   // console.log("Data: ", data.data);
+    // only for testing accessing
+    console.log("Data: ", data.data);
+    // console.log("Data: ", data.data);
 
-  //   // Accessing each data field:
-  //   const pressure = data.data.pressure; // Access Pressure (e.g., 1200)
-  //   const safetyFlags = data.data.safetyFlags[0]; // Access Safety Flags array
-  //   const temperatures = data.data.temperatures; // Access Temperatures object
-  //   // const timestamp = response.NEW; // Access the timestamp (or NEW field)
+    // Accessing each data field:
+    const pressure = data.data.pressure; // Access Pressure (e.g., 1200)
+    const safetyFlags = data.data.safetyFlags[0]; // Access Safety Flags array
+    const temperatures = data.data.temperatures; // Access Temperatures object
+    // const timestamp = response.NEW; // Access the timestamp (or NEW field)
     
 
-  //   // For example, to access the first temperature reading:
-  //   // const temperatureSensor1 = temperatures["1"]; // "18.94"
+    // For example, to access the first temperature reading:
+    // const temperatureSensor1 = temperatures["1"]; // "18.94"
 
-  //   // You can now use these variables as needed in your front end.
-  //   console.log('Pressure:', pressure);
-  //   console.log('Safety Flags:', safetyFlags);
-  //   console.log('Temperatures:', temperatures['1']);
-  //   // console.log('Timestamp:', timestamp);
-  //   // console.log('Temperature from sensor 1:', temperatureSensor1);
-  // } catch (e) {
-  //   console.log("Error: ", e);
-  // }
+    // You can now use these variables as needed in your front end.
+    console.log('Pressure:', pressure);
+    console.log('Safety Flags:', safetyFlags);
+    console.log('Temperatures:', temperatures['1']);
+    // console.log('Timestamp:', timestamp);
+    // console.log('Temperature from sensor 1:', temperatureSensor1);
+  } catch (e) {
+    console.log("Error: ", e);
+  }
 
   return data;
 }

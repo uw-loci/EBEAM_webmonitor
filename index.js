@@ -9,8 +9,6 @@ const lockFile = require('proper-lockfile');
 const { PassThrough } = require('stream');
 const logDataExtractionApiRoutes = require('./log_data_extraction');
 
-
-
 // Load environment variables
 require('dotenv').config();
 
@@ -34,6 +32,8 @@ app.use('/log-data-extraction', logDataExtractionApiRoutes);
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });
 
+// variable to store the data extracted
+let data = null;
 
 /**
  * Fetch the most recent file from Google Drive.
@@ -124,6 +124,37 @@ async function fetchFileContents(fileId) {
 }
 
 
+/**
+ * Get the extracted lof data from log file from API end point
+ * 
+ * @returns the data read form the log file in the format
+ * 
+ * 
+ * extected repsonse var form the end point once fixed
+  data = {
+      "Pressure": 1200,
+      "Safety Flags": [0, 0, 0, 0, 0, 0, 1],
+      "Temperatures": {
+          "1": "18.94",
+          "2": "19.00",
+          "3": "22.83",
+          "4": "20.38",
+          "5": "21.88",
+          "6": "19.31"
+      }
+    }
+ */
+async function extractData() {
+
+  data = await axios.get('http://localhost:3000/log-data-extraction/data', {
+    headers: {
+      'x-api-key': LOG_DATA_EXTRACTION_KEY
+    }});
+  
+  console.log("Data: ", data.data);
+  return data;
+}
+
 
 /**
  * Fetches and updates the log file if there's a new version
@@ -141,24 +172,6 @@ async function fetchAndUpdateFile() {
 
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
     const currentTime = new Date().getTime();
-    
-    // trying it out.
-    // end point that can be accessed app.use('/log-data-extraction', logDataExtractionApiRoutes);
-
-    // response = await axios.get('http://localhost:3001/get-log-data');
-    // console.log('Map from API:', response.data);
-
-    response = await axios.get('http://localhost:3000/log-data-extraction/data', {
-      headers: {
-        'x-api-key': LOG_DATA_EXTRACTION_KEY
-      }});
-
-    // problem with the key
-
-    // Accessing each data field:
-    const pressure = response.Pressure; // Access Pressure (e.g., 1200)
-    console.log("hello i am running");
-    console.log('Pressure:', response.data);
 
     // First check if the experiment is active
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { 
@@ -171,6 +184,7 @@ async function fetchAndUpdateFile() {
         // if REVERSED_FILE_PATH.file exists then return, no need to read.
         console.log("Experiment not running - no updates in 15 minutes");
         shouldReload = false;
+        data = extractData();
         return false;
       }
     }
@@ -180,6 +194,13 @@ async function fetchAndUpdateFile() {
       console.log("No new updates. Using cached file.");
       experimentRunning = true;
       shouldReload = false;
+      if (fs.existsSync(REVERSED_FILE_PATH)) {
+        data = extractData();
+      } else {
+        data = null;
+        console.log("File None existant -- Could not extract the log data");
+      }
+
       return false;
     }
     
@@ -218,35 +239,16 @@ async function fetchAndUpdateFile() {
           // fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
           console.log('Reversed log updated successfully.');
           lastModifiedTime = mostRecentFile.modifiedTime;
-          logFileName = mostRecentFile.name;  
+          logFileName = mostRecentFile.name;
           experimentRunning = true;
           shouldReload = true;
-          // TODO: complete and uncomment the extraction API here, once Prat is done fixing it. 
-          // end point that can be accessed app.use('/log-data-extraction', logDataExtractionApiRoutes);
 
-          // response = await axios.get('http://localhost:3001/get-log-data');
-          // console.log('Map from API:', response.data);
-
-          // response = await axios.get('http://localhost:3000/log-data-extraction/data', {
-          //   headers: {
-          //     'x-api-key': LOG_DATA_EXTRACTION_KEY
-          //   }});
-
-          // // extected repsonse var form the end point once fixed
-          // response = {
-          //     "Pressure": 1200,
-          //     "Safety Flags": [0, 0, 0, 0, 0, 0, 1],
-          //     "Temperatures": {
-          //        "1": "18.94",
-          //        "2": "19.00",
-          //        "3": "22.83",
-          //        "4": "20.38",
-          //        "5": "21.88",
-          //        "6": "19.31"
-          //     },
-          //     "NEW": "12:40"
-          //   }
-
+          if (fs.existsSync(REVERSED_FILE_PATH)) {
+            data = extractData();
+          } else {
+            data = null;
+            console.log("File None existant -- Could not extract the log data");
+          }
 
           // Accessing each data field:
           // const pressure = response.Pressure; // Access Pressure (e.g., 1200)
@@ -283,6 +285,8 @@ async function fetchAndUpdateFile() {
   } catch (err) {
     console.error(`Error processing file: ${err.message}`);
     experimentRunning = false;
+    data = null
+    console.log("Could not extract the log data");
     return false;
   } finally {
     if (release) {

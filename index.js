@@ -151,7 +151,7 @@ async function extractData() {
       'x-api-key': LOG_DATA_EXTRACTION_KEY
     }});
   
-  console.log("Data: ", data.data);
+  console.log("Data: ", data);
   return data;
 }
 
@@ -312,7 +312,7 @@ app.get('/', async (req, res) => {
       : "N/A";
     const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
 
-    // console.log("Data: ", data.data) // throwing an error on render.
+    console.log("Data: ", data) // throwing an error on render.
 
     // Accessing each data field:
     // const pressure = response.Pressure; // Access Pressure (e.g., 1200)

@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 // File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 // Temp_File paths for local storage
-const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
+// const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
@@ -150,23 +150,23 @@ async function extractData() {
     headers: {
       'x-api-key': LOG_DATA_EXTRACTION_KEY
     }});
-  
-    // only for testing accessing
-  console.log("Data: ", data.data);
-  // console.log("Data: ", data.data);
-
-  // Accessing each data field:
-  const pressure = data.data.pressure; // Access Pressure (e.g., 1200)
-  const safetyFlags = data.data.safetyFlags; // Access Safety Flags array
-  const temperatures = data.data.temperatures; // Access Temperatures object
-  // const timestamp = response.NEW; // Access the timestamp (or NEW field)
-  
-
-  // For example, to access the first temperature reading:
-  // const temperatureSensor1 = temperatures["1"]; // "18.94"
-
-  // You can now use these variables as needed in your front end.
   try {
+
+    // only for testing accessing
+    console.log("Data: ", data.data);
+    // console.log("Data: ", data.data);
+
+    // Accessing each data field:
+    const pressure = data.data.pressure; // Access Pressure (e.g., 1200)
+    const safetyFlags = data.data.safetyFlags; // Access Safety Flags array
+    const temperatures = data.data.temperatures; // Access Temperatures object
+    // const timestamp = response.NEW; // Access the timestamp (or NEW field)
+    
+
+    // For example, to access the first temperature reading:
+    // const temperatureSensor1 = temperatures["1"]; // "18.94"
+
+    // You can now use these variables as needed in your front end.
     console.log('Pressure:', pressure);
     console.log('Safety Flags:', safetyFlags);
     console.log('Temperatures:', temperatures['1']);
@@ -238,7 +238,7 @@ async function fetchAndUpdateFile() {
     //   fs.writeFileSync(REVERSED_FILE_PATH, '', 'utf8');
     // }
 
-    fs.writeFileSync(REVERSED_TEMP_FILE_PATH, 'hii ', 'utf8'); // only for debugging
+    // fs.writeFileSync(REVERSED_TEMP_FILE_PATH, 'hii ', 'utf8'); // only for debugging
 
     // release = await lockFile.lock(REVERSED_TEMP_FILE_PATH); // lock original path
 
@@ -323,18 +323,11 @@ app.get('/', async (req, res) => {
     // }
 
     let reversedContents = "No data available.";
-    // reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
-    if (fs.existsSync(REVERSED_FILE_PATH)) {
-      reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
-    }else{
-      reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server.`;
-    }
-
-    // if (!fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
-    //   reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server. \n no ${REVERSED_TEMP_FILE_PATH} on the server.`;
+    reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
+    // if (fs.existsSync(REVERSED_FILE_PATH)) {
+    //   reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
     // }else{
-    //   reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server.\n there is ${REVERSED_TEMP_FILE_PATH}`;
-    //   reversedContents = await fs.promises.readFile(REVERSED_TEMP_FILE_PATH, 'utf8');
+    //   reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server.`;
     // }
 
     const contentLines = reversedContents.split('\n');

@@ -147,7 +147,7 @@ async function fetchFileContents(fileId) {
 async function extractData() {
   try {
 
-    data = await axios.get('https://ebeam-webmonitor.onrender.com:3000/log-data-extraction/data', {
+    data = await axios.get('https://ebeam-webmonitor.onrender.com/log-data-extraction/data', {
       headers: {
         'x-api-key': LOG_DATA_EXTRACTION_KEY
       }});

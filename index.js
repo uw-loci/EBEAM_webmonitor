@@ -145,12 +145,12 @@ async function fetchFileContents(fileId) {
     }
  */
 async function extractData() {
-
-  data = await axios.get('http://localhost:3000/log-data-extraction/data', {
-    headers: {
-      'x-api-key': LOG_DATA_EXTRACTION_KEY
-    }});
   try {
+
+    data = await axios.get('https://ebeam-webmonitor.onrender.com/log-data-extraction/data', {
+      headers: {
+        'x-api-key': LOG_DATA_EXTRACTION_KEY
+      }});
 
     // only for testing accessing
     console.log("Data: ", data.data);

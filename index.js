@@ -209,7 +209,11 @@ async function fetchAndUpdateFile() {
     let lines = await fetchFileContents(mostRecentFile.id);
     lines.reverse();
 
-    // Write to temporary file first
+    // Write to file first
+    if (!fs.existsSync(REVERSED_FILE_PATH)) {
+      fs.writeFileSync(REVERSED_FILE_PATH, '', 'utf8');
+    }  
+
     release = await lockFile.lock(REVERSED_FILE_PATH); // lock original path
 
     const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });

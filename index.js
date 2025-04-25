@@ -14,7 +14,7 @@ require('dotenv').config();
 
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
-const LOG_DATA_EXTRACTION_KEY = 'my-secret-key';
+const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
 const PORT = process.env.PORT || 3000;
 
 // File paths for local storage

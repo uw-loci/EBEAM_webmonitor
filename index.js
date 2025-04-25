@@ -358,7 +358,6 @@ app.get('/', async (req, res) => {
     // temp var 
     const temp = JSON.stringify(data.data);
 
-
     //  keep your HTML generation as-is below this
     res.send(`
       <!DOCTYPE html>

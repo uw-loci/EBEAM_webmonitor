@@ -900,14 +900,14 @@ app.get('/', async (req, res) => {
               <div class="glass-container p-4">
                 <button id="toggleButton" class="btn-toggle">Show Full Log</button>
                 <div id="previewContent" class="content-section active">
-                  <pre>${previewContent}</pre>
+                <!-- change the next line with previewContent -->
+                  <pre>${temp}</pre>
                   <p class="text-center text-info mt-2">
                     Showing first 20 lines. Click the button above to see the full log.
                   </p>
                 </div>
                 <div id="fullContent" class="content-section">
-                <!-- change the next line with reversedContents -->
-                  <pre>${temp}</pre>
+                  <pre>${reversedContents}</pre>
                   <p class="text-center text-info mt-2">
                     Showing full log. Click the button above to see the preview.
                   </p>

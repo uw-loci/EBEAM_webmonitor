@@ -98,6 +98,12 @@ function processLogLines(logLines) {
                 }
                 break;
         }
+
+        // if currentData object has been filled with valid values stop processing log lines
+        if (Object.values(currentData).every(value => value !== null)) {
+            console.log(`data object has been filled`)
+            break
+        }
     }
 }
 

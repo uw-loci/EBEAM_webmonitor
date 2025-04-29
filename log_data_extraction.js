@@ -5,7 +5,8 @@ require('dotenv').config();
 
 const router = express.Router();
 
-const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
+// const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
+const LOG_DATA_EXTRACTION_KEY = 'my-secret-key';
 
 // Precompile regex patterns for better performance
 const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
@@ -74,6 +75,11 @@ function processLogLines(logLines) {
                 if (pressureMatch) {
                     currentData.pressure = parseFloat(pressureMatch[1]);
                 }
+                // if currentData object has been filled with valid values stop processing log lines
+                if (Object.values(currentData).every(value => value !== null)) {
+                    console.log(`data object has been filled`)
+                    return;
+                }
                 break;
                 
             case "DEBUG: Safety Output Terminal Data Flags":
@@ -82,6 +88,11 @@ function processLogLines(logLines) {
                     try {
                         currentData.safetyFlags = JSON.parse(flagsMatch[1]);
                     } catch (error) {}
+                }
+                // if currentData object has been filled with valid values stop processing log lines
+                if (Object.values(currentData).every(value => value !== null)) {
+                    console.log(`data object has been filled`)
+                    return;
                 }
                 break;
                 
@@ -96,13 +107,12 @@ function processLogLines(logLines) {
                         currentData.temperatures = JSON.parse(tempsStr);
                     } catch (error) {}
                 }
+                // if currentData object has been filled with valid values stop processing log lines
+                if (Object.values(currentData).every(value => value !== null)) {
+                    console.log(`data object has been filled`)
+                    return;
+                }
                 break;
-        }
-
-        // if currentData object has been filled with valid values stop processing log lines
-        if (Object.values(currentData).every(value => value !== null)) {
-            console.log(`data object has been filled`)
-            break;
         }
     }
 }
@@ -135,7 +145,9 @@ router.get('/data', (req, res) => {
     // Set the new interval time (in seconds)
     currentTimeInSeconds = getCurrentTimeInSeconds();
     
-    const logFilePath = path.join(__dirname, 'reversed.txt'); // change this for sample log reading
+    // 'reversed.txt'
+    // 'test_logs', 'sample_logs.txt'
+    const logFilePath = path.join(__dirname, 'test_logs', 'sample_logs.txt'); // change this for sample log reading
     fs.readFile(logFilePath, 'utf-8', (err, data) => {
         if (err) {
             console.error('Failed to read log file:', err);
@@ -146,6 +158,7 @@ router.get('/data', (req, res) => {
         console.log(logLines)
         processLogLines(logLines);
         // Send back the processed interval data
+        console.log(currentData)
         res.json(currentData);
 
         currentData = {

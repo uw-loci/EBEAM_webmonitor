@@ -1,8 +1,8 @@
 const axios = require('axios');
 require('dotenv').config();
 
-const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
-// const LOG_DATA_EXTRACTION_KEY = 'my-secret-key';
+// const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
+const LOG_DATA_EXTRACTION_KEY = 'my-secret-key';
 
 async function testLogDataExtraction() {
   try {

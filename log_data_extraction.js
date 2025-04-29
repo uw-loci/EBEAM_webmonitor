@@ -73,7 +73,7 @@ function processLogLines(logLines) {
             case "DEBUG: GUI updated with pressure":
                 if (currentData.pressure === null) {
                     const pressureMatch = logLine.match(PRESSURE_REGEX);
-                    if (pressureMatch) {
+                    if (pressureMatch && pressureMatch[1]) {
                         currentData.pressure = parseFloat(pressureMatch[1]);
                         // if currentData object has been filled with valid values stop processing log lines
                         if (Object.values(currentData).every(value => value !== null)) {
@@ -87,7 +87,7 @@ function processLogLines(logLines) {
             case "DEBUG: Safety Output Terminal Data Flags":
                 if (currentData.safetyFlags === null) {
                     const flagsMatch = logLine.match(FLAGS_REGEX);
-                    if (flagsMatch) {
+                    if (flagsMatch && flagsMatch[1]) {
                         try {
                             currentData.safetyFlags = JSON.parse(flagsMatch[1]);
                             // if currentData object has been filled with valid values stop processing log lines
@@ -103,7 +103,7 @@ function processLogLines(logLines) {
             case "DEBUG: PMON temps":
                 if (currentData.temperatures === null) {
                     const tempsMatch = logLine.match(TEMPS_REGEX);
-                    if (tempsMatch) {
+                    if (tempsMatch && tempsMatch[1]) {
                         try {
                             let tempsStr = tempsMatch[1]
                                 .replace(/'/g, '"')
@@ -118,6 +118,9 @@ function processLogLines(logLines) {
                         } catch (error) {}
                     }
                 }
+                break;
+
+            default:
                 break;
         }
     }

@@ -5,7 +5,7 @@ require('dotenv').config();
 
 const router = express.Router();
 
-// const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
+const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
 // const LOG_DATA_EXTRACTION_KEY = 'my-secret-key';
 
 // Precompile regex patterns for better performance

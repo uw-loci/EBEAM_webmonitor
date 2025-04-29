@@ -148,11 +148,11 @@ router.get('/data', (req, res) => {
         // Send back the processed interval data
         res.json(currentData);
 
-        currentData = {
-            pressure: null,
-            safetyFlags: null,
-            temperatures: null
-        };
+        // currentData = {
+        //     pressure: null,
+        //     safetyFlags: null,
+        //     temperatures: null
+        // };
     });
 });
 

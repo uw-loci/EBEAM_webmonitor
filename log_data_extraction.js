@@ -51,16 +51,20 @@ function processLogLines(logLines) {
         const timestampInSeconds = timeToSeconds(timestamp);
         
         // Check if log is within 60 seconds of current interval time
-        const difference = Math.abs(currentTimeInSeconds - timestampInSeconds);
-        
-        // Handle the case where the difference spans midnight, allowing for a 24-hour wraparound
-        const adjustedDifference = difference > 43200 ? 86400 - difference : difference;
-        
+        let difference = currentTimeInSeconds - timestampInSeconds;
+
+        // Handle midnight wraparound (only need to check for "yesterday")
+        if (difference < -43200) { // Log is from "yesterday" relative to currentTime
+            difference += 86400;
+        }
+
+        const adjustedDifference = Math.abs(difference);
+
         // Only process if within 60 seconds
-        // if (adjustedDifference > 60) {
-        //     console.log(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
-        //     break;
-        // }
+        if (adjustedDifference > 60) {
+            console.log(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
+            break;
+        }
         
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);

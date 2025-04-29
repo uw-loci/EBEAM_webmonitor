@@ -42,28 +42,28 @@ function getCurrentTimeInSeconds() {
 function processLogLines(logLines) {
     // Process each log line
     for (const logLine of logLines) {
-        // // Extract timestamp
-        // const timestampMatch = logLine.match(TIMESTAMP_REGEX);
-        // if (!timestampMatch) continue;
+        // Extract timestamp
+        const timestampMatch = logLine.match(TIMESTAMP_REGEX);
+        if (!timestampMatch) continue;
         
-        // const timestamp = timestampMatch[1];
-        // const timestampInSeconds = timeToSeconds(timestamp);
+        const timestamp = timestampMatch[1];
+        const timestampInSeconds = timeToSeconds(timestamp);
         
-        // // Check if log is within 60 seconds of current interval time
-        // const difference = Math.abs(currentTimeInSeconds - timestampInSeconds);
+        // Check if log is within 60 seconds of current interval time
+        const difference = Math.abs(currentTimeInSeconds - timestampInSeconds);
         
-        // // Handle the case where the difference spans midnight, allowing for a 24-hour wraparound
-        // const adjustedDifference = difference > 43200 ? 86400 - difference : difference;
+        // Handle the case where the difference spans midnight, allowing for a 24-hour wraparound
+        const adjustedDifference = difference > 43200 ? 86400 - difference : difference;
         
-        // // Only process if within 60 seconds
-        // if (adjustedDifference > 60) {
-        //     console.log(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
-        //     break;
-        // }
+        // Only process if within 60 seconds
+        if (adjustedDifference > 60) {
+            console.log(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
+            break;
+        }
         
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);
-        if (!logTypeMatch) return;
+        if (!logTypeMatch) continue;
         
         const logType = logTypeMatch[1];
         
@@ -148,11 +148,11 @@ router.get('/data', (req, res) => {
         // Send back the processed interval data
         res.json(currentData);
 
-        // currentData = {
-        //     pressure: null,
-        //     safetyFlags: null,
-        //     temperatures: null
-        // };
+        currentData = {
+            pressure: null,
+            safetyFlags: null,
+            temperatures: null
+        };
     });
 });
 

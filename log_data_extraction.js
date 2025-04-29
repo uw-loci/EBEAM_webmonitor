@@ -6,7 +6,7 @@ require('dotenv').config();
 const router = express.Router();
 
 // const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
-const LOG_DATA_EXTRACTION_KEY = 'my-secret-key';
+// const LOG_DATA_EXTRACTION_KEY = 'my-secret-key';
 
 // Precompile regex patterns for better performance
 const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
@@ -71,46 +71,52 @@ function processLogLines(logLines) {
         // Process based on log type
         switch(logType) {
             case "DEBUG: GUI updated with pressure":
-                const pressureMatch = logLine.match(PRESSURE_REGEX);
-                if (pressureMatch) {
-                    currentData.pressure = parseFloat(pressureMatch[1]);
-                }
-                // if currentData object has been filled with valid values stop processing log lines
-                if (Object.values(currentData).every(value => value !== null)) {
-                    console.log(`data object has been filled`)
-                    return;
+                if (currentData.pressure === null) {
+                    const pressureMatch = logLine.match(PRESSURE_REGEX);
+                    if (pressureMatch) {
+                        currentData.pressure = parseFloat(pressureMatch[1]);
+                        // if currentData object has been filled with valid values stop processing log lines
+                        if (Object.values(currentData).every(value => value !== null)) {
+                            console.log(`data object has been filled`)
+                            return;
+                        }
+                    }
                 }
                 break;
                 
             case "DEBUG: Safety Output Terminal Data Flags":
-                const flagsMatch = logLine.match(FLAGS_REGEX);
-                if (flagsMatch) {
-                    try {
-                        currentData.safetyFlags = JSON.parse(flagsMatch[1]);
-                    } catch (error) {}
-                }
-                // if currentData object has been filled with valid values stop processing log lines
-                if (Object.values(currentData).every(value => value !== null)) {
-                    console.log(`data object has been filled`)
-                    return;
+                if (currentData.safetyFlags === null) {
+                    const flagsMatch = logLine.match(FLAGS_REGEX);
+                    if (flagsMatch) {
+                        try {
+                            currentData.safetyFlags = JSON.parse(flagsMatch[1]);
+                            // if currentData object has been filled with valid values stop processing log lines
+                            if (Object.values(currentData).every(value => value !== null)) {
+                                console.log(`data object has been filled`)
+                                return;
+                            }
+                        } catch (error) {}
+                    }
                 }
                 break;
                 
             case "DEBUG: PMON temps":
-                const tempsMatch = logLine.match(TEMPS_REGEX);
-                if (tempsMatch) {
-                    try {
-                        let tempsStr = tempsMatch[1]
-                            .replace(/'/g, '"')
-                            .replace(/(\d+):/g, '"$1":');
-                        
-                        currentData.temperatures = JSON.parse(tempsStr);
-                    } catch (error) {}
-                }
-                // if currentData object has been filled with valid values stop processing log lines
-                if (Object.values(currentData).every(value => value !== null)) {
-                    console.log(`data object has been filled`)
-                    return;
+                if (currentData.temperatures === null) {
+                    const tempsMatch = logLine.match(TEMPS_REGEX);
+                    if (tempsMatch) {
+                        try {
+                            let tempsStr = tempsMatch[1]
+                                .replace(/'/g, '"')
+                                .replace(/(\d+):/g, '"$1":');
+                            
+                            currentData.temperatures = JSON.parse(tempsStr);
+                            // if currentData object has been filled with valid values stop processing log lines
+                            if (Object.values(currentData).every(value => value !== null)) {
+                                console.log(`data object has been filled`)
+                                return;
+                            }
+                        } catch (error) {}
+                    }
                 }
                 break;
         }
@@ -147,7 +153,7 @@ router.get('/data', (req, res) => {
     
     // 'reversed.txt'
     // 'test_logs', 'sample_logs.txt'
-    const logFilePath = path.join(__dirname, 'test_logs', 'sample_logs.txt'); // change this for sample log reading
+    const logFilePath = path.join(__dirname, 'reversed.txt'); // change this for sample log reading
     fs.readFile(logFilePath, 'utf-8', (err, data) => {
         if (err) {
             console.error('Failed to read log file:', err);

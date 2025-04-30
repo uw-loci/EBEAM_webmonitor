@@ -901,6 +901,7 @@ app.get('/', async (req, res) => {
                 <button id="toggleButton" class="btn-toggle">Show Full Log</button>
                 <div id="previewContent" class="content-section active">
                 <!-- change the next line with previewContent -->
+                  <pre>change 3</pre>
                   <pre>${temp}</pre>
                   <p class="text-center text-info mt-2">
                     Showing first 20 lines. Click the button above to see the full log.

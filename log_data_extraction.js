@@ -87,7 +87,7 @@ function processLogLines(logLines) {
         // Only process if the difference is between 0 and 60 seconds (inclusive)
         if (difference < 0 || difference > 60) {
             console.log(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
-            currentData.safetyFlags.push(`Stopping log processing: timestamp ${timestamp} is out of interval.`)
+            currentData.safetyFlags.push(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
             return; // Use 'return' to exit the loop iteration
         }
         
@@ -95,8 +95,8 @@ function processLogLines(logLines) {
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);
         if (!logTypeMatch) {
-            currentData.safetyFlags.push(`no log type match`)
-            continue
+            currentData.safetyFlags.push(`no log type match`);
+            continue;
         }
         
         const logType = logTypeMatch[1];

@@ -18,7 +18,7 @@ const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
 // Store current interval data
 let currentData = {
   pressure: null,
-  safetyFlags: null,
+  safetyFlags: [],
   temperatures: null
 };
 
@@ -91,7 +91,6 @@ function processLogLines(logLines) {
             return; // Use 'return' to exit the loop iteration
         }
         
-        currentData.safetyFlags.push(`log type: ${logType}`)
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);
         if (!logTypeMatch) {

@@ -76,11 +76,10 @@ function processLogLines(logLines) {
 
 
 
-        currentData.pressure = currentTimeInSeconds;
-        currentData.safetyFlags = timestampInSeconds;
-        currentData.temperatures = difference;
-
-        return;
+        // currentData.pressure = currentTimeInSeconds;
+        // currentData.safetyFlags = timestampInSeconds;
+        // currentData.temperatures = difference;
+        
 
 
 

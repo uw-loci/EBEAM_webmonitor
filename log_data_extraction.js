@@ -18,7 +18,7 @@ const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
 // Store current interval data
 let currentData = {
   pressure: null,
-  safetyFlags: [],
+  safetyFlags: null,
   temperatures: null
 };
 
@@ -73,34 +73,17 @@ function processLogLines(logLines) {
             difference += 86400;
         }
 
-
-
-
-        // currentData.pressure = currentTimeInSeconds;
-        // currentData.safetyFlags = timestampInSeconds;
-        // currentData.temperatures = difference;
-        
-
-
-
-
         // Only process if the difference is between 0 and 60 seconds (inclusive)
-        // if (difference < 0 || difference > 60) {
-        //     console.log(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
-        //     currentData.safetyFlags.push(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
-        //     return; // Use 'return' to exit the loop iteration
-        // }
+        if (difference < 0 || difference > 60) {
+            console.log(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
+            return; // Use 'return' to exit the loop iteration
+        }
         
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);
-        if (!logTypeMatch) {
-            // currentData.safetyFlags.push(`no log type match`);
-            continue;
-        }
+        if (!logTypeMatch) continue;
         
         const logType = logTypeMatch[1];
-
-        //currentData.safetyFlags.push(`log type: ${logType}`)
         
         // Process based on log type
         switch(logType) {
@@ -118,21 +101,21 @@ function processLogLines(logLines) {
                 }
                 break;
                 
-            // case "DEBUG: Safety Output Terminal Data Flags":
-            //     if (currentData.safetyFlags === null) {
-            //         const flagsMatch = logLine.match(FLAGS_REGEX);
-            //         if (flagsMatch && flagsMatch[1]) {
-            //             try {
-            //                 currentData.safetyFlags = JSON.parse(flagsMatch[1]);
-            //                 // if currentData object has been filled with valid values stop processing log lines
-            //                 if (Object.values(currentData).every(value => value !== null)) {
-            //                     console.log(`data object has been filled`)
-            //                     return;
-            //                 }
-            //             } catch (error) {}
-            //         }
-            //     }
-            //     break;
+            case "DEBUG: Safety Output Terminal Data Flags":
+                if (currentData.safetyFlags === null) {
+                    const flagsMatch = logLine.match(FLAGS_REGEX);
+                    if (flagsMatch && flagsMatch[1]) {
+                        try {
+                            currentData.safetyFlags = JSON.parse(flagsMatch[1]);
+                            // if currentData object has been filled with valid values stop processing log lines
+                            if (Object.values(currentData).every(value => value !== null)) {
+                                console.log(`data object has been filled`)
+                                return;
+                            }
+                        } catch (error) {}
+                    }
+                }
+                break;
                 
             case "DEBUG: PMON temps":
                 if (currentData.temperatures === null) {
@@ -206,7 +189,7 @@ router.get('/data', (req, res) => {
 
         currentData = {
             pressure: null,
-            safetyFlags: [],
+            safetyFlags: null,
             temperatures: null
         };
     });

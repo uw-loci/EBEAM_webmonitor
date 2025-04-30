@@ -1,36 +1,36 @@
 
 OK
-[10:00:34] - DEBUG: Raw GETD response (attempt 1): 000600000
+[09:11:34] - DEBUG: Raw GETD response (attempt 1): 000600000
 
 OK
-[10:00:34] - DEBUG: Parsed GETD response: 0.06V, 0.00A, CV Mode
-[10:00:34] - DEBUG: Power supply 1 readings - Voltage: 0.06V, Current: 0.00A, Mode: CV Mode
-[10:00:34] - DEBUG: Sent command:GETD
-[10:00:34] - DEBUG: Flushing serial input buffer
-[10:00:34] - DEBUG: Sending command: GETD
-[10:00:34] - DEBUG: Response: 000800000
+[09:11:34] - DEBUG: Parsed GETD response: 0.06V, 0.00A, CV Mode
+[09:11:34] - DEBUG: Power supply 1 readings - Voltage: 0.06V, Current: 0.00A, Mode: CV Mode
+[09:11:34] - DEBUG: Sent command:GETD
+[09:11:34] - DEBUG: Flushing serial input buffer
+[09:11:34] - DEBUG: Sending command: GETD
+[09:11:34] - DEBUG: Response: 000800000
 
 OK
-[10:00:34] - DEBUG: Raw GETD response (attempt 1): 000800000
+[09:11:34] - DEBUG: Raw GETD response (attempt 1): 000800000
 
 OK
-[10:00:34] - DEBUG: Parsed GETD response: 0.08V, 0.00A, CV Mode
-[10:00:34] - DEBUG: Power supply 2 readings - Voltage: 0.08V, Current: 0.00A, Mode: CV Mode
+[09:11:34] - DEBUG: Parsed GETD response: 0.08V, 0.00A, CV Mode
+[09:11:34] - DEBUG: Power supply 2 readings - Voltage: 0.08V, Current: 0.00A, Mode: CV Mode
 
 OK
-[10:00:33] - DEBUG: Parsed GETD response: 0.06V, 0.00A, CV Mode
-[10:00:33] - DEBUG: Power supply 3 readings - Voltage: 0.06V, Current: 0.00A, Mode: CV Mode
-[10:00:33] - INFO: checking com ports
-[10:00:33] - DEBUG: PMON temps: {1: '18.56', 2: '18.19', 3: '20.68', 4: '19.52', 5: '21.20', 6: '19.25'}
-[10:00:33] - DEBUG: GUI updated with pressure: 1.21E+3 mbar
-[10:00:33] - INFO: Temperature from unit 3: 17.70 C
-[10:00:33] - INFO: Unit 3 Temperature: 17.7 C
-[10:00:34] - DEBUG: Sent command:GETD
-[10:00:34] - DEBUG: Flushing serial input buffer
-[10:00:34] - DEBUG: Sending command: GETD
-[10:00:34] - DEBUG: Response: 000600000
+[09:11:33] - DEBUG: Parsed GETD response: 0.06V, 0.00A, CV Mode
+[09:11:33] - DEBUG: Power supply 3 readings - Voltage: 0.06V, Current: 0.00A, Mode: CV Mode
+[09:11:33] - INFO: checking com ports
+[09:11:33] - DEBUG: PMON temps: {1: '18.56', 2: '18.19', 3: '20.68', 4: '19.52', 5: '21.20', 6: '19.25'}
+[09:11:33] - DEBUG: GUI updated with pressure: 1.21E+3 mbar
+[09:11:33] - INFO: Temperature from unit 3: 17.70 C
+[09:11:33] - INFO: Unit 3 Temperature: 17.7 C
+[09:11:34] - DEBUG: Sent command:GETD
+[09:11:34] - DEBUG: Flushing serial input buffer
+[09:11:34] - DEBUG: Sending command: GETD
+[09:11:34] - DEBUG: Response: 000600000
 
 
-[10:00:33] - DEBUG: PMON temps: {1: '18.36', 2: '18.19', 3: '20.68', 4: '19.52', 5: '21.20', 6: '19.25'}
+[09:11:33] - DEBUG: PMON temps: {1: '18.36', 2: '18.19', 3: '20.68', 4: '19.52', 5: '21.20', 6: '19.25'}
 
-[10:00:33] - DEBUG: GUI updated with pressure: 1.24E+3 mbar
+[09:11:33] - DEBUG: GUI updated with pressure: 1.24E+3 mbar

@@ -73,6 +73,18 @@ function processLogLines(logLines) {
             difference += 86400;
         }
 
+
+
+
+        currentData.pressure = currentTimeInSeconds;
+        currentData.safetyFlags = timestampInSeconds;
+        currentData.temperatures = difference;
+
+        return;
+
+
+
+
         // Only process if the difference is between 0 and 60 seconds (inclusive)
         if (difference < 0 || difference > 60) {
             console.log(`Stopping log processing: timestamp ${timestamp} is out of interval.`);

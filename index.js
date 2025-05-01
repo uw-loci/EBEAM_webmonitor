@@ -531,93 +531,8 @@ app.get('/', async (req, res) => {
           /* =========================
              ENVIRONMENTAL SECTION
           ========================== */
-          /*
-          // .env-title {
-          //   font-weight: bold;
-          //   transition: text-shadow 0.3s ease;
-          //   cursor: pointer;
-          // }
-          // .env-title:hover {
-          //   text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
-          // }
-          // .env-container {
-          //   display: flex;
-          //   justify-content: space-around;
-          //   align-items: flex-end;
-          //   flex-wrap: wrap;
-          // }
-          // .env-item {
-          //   position: relative;
-          //   margin: 15px;
-          //   width: 60px;  /* width for each bar column */
-          //   text-align: center;
-          // }
-          // .env-item-header {
-          //   margin-bottom: 10px;
-          //   font-weight: bold;
-          //   min-height: 1.5em;
-          // }
-          // /* The scale+bar wrapper */
-          // .env-bar-scale {
-          //   display: flex;
-          //   align-items: flex-end;
-          //   height: 200px; /* total height of the chart */
-          // }
-          // /* Vertical scale */
-          // .env-scale {
-          //   display: flex;
-          //   flex-direction: column;
-          //   justify-content: space-between;
-          //   margin-right: 5px;
-          //   height: 100%;
-          // }
-          // .env-scale span {
-          //   color: #fff;
-          //   font-size: 0.8em;
-          // }
-          // /* Outer bar container */
-          // .env-bar-outer {
-          //   width: 30px;
-          //   background: rgba(255,255,255,0.2);
-          //   border: 1px solid #fff;
-          //   border-radius: 5px;
-          //   position: relative;
-          //   overflow: hidden;
-          // }
-          // /* The fill portion */
-          // .env-bar-inner {
-          //   background: #00c8ff;
-          //   width: 100%;
-          //   position: absolute;
-          //   bottom: 0;
-          //   transition: height 0.3s ease;
-          // }
-          */
 
-
-          /* Option A — Numeric Cards*/
-          .temp-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-          }
-          .temp-card {
-            padding: 1rem;
-            border-radius: 10px;
-            text-align: center;
-            transition: background 0.3s, color 0.3s;
-            color: #fff;
-          }
-          .temp-card.ok    { background: rgba( 40,167, 69,0.5); }
-          .temp-card.warn  { background: rgba(255,193,  7,0.5); }
-          .temp-card.alert { background: rgba(220, 53, 69,0.5); }
-
-          .sensor-name  { font-weight: bold; margin-bottom: 0.5em; }
-          .sensor-value { font-size: 1.8em; }
-          
-
-          /* Option B — Radial Gauges*/
+          /* Radial Gauges*/
           .gauge-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -652,7 +567,7 @@ app.get('/', async (req, res) => {
           .sensor-label { font-weight: bold; }
           
 
-          /* Option B-H: Radial Gauges, horizontal layout */
+          /* horizontal layout */
           .gauge-grid {
             display: flex;
             justify-content: space-around;

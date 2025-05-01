@@ -147,19 +147,33 @@ async function fetchFileContents(fileId) {
 async function extractData() {
   try {
 
-    data = await axios.get('https://ebeam-webmonitor.onrender.com/log-data-extraction/data', {
+    response = await axios.get('https://ebeam-webmonitor.onrender.com/log-data-extraction/data', {
       headers: {
         'x-api-key': LOG_DATA_EXTRACTION_KEY
       }});
+    
+    if (response.status !== 200) {
+      console.warn(`API request failed with status: ${response.status}. Returning empty data.`);
+      return { // Return an empty object on failure
+        pressure: null,
+        safetyFlags: null,
+        temperatures: null
+      };
+    }
 
     // only for testing accessing
-    console.log("Data: ", data.data);
+    console.log("Data: ", response.data);
     // console.log("Data: ", data.data);
 
     // Accessing each data field:
-    const pressure = data.data.pressure; // Access Pressure (e.g., 1200)
+    const pressure = response.data.pressure; // Access Pressure (e.g., 1200)
     // const safetyFlags = data.data.safetyFlags[0]; // Access Safety Flags array
-    const temperatures = data.data.temperatures; // Access Temperatures object
+    const temperatures = response.data.temperatures; // Access Temperatures object
+    // const timestamp = response.NEW; // Access the timestamp (or NEW field)
+    
+
+    // For example, to access the first temperature reading:
+    // const temperatureSensor1 = temperatures["1"]; // "18.94"
 
     // You can now use these variables as needed in your front end.
     console.log('Pressure:', pressure);
@@ -170,7 +184,7 @@ async function extractData() {
     console.log("Error: ", e);
   }
 
-  return data;
+  return response;
 }
 
 
@@ -268,7 +282,12 @@ async function fetchAndUpdateFile() {
           shouldReload = true;
 
           if (fs.existsSync(REVERSED_FILE_PATH)) {
-            data = extractData();
+            try {
+              data = await extractData(); // AWAIT the result!
+            } catch (error) {
+              console.log("Error extracting data:", error);
+              data = null; // Or handle this appropriately
+            }
           } else {
             data = null;
             console.log("File None existant -- Could not extract the log data");

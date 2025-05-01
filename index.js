@@ -160,18 +160,12 @@ async function extractData() {
     const pressure = data.data.pressure; // Access Pressure (e.g., 1200)
     // const safetyFlags = data.data.safetyFlags[0]; // Access Safety Flags array
     const temperatures = data.data.temperatures; // Access Temperatures object
-    // const timestamp = response.NEW; // Access the timestamp (or NEW field)
-    
-
-    // For example, to access the first temperature reading:
-    // const temperatureSensor1 = temperatures["1"]; // "18.94"
 
     // You can now use these variables as needed in your front end.
     console.log('Pressure:', pressure);
     // console.log('Safety Flags:', safetyFlags);
     console.log('Temperatures:', temperatures['1']);
-    // console.log('Timestamp:', timestamp);
-    // console.log('Temperature from sensor 1:', temperatureSensor1);
+    
   } catch (e) {
     console.log("Error: ", e);
   }
@@ -537,66 +531,163 @@ app.get('/', async (req, res) => {
           /* =========================
              ENVIRONMENTAL SECTION
           ========================== */
-          .env-title {
-            font-weight: bold;
-            transition: text-shadow 0.3s ease;
-            cursor: pointer;
+          /*
+          // .env-title {
+          //   font-weight: bold;
+          //   transition: text-shadow 0.3s ease;
+          //   cursor: pointer;
+          // }
+          // .env-title:hover {
+          //   text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
+          // }
+          // .env-container {
+          //   display: flex;
+          //   justify-content: space-around;
+          //   align-items: flex-end;
+          //   flex-wrap: wrap;
+          // }
+          // .env-item {
+          //   position: relative;
+          //   margin: 15px;
+          //   width: 60px;  /* width for each bar column */
+          //   text-align: center;
+          // }
+          // .env-item-header {
+          //   margin-bottom: 10px;
+          //   font-weight: bold;
+          //   min-height: 1.5em;
+          // }
+          // /* The scale+bar wrapper */
+          // .env-bar-scale {
+          //   display: flex;
+          //   align-items: flex-end;
+          //   height: 200px; /* total height of the chart */
+          // }
+          // /* Vertical scale */
+          // .env-scale {
+          //   display: flex;
+          //   flex-direction: column;
+          //   justify-content: space-between;
+          //   margin-right: 5px;
+          //   height: 100%;
+          // }
+          // .env-scale span {
+          //   color: #fff;
+          //   font-size: 0.8em;
+          // }
+          // /* Outer bar container */
+          // .env-bar-outer {
+          //   width: 30px;
+          //   background: rgba(255,255,255,0.2);
+          //   border: 1px solid #fff;
+          //   border-radius: 5px;
+          //   position: relative;
+          //   overflow: hidden;
+          // }
+          // /* The fill portion */
+          // .env-bar-inner {
+          //   background: #00c8ff;
+          //   width: 100%;
+          //   position: absolute;
+          //   bottom: 0;
+          //   transition: height 0.3s ease;
+          // }
+          */
+
+
+          /* Option A — Numeric Cards*/
+          .temp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
           }
-          .env-title:hover {
-            text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
+          .temp-card {
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            transition: background 0.3s, color 0.3s;
+            color: #fff;
           }
-          .env-container {
+          .temp-card.ok    { background: rgba( 40,167, 69,0.5); }
+          .temp-card.warn  { background: rgba(255,193,  7,0.5); }
+          .temp-card.alert { background: rgba(220, 53, 69,0.5); }
+
+          .sensor-name  { font-weight: bold; margin-bottom: 0.5em; }
+          .sensor-value { font-size: 1.8em; }
+          
+
+          /* Option B — Radial Gauges*/
+          .gauge-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+          }
+          .gauge {
+            text-align: center;
+            color: #fff;
+          }
+          .gauge-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(#ccc 0deg, #ccc 360deg);
+            position: relative;
+            margin: 0 auto 0.5rem;
+            transition: background 0.3s;
+          }
+          .gauge-cover {
+            position: absolute;
+            top: 12px; left: 12px;
+            width: 56px; height: 56px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1em;
+            color: #fff;
+          }
+          .sensor-label { font-weight: bold; }
+          
+
+          /* Option B-H: Radial Gauges, horizontal layout */
+          .gauge-grid {
             display: flex;
             justify-content: space-around;
-            align-items: flex-end;
+            align-items: center;
             flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
           }
-          .env-item {
-            position: relative;
-            margin: 15px;
-            width: 60px;  /* width for each bar column */
+          .gauge {
             text-align: center;
-          }
-          .env-item-header {
-            margin-bottom: 10px;
-            font-weight: bold;
-            min-height: 1.5em;
-          }
-          /* The scale+bar wrapper */
-          .env-bar-scale {
-            display: flex;
-            align-items: flex-end;
-            height: 200px; /* total height of the chart */
-          }
-          /* Vertical scale */
-          .env-scale {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            margin-right: 5px;
-            height: 100%;
-          }
-          .env-scale span {
             color: #fff;
-            font-size: 0.8em;
           }
-          /* Outer bar container */
-          .env-bar-outer {
-            width: 30px;
-            background: rgba(255,255,255,0.2);
-            border: 1px solid #fff;
-            border-radius: 5px;
+          .gauge-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(#ccc 0deg, #ccc 360deg);
             position: relative;
-            overflow: hidden;
+            margin: 0 auto 0.5rem;
+            transition: background 0.3s;
           }
-          /* The fill portion */
-          .env-bar-inner {
-            background: #00c8ff;
-            width: 100%;
+          .gauge-cover {
             position: absolute;
-            bottom: 0;
-            transition: height 0.3s ease;
+            top: 12px; left: 12px;
+            width: 56px; height: 56px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1em;
+            color: #fff;
           }
+          .sensor-label { font-weight: bold; }
+
 
           /* =========================
              LOG VIEWER
@@ -799,100 +890,40 @@ app.get('/', async (req, res) => {
           </div>
 
           <!-- Environmental Section -->
+          <!-- Environmental Section (Horizontal Radial Gauges) -->
           <div class="env-section">
             <h3 class="dashboard-subtitle env-title">Environmental</h3>
-            <div class="env-container">
-              <!-- Bar 1: Solenoid 1 -->
-              <div class="env-item">
-                <div class="env-item-header">Solenoid 1</div>
-                <div class="env-bar-scale">
-                  <div class="env-scale">
-                    <span>100</span>
-                    <span>80</span>
-                    <span>60</span>
-                    <span>40</span>
-                    <span>20</span>
-                    <span>0</span>
-                  </div>
-                  <div class="env-bar-outer">
-                    <div class="env-bar-inner" style="height: 20%;"></div>
-                  </div>
-                </div>
+            <div class="gauge-grid">
+              <div class="gauge" id="sensor-1">
+                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="sensor-label">Solenoid 1</div>
               </div>
-              
-              <!-- Bar 2: Solenoid 2 -->
-              <div class="env-item">
-                <div class="env-item-header">Solenoid 2</div>
-                <div class="env-bar-scale">
-                  <div class="env-scale">
-                    <span>100</span>
-                    <span>80</span>
-                    <span>60</span>
-                    <span>40</span>
-                    <span>20</span>
-                    <span>0</span>
-                  </div>
-                  <div class="env-bar-outer">
-                    <div class="env-bar-inner" style="height: 40%;"></div>
-                  </div>
-                </div>
+              <div class="gauge" id="sensor-2">
+                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="sensor-label">Solenoid 2</div>
               </div>
-
-              <!-- Bar 3: Chmbr Bot -->
-              <div class="env-item">
-                <div class="env-item-header">Chmbr Bot</div>
-                <div class="env-bar-scale">
-                  <div class="env-scale">
-                    <span>100</span>
-                    <span>80</span>
-                    <span>60</span>
-                    <span>40</span>
-                    <span>20</span>
-                    <span>0</span>
-                  </div>
-                  <div class="env-bar-outer">
-                    <div class="env-bar-inner" style="height: 100%;"></div>
-                  </div>
-                </div>
+              <div class="gauge" id="sensor-3">
+                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="sensor-label">Chmbr Bot</div>
               </div>
-
-              <!-- Bar 4: Chmbr Top -->
-              <div class="env-item">
-                <div class="env-item-header">Chmbr Top</div>
-                <div class="env-bar-scale">
-                  <div class="env-scale">
-                    <span>100</span>
-                    <span>80</span>
-                    <span>60</span>
-                    <span>40</span>
-                    <span>20</span>
-                    <span>0</span>
-                  </div>
-                  <div class="env-bar-outer">
-                    <div class="env-bar-inner" style="height: 100%;"></div>
-                  </div>
-                </div>
+              <div class="gauge" id="sensor-4">
+                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="sensor-label">Chmbr Top</div>
               </div>
-
-              <!-- Bar 5: Air temp -->
-              <div class="env-item">
-                <div class="env-item-header">Air temp</div>
-                <div class="env-bar-scale">
-                  <div class="env-scale">
-                    <span>100</span>
-                    <span>80</span>
-                    <span>60</span>
-                    <span>40</span>
-                    <span>20</span>
-                    <span>0</span>
-                  </div>
-                  <div class="env-bar-outer">
-                    <div class="env-bar-inner" style="height: 60%;"></div>
-                  </div>
-                </div>
+              <div class="gauge" id="sensor-5">
+                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="sensor-label">Air temp</div>
+              </div>
+              <div class="gauge" id="sensor-6">
+                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="sensor-label">Extra 6</div>
               </div>
             </div>
           </div>
+
+
+
+
 
           <!-- Log Viewer -->
           <div class="row justify-content-center">

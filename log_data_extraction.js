@@ -61,10 +61,10 @@ function processLogLines(logLines) {
         const adjustedDifference = Math.abs(difference);
 
         // Only process if within 60 seconds
-        if (adjustedDifference > 60) {
-            console.log(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
-            break;
-        }
+        // if (adjustedDifference > 60) {
+        //     console.log(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
+        //     break;
+        // }
         
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);

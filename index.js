@@ -436,10 +436,12 @@ app.get('/', async (req, res) => {
           ========================== */
           .dashboard-title {
             font-size: 3.5em;
-            font-weight: 900;
+            font-weight: 700;
             color: #d6eaff;
-            text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
-                         0px 0px 20px rgba(214, 234, 255, 0.4);
+            text-align: left;
+            padding-left: 40px;
+            /* text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
+                         0px 0px 20px rgba(214, 234, 255, 0.4); */
           }
           .dashboard-title::after {
             content: "";

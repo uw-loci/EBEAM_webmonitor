@@ -692,13 +692,13 @@ app.get('/', async (req, res) => {
             position: absolute;
             top: 20px;
             right: 25px;
-            padding: 10px 20px;
-            font-size: 1.3em;
+            padding: 5px 10px;
+            font-size: 0.7em;
             background-color: rgba(255, 0, 0, 0.2);
             border: 2px solid red;
             border-radius: 8px;
-            box-shadow: 0 0 20px red;
-            text-shadow: 0 0 15px red;
+            box-shadow: 0 0 10px red;
+            text-shadow: 0 0 10px red;
             color: white;
             font-weight: bold;
             z-index: 9999;

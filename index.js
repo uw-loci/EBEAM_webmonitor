@@ -610,8 +610,8 @@ app.get('/', async (req, res) => {
             color: #fff;
           }
           .gauge-circle {
-            width: 60px;
-            height: 60px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: conic-gradient(#ccc 0deg, #ccc 360deg);
             position: relative;
@@ -621,7 +621,7 @@ app.get('/', async (req, res) => {
           .gauge-cover {
             position: absolute;
             top: 12px; left: 12px;
-            width: 40px; height: 40px;
+            width: 60px; height: 60px;
             background: rgba(0,0,0,0.4);
             border-radius: 50%;
             display: flex;

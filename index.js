@@ -572,19 +572,19 @@ app.get('/', async (req, res) => {
             text-align: center;
             color: #fff;
           }
-          .gauge-circle {
-            width: 56px;
-            height: 56px;
+          /* .gauge-circle {
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             background: conic-gradient(#ccc 0deg, #ccc 360deg);
             position: relative;
             margin: 0 auto 0.5rem;
             transition: background 0.3s;
-          }
-          .gauge-cover {
+          } */
+          /* .gauge-cover {
             position: absolute;
             top: 12px; left: 12px;
-            width: 56px; height: 56px;
+            width: 40px; height: 40px;
             background: rgba(0,0,0,0.4);
             border-radius: 50%;
             display: flex;
@@ -593,7 +593,7 @@ app.get('/', async (req, res) => {
             font-size: 1em;
             color: #fff;
           }
-          .sensor-label { font-weight: bold; }
+          .sensor-label { font-weight: bold; } */
           
 
           /* horizontal layout */
@@ -610,8 +610,8 @@ app.get('/', async (req, res) => {
             color: #fff;
           }
           .gauge-circle {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: conic-gradient(#ccc 0deg, #ccc 360deg);
             position: relative;
@@ -621,7 +621,7 @@ app.get('/', async (req, res) => {
           .gauge-cover {
             position: absolute;
             top: 12px; left: 12px;
-            width: 56px; height: 56px;
+            width: 60px; height: 60px;
             background: rgba(0,0,0,0.4);
             border-radius: 50%;
             display: flex;

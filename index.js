@@ -387,7 +387,8 @@ app.get('/', async (req, res) => {
           body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background: linear-gradient(-45deg, #001f3f, #003366, #005a9e);
+            /* background: linear-gradient(-45deg, #001f3f, #003366, #005a9e); */
+            background: #0d1117
             background-size: 400% 400%;
             color: white;
             padding: 20px;
@@ -403,15 +404,21 @@ app.get('/', async (req, res) => {
              GLASSMORPHISM CONTAINERS
           ========================== */
           .glass-container {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 15px;
+            background: rgba(30, 30, 30, 0.9);
+
+            /* backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px); */
+
+            border-radius: 8px;
             padding: 30px;
-            box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15);
+
+            /* box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15); */
+
             width: 100%;
             margin: 0 auto;
+            border: 1px solid #333;
           }
+
           /* For sections like Interlocks, Environmental, and Green Indicators */
           .interlocks-section,
           .env-section,
@@ -717,7 +724,7 @@ app.get('/', async (req, res) => {
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${fileModified} | 
-            <strong>Last Update:</strong> ${currentTime}
+            <strong>Last Updated:</strong> ${currentTime}
           </p>
 
           <!-- Example Cards (Optional) -->

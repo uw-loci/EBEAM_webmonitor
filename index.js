@@ -435,7 +435,7 @@ app.get('/', async (req, res) => {
              TITLES / HEADERS
           ========================== */
           .dashboard-title {
-            font-size: 2 em;
+            font-size: 2em;
             font-weight: 700;
             color: #d6eaff;
             text-align: left;

@@ -691,14 +691,14 @@ app.get('/', async (req, res) => {
             text-shadow: 0 0 15px red;
             color: white;
             font-weight: bold;
-            animation: neonBlink 8s infinite alternate;
+            // animation: neonBlink 8s infinite alternate;
             z-index: 9999;
           }
-          @keyframes neonBlink {
-            0% { opacity: 1; text-shadow: 0 0 10px red; }
-            50% { opacity: 0.8; text-shadow: 0 0 5px red; }
-            100% { opacity: 1; text-shadow: 0 0 10px red; }
-          }
+          // @keyframes neonBlink {
+          //   0% { opacity: 1; text-shadow: 0 0 10px red; }
+          //   50% { opacity: 0.8; text-shadow: 0 0 5px red; }
+          //   100% { opacity: 1; text-shadow: 0 0 10px red; }
+          // }
           @media (max-width: 768px) {
             .fixed-top-right {
               position: static;

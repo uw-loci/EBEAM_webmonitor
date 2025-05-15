@@ -389,7 +389,7 @@ app.get('/', async (req, res) => {
             text-align: center;
             background: linear-gradient(-45deg, #001f3f, #003366, #005a9e);
             background-size: 400% 400%;
-            animation: gradientMove 12s ease infinite;
+            // animation: gradientMove 12s ease infinite;
             color: white;
             padding: 20px;
             margin: 0;

@@ -388,7 +388,7 @@ app.get('/', async (req, res) => {
             font-family: Arial, sans-serif;
             text-align: center;
             /* background: linear-gradient(-45deg, #001f3f, #003366, #005a9e); */
-            background: #0d1117
+            background: #0d1117;
             background-size: 400% 400%;
             color: white;
             padding: 20px;
@@ -416,9 +416,8 @@ app.get('/', async (req, res) => {
 
             width: 100%;
             margin: 0 auto;
-            border: 1px solid #333;
           }
-
+            
           /* For sections like Interlocks, Environmental, and Green Indicators */
           .interlocks-section,
           .env-section,

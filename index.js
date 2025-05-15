@@ -449,7 +449,7 @@ app.get('/', async (req, res) => {
             display: block;
             width: 60%;
             height: 5px;
-            /* background: rgba(0, 255, 255, 0.8); */
+            background: rgba(0, 255, 255, 0.8);
             margin: 10px auto;
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
             border-radius: 10px;

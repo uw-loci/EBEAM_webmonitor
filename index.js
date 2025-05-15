@@ -497,8 +497,8 @@ app.get('/', async (req, res) => {
             font-weight: bold;
           }
           .circle {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             margin: 0 auto 5px auto;
             transition: transform 0.3s ease, filter 0.3s ease;
@@ -545,8 +545,8 @@ app.get('/', async (req, res) => {
           }
           /* Use same circle styling */
           .vacuum-indicators-circle {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             margin: 0 auto 5px auto;
             background-color: #28a745; /* Green */
@@ -610,8 +610,8 @@ app.get('/', async (req, res) => {
             color: #fff;
           }
           .gauge-circle {
-            width: 80px;
-            height: 80px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             background: conic-gradient(#ccc 0deg, #ccc 360deg);
             position: relative;

@@ -636,20 +636,18 @@ app.get('/', async (req, res) => {
           /* =========================
              LOG VIEWER
           ========================== */
+          
           pre {
             white-space: pre-wrap;
             font-family: 'Courier New', monospace;
             text-align: left;
-            background: rgba(255, 255, 255, 0.08);
             color: #ffffff;
-            padding: 20px;
-            border-radius: 12px;
+            padding: 20px 0;
             max-height: 600px;
             overflow-y: auto;
             font-size: 1.2em;
-            box-shadow: 0px 0px 15px rgba(0, 255, 255, 0.3);
-            border: 1px solid rgba(0, 255, 255, 0.5);
-          }
+            }
+
           .content-section {
             display: none;
           }

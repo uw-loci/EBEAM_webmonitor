@@ -427,7 +427,7 @@ app.get('/', async (req, res) => {
             -webkit-backdrop-filter: blur(20px);
             border-radius: 15px;
             padding: 20px;
-            margin: 30px auto;
+            margin: 50px auto;
             width: 90%;
           }
 
@@ -640,7 +640,7 @@ app.get('/', async (req, res) => {
             white-space: pre-wrap;
             font-family: 'Courier New', monospace;
             text-align: left;
-            background: rgba(10, 10, 10, 0.85);
+            background: rgba(255, 255, 255, 0.08);
             color: #ffffff;
             padding: 20px;
             border-radius: 12px;

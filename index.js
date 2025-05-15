@@ -435,7 +435,7 @@ app.get('/', async (req, res) => {
              TITLES / HEADERS
           ========================== */
           .dashboard-title {
-            font-size: 3.5em;
+            font-size: 2 em;
             font-weight: 700;
             color: #d6eaff;
             text-align: left;
@@ -443,16 +443,18 @@ app.get('/', async (req, res) => {
             /* text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
                          0px 0px 20px rgba(214, 234, 255, 0.4); */
           }
-          .dashboard-title::after {
+          
+          /* .dashboard-title::after {
             content: "";
             display: block;
             width: 60%;
             height: 5px;
-            background: rgba(0, 255, 255, 0.8);
+            /* background: rgba(0, 255, 255, 0.8); */
             margin: 10px auto;
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
             border-radius: 10px;
-          }
+          } */
+
           .dashboard-subtitle {
             font-size: 1.2em;
             margin-bottom: 25px;

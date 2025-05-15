@@ -619,11 +619,10 @@ app.get('/', async (req, res) => {
             transition: background 0.3s;
           }
           .gauge-cover {
-            position: absolute;
-            top: 12px; left: 12px;
-            width: 60px; height: 60px;
-            background: rgba(0,0,0,0.4);
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
+            background: rgba(0, 0, 0, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -636,7 +635,7 @@ app.get('/', async (req, res) => {
           /* =========================
              LOG VIEWER
           ========================== */
-          
+
           pre {
             white-space: pre-wrap;
             font-family: 'Courier New', monospace;

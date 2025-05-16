@@ -863,7 +863,7 @@ app.get('/', async (req, res) => {
           <!-- Log Viewer -->
           <div class="row justify-content-center">
             <div class="col-lg-12">
-              <div class="glass-container p-4">
+              <div class="dashboard-subtitle env-title">
                 <button id="toggleButton" class="btn-toggle">Show Full Log</button>
                 <div id="previewContent" class="content-section active">
                 <!-- change the next line with previewContent -->

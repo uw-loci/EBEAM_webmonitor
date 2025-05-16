@@ -647,7 +647,7 @@ app.get('/', async (req, res) => {
             overflow-y: auto;
             font-size: 1.2em;
             border-radius: 15px;
-            margin-top: 5em;
+            margin-top: 2.75em;
             }
 
           .content-section {

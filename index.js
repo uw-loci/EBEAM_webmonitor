@@ -663,6 +663,8 @@ app.get('/', async (req, res) => {
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            float: right;
+            margin-top: -2.5em;
           }
           .btn-toggle:hover {
             background: rgba(0, 255, 255, 0.8);

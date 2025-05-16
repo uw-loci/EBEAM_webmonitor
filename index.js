@@ -646,7 +646,7 @@ app.get('/', async (req, res) => {
             max-height: 600px;
             overflow-y: auto;
             font-size: 1.2em;
-            border-radius: 15px;
+            border-radius: 9px;
             margin-top: 2.75em;
             }
 

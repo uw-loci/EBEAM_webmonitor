@@ -344,6 +344,8 @@ app.get('/', async (req, res) => {
 
     const contentLines = reversedContents.split('\n');
     const previewContent = contentLines.slice(0, 20).join('\n');
+    // console.log("Preview content (first 20 lines):\n", previewContent);
+
     const fileModified = lastModifiedTime 
       ? new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })
       : "N/A";
@@ -729,6 +731,7 @@ app.get('/', async (req, res) => {
 
           <!-- Title & Subtitle -->
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
+          <div style="white-space: pre-wrap; color: cyan;">${previewContent}</div>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${fileModified} | 
             <strong>Last Updated:</strong> ${currentTime}

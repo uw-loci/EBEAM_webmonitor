@@ -856,32 +856,24 @@ app.get('/', async (req, res) => {
             </div>
           </div>
 
-
-
-
-
           <!-- Log Viewer -->
-          <div class="row justify-content-center">
-            <div class="col-lg-12">
-              <div class="dashboard-subtitle env-title">
+            <div class="env-section">
+              <h3 class="dashboard-subtitle env-title">System Logs</h3>
                 <button id="toggleButton" class="btn-toggle">Show Full Log</button>
-                <div id="previewContent" class="content-section active">
-                <!-- change the next line with previewContent -->
-                  <pre>${temp}</pre>
-                  <p class="text-center text-info mt-2">
-                    Showing first 20 lines. Click the button above to see the full log.
-                  </p>
-                </div>
+                  <div id="previewContent" class="content-section active">
+                    <pre>${temp}</pre>
+                      <p class="text-center text-info mt-2">
+                        Showing first 20 lines. Click the button above to see the full log.
+                      </p>
+                  </div>
                 <div id="fullContent" class="content-section">
-                  <pre>${reversedContents}</pre>
-                  <p class="text-center text-info mt-2">
-                    Showing full log. Click the button above to see the preview.
-                  </p>
-                </div>
-              </div>
-            </div>
+              <pre>${reversedContents}</pre>
+            <p class="text-center text-info mt-2">
+                  Showing full log. Click the button above to see the preview.
+            </p>
           </div>
         </div>
+
 
         <!-- Auto-refresh & Toggle Script -->
         <script>

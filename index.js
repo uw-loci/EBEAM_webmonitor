@@ -458,7 +458,7 @@ app.get('/', async (req, res) => {
           } */
 
           .dashboard-subtitle {
-            font-size: 0.7em;
+            font-size: 1.5em;
             margin-bottom: 25px;
             text-align: left;
             opacity: 0.9;
@@ -472,6 +472,7 @@ app.get('/', async (req, res) => {
             font-weight: bold;
             transition: text-shadow 0.3s ease;
             cursor: pointer;
+            font-size: 1.5em;
           }
           .interlocks-title:hover {
             text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
@@ -484,6 +485,7 @@ app.get('/', async (req, res) => {
           }
           .interlock-item {
             text-align: center;
+            font-size: 0.75em;
             margin: 10px;
             transition: transform 0.3s ease, filter 0.3s ease;
             cursor: pointer;
@@ -517,6 +519,7 @@ app.get('/', async (req, res) => {
             font-weight: bold;
             transition: text-shadow 0.3s ease;
             cursor: pointer;
+            font-size: 1.5em;
           }
           .vacuum-indicators-title:hover {
             text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
@@ -531,6 +534,7 @@ app.get('/', async (req, res) => {
           /* Items here are the same as interlock items but will only use green circles */
           .vacuum-indicators-item {
             text-align: center;
+            font-size: 0.75em;
             margin: 10px;
             transition: transform 0.3s ease, filter 0.3s ease;
             cursor: pointer;
@@ -609,6 +613,7 @@ app.get('/', async (req, res) => {
           }
           .gauge {
             text-align: center;
+            font-size: 0.75em;
             color: #fff;
           }
           .gauge-circle {

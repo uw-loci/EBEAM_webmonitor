@@ -654,14 +654,14 @@ app.get('/', async (req, res) => {
             display: block;
           }
           .btn-toggle {
-            background: rgba(0, 255, 255, 0.5);
+            background-color: #00bcd4;
             color: white;
-            border: 1px solid rgba(0, 255, 255, 0.8);
-            border-radius: 8px;
-            padding: 12px 25px;
-            font-size: 1.1em;
-            margin-bottom: 20px;
-            transition: background 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            padding: 10px 20px;
+            font-size: 0.75em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
           }
           .btn-toggle:hover {
             background: rgba(0, 255, 255, 0.8);

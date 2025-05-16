@@ -731,7 +731,6 @@ app.get('/', async (req, res) => {
 
           <!-- Title & Subtitle -->
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
-          <div style="white-space: pre-wrap; color: cyan;">${previewContent}</div>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${fileModified} | 
             <strong>Last Updated:</strong> ${currentTime}

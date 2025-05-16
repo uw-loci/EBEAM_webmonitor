@@ -472,7 +472,7 @@ app.get('/', async (req, res) => {
             font-weight: bold;
             transition: text-shadow 0.3s ease;
             cursor: pointer;
-            font-size: 1.5em;
+            font-size: 0.9em;
           }
           .interlocks-title:hover {
             text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
@@ -519,7 +519,7 @@ app.get('/', async (req, res) => {
             font-weight: bold;
             transition: text-shadow 0.3s ease;
             cursor: pointer;
-            font-size: 1.5em;
+            font-size: 0.9em;
           }
           .vacuum-indicators-title:hover {
             text-shadow: 0px 0px 10px rgba(255,255,255,0.8);

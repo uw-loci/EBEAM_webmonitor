@@ -640,6 +640,7 @@ app.get('/', async (req, res) => {
             white-space: pre-wrap;
             font-family: 'Courier New', monospace;
             text-align: left;
+            background-color: #000;
             color: #ffffff;
             padding: 20px 0;
             max-height: 600px;

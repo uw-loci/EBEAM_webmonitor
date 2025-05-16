@@ -867,7 +867,7 @@ app.get('/', async (req, res) => {
               <h3 class="dashboard-subtitle env-title">System Logs</h3>
                 <button id="toggleButton" class="btn-toggle">Show Full Log</button>
                   <div id="previewContent" class="content-section active">
-                    <pre>${temp}</pre>
+                    <pre>${previewContent}</pre>
                       <p class="text-center text-info mt-2">
                         Showing first 20 lines. Click the button above to see the full log.
                       </p>

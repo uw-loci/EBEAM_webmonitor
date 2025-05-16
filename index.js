@@ -458,7 +458,7 @@ app.get('/', async (req, res) => {
           } */
 
           .dashboard-subtitle {
-            font-size: 1.5em;
+            font-size: 0.9em;
             margin-bottom: 25px;
             text-align: left;
             opacity: 0.9;

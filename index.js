@@ -646,7 +646,6 @@ app.get('/', async (req, res) => {
             max-height: 600px;
             overflow-y: auto;
             font-size: 1.2em;
-            border-radius: 10px;
             }
 
           .content-section {
@@ -665,7 +664,7 @@ app.get('/', async (req, res) => {
             cursor: pointer;
             transition: background-color 0.3s ease;
             float: right;
-            margin-top: -0.5em;
+            margin-top: -3.5em;
           }
           .btn-toggle:hover {
             background: rgba(0, 255, 255, 0.8);

@@ -736,7 +736,7 @@ app.get('/', async (req, res) => {
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${fileModified} | 
-            <strong>Last Update:</strong> ${currentTime}
+            <strong>Last Updated:</strong> ${currentTime}
           </p>
 
           <!-- Example Cards (Optional) -->

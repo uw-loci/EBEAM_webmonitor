@@ -204,7 +204,7 @@ async function fetchAndUpdateFile() {
         // if REVERSED_FILE_PATH.file exists then return, no need to read.
         console.log("Experiment not running - no updates in 15 minutes");
         shouldReload = false;
-        data = extractData(); // only for testing has to be removed after
+        data = await extractData(); // only for testing has to be removed after
         return false;
       }
     }
@@ -360,7 +360,7 @@ app.get('/', async (req, res) => {
     // console.log('Temperature from sensor 1:', temperatureSensor1);
 
     // temp var 
-    const temp = JSON.stringify(data.data);
+    const temp = JSON.stringify(data);
 
     //  keep your HTML generation as-is below this
     res.send(`

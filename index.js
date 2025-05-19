@@ -353,6 +353,7 @@ app.get('/', async (req, res) => {
 
     // Accessing each data field:
     const pressure = data.pressure; // Access Pressure (e.g., 1200)
+    const temperatures = data.temperatures;
     // const safetyFlags = data.data.safetyFlags; // Access Safety Flags array
     // const temperatures = response.Temperatures; // Access Temperatures object
     // const timestamp = response.NEW; // Access the timestamp (or NEW field)
@@ -736,7 +737,7 @@ app.get('/', async (req, res) => {
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${fileModified} | 
-            <strong>Last Updated:</strong> ${currentTime}
+            <strong>Last Update:</strong> ${currentTime}
           </p>
 
           <!-- Example Cards (Optional) -->

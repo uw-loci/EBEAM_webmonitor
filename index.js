@@ -606,15 +606,20 @@ app.get('/', async (req, res) => {
             font-size: 0.75em;
             color: #fff;
           }
+
+          // gauge circle now displays the attributes of a textbox
           .gauge-circle {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: conic-gradient(#ccc 0deg, #ccc 360deg);
-            position: relative;
-            margin: 0 auto 0.5rem;
-            transition: background 0.3s;
+            width: 80px; /* adjust as needed */
+            height: auto;
+            padding: 10px;
+            border-radius: 6px; 
+            background-color: #1f1f1f;
+            color: white;
+            border: 1px solid #ccc;
+            text-align: center;
+            font-size: 0.9em;
           }
+
           .gauge-cover {
             width: 100%;
             height: 100%;

@@ -61,10 +61,15 @@ function processLogLines(logLines) {
         }
 
         // Only process if the log is within the last 60 seconds; I switched it to 300 for temperatures to show up on the dashboard.
-        if (difference > 300) {
-            console.log(`Stopping log processing: timestamp ${timestamp}, difference: ${difference}`);
-            break; // Exit the loop since logs are in descending order
-        }
+
+        /*
+        IMP: commenting it out for now 
+        */
+
+        // if (difference > 300) {
+        //     console.log(`Stopping log processing: timestamp ${timestamp}, difference: ${difference}`);
+        //     break; // Exit the loop since logs are in descending order
+        // }
         
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);
@@ -145,7 +150,8 @@ router.use('/data', (req, res, next) => {
 router.get('/data', (req, res) => {
     // 'reversed.txt'
     // 'test_logs', 'sample_logs.txt'
-    const logFilePath = path.join(__dirname, 'reversed.txt'); // change this for sample log reading
+    // const logFilePath = path.join(__dirname, 'reversed.txt'); // change this for sample log reading
+    const logFilePath = './test_logs/sample_logs.txt'
     fs.readFile(logFilePath, 'utf-8', (err, data) => {
         if (err) {
             console.error('Failed to read log file:', err);

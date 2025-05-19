@@ -215,7 +215,7 @@ async function fetchAndUpdateFile() {
       experimentRunning = true;
       shouldReload = false;
       if (fs.existsSync(REVERSED_FILE_PATH)) {
-        data = extractData();
+        data = await extractData();
       } else {
         data = null;
         console.log("File None existant -- Could not extract the log data");

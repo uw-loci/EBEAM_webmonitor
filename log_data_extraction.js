@@ -60,8 +60,8 @@ function processLogLines(logLines) {
             difference += 86400; // Add 24 hours in seconds
         }
 
-        // Only process if the log is within the last 60 seconds
-        if (difference > 60) {
+        // Only process if the log is within the last 60 seconds; I switched it to 300 for temperatures to show up on the dashboard.
+        if (difference > 300) {
             console.log(`Stopping log processing: timestamp ${timestamp}, difference: ${difference}`);
             break; // Exit the loop since logs are in descending order
         }
@@ -69,7 +69,6 @@ function processLogLines(logLines) {
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);
         if (!logTypeMatch) continue;
-        
         const logType = logTypeMatch[1];        // trim might be necessary but not important for now
         
         // Process based on log type
@@ -105,6 +104,7 @@ function processLogLines(logLines) {
                 break;
                 
             case "DEBUG: PMON temps":
+                console.log("Found PMON log line:", logLine);
                 if (currentData.temperatures === null) {
                     const tempsMatch = logLine.match(TEMPS_REGEX);
                     if (tempsMatch && tempsMatch[1]) {

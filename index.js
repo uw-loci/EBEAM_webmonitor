@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { google } = require('googleapis');
 const fs = require('fs');
@@ -146,7 +145,6 @@ async function fetchFileContents(fileId) {
  */
 async function extractData() {
   try {
-
     response = await axios.get('https://ebeam-webmonitor.onrender.com/log-data-extraction/data', {
       headers: {
         'x-api-key': LOG_DATA_EXTRACTION_KEY

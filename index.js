@@ -612,7 +612,6 @@ app.get('/', async (req, res) => {
             width: 80px; 
             height: 37px;
             padding: 10px;
-            border-radius: 6px; 
             background-color: conic-gradient(#ccc 0deg, #ccc 360deg);
             color: white;
             border: 1px solid #ccc;
@@ -620,18 +619,18 @@ app.get('/', async (req, res) => {
             font-size: 0.9em;
           }
 
-          .gauge-cover {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1em;
-            color: #fff;
-          }
-          .sensor-label { font-weight: bold; }
+          // .gauge-cover {
+          //   width: 100%;
+          //   height: 100%;
+          //   border-radius: 50%;
+          //   background: rgba(0, 0, 0, 0.4);
+          //   display: flex;
+          //   align-items: center;
+          //   justify-content: center;
+          //   font-size: 1em;
+          //   color: #fff;
+          // }
+          // .sensor-label { font-weight: bold; }
 
 
           /* =========================

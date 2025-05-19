@@ -136,15 +136,15 @@ function processLogLines(logLines) {
 }
 
 // Middleware to check the secret key in the request headers
-router.use('/data', (req, res, next) => {
-    // If the API key doesn't match the expected key, deny access
-    if (req.headers['x-api-key'] !== LOG_DATA_EXTRACTION_KEY) {
-      return res.status(403).json({ error: 'Forbidden: Invalid API Key' });
-    }
+// router.use('/data', (req, res, next) => {
+//     // If the API key doesn't match the expected key, deny access
+//     if (req.headers['x-api-key'] !== LOG_DATA_EXTRACTION_KEY) {
+//       return res.status(403).json({ error: 'Forbidden: Invalid API Key' });
+//     }
     
-    // If the key matches, proceed to the actual API route handler
-    next();
-});
+//     // If the key matches, proceed to the actual API route handler
+//     next();
+// });
 
 // Define the /api/data endpoint that returns the JSON object
 router.get('/data', (req, res) => {

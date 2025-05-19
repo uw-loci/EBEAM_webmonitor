@@ -354,6 +354,7 @@ app.get('/', async (req, res) => {
 
     // You can now use these variables as needed in your front end.
     console.log('Pressure:', pressure);
+    console.log('Temperatures', temperatures);
     // console.log('Safety Flags:', safetyFlags);
     // console.log('Temperatures:', temperatures);
     // console.log('Timestamp:', timestamp);
@@ -606,8 +607,8 @@ app.get('/', async (req, res) => {
             color: #fff;
           }
           .gauge-circle {
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             background: conic-gradient(#ccc 0deg, #ccc 360deg);
             position: relative;

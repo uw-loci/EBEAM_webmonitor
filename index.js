@@ -497,6 +497,7 @@ app.get('/', async (req, res) => {
             border-radius: 50%;
             margin: 0 auto 5px auto;
             transition: transform 0.3s ease, filter 0.3s ease;
+            background-color: #28a745;
           }
           .interlock-item:hover .circle {
             transform: scale(1.1);

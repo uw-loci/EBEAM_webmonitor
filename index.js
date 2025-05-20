@@ -839,27 +839,27 @@ app.get('/', async (req, res) => {
             <h3 class="dashboard-subtitle env-title">Environmental</h3>
             <div class="gauge-grid">
               <div class="gauge" id="sensor-1">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["1"] === "Disconnected" ? '--' : temperatures["1"]}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["1"] === "DISCONNECTED" ? '--' : temperatures["1"] + '°C'}</div></div>
                 <div class="sensor-label">Solenoid 1</div>
               </div>
               <div class="gauge" id="sensor-2">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["2"] === "Disconnected" ? '--' : temperatures["2"]}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["2"] === "DISCONNECTED" ? '--' : temperatures["2"] + '°C'}</div></div>
                 <div class="sensor-label">Solenoid 2</div>
               </div>
               <div class="gauge" id="sensor-3">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] === "Disconnected" ? '--' : temperatures["3"]}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] === "DISCONNECTED" ? '--' : temperatures["3"] + '°C'}</div></div>
                 <div class="sensor-label">Chmbr Bot</div>
               </div>
               <div class="gauge" id="sensor-4">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] === "Disconnected" ? '--' : temperatures["4"]}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] === "DISCONNECTED" ? '--' : temperatures["4"] + '°C'}</div></div>
                 <div class="sensor-label">Chmbr Top</div>
               </div>
               <div class="gauge" id="sensor-5">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] === "Disconnected" ? '--' : temperatures["5"]}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] === "DISCONNECTED" ? '--' : temperatures["5"] + '°C'}</div></div>
                 <div class="sensor-label">Air temp</div>
               </div>
               <div class="gauge" id="sensor-6">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] === "Disconnected" ? '--' : temperatures["6"]}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] === "DISCONNECTED" ? '--' : temperatures["6"] + '°C'}</div></div>
                 <div class="sensor-label">Extra 6</div>
               </div>
             </div>

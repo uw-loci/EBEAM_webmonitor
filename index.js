@@ -458,27 +458,20 @@ app.get('/', async (req, res) => {
           /* =========================
              PRESSURE SECTION
           ========================== */
-
           .pressure-section {
-            width: 60%;
-            height: 5px;
-            padding: 5px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 15px;
-            text-align: left;
-            color: white;
+            display: inline-block;
             margin-left: 40px;
             margin-top: -10px;
-          }
-
-          .pressure-section h4 {
-            margin-bottom: 10px;
-            font-size: 1.2em;
-            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 0.75em;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #00e676;
           }
 
           .pressure-value {
-            font-size: 2em;
+            font-size: 0.75em;
             font-weight: bold;
           }
 

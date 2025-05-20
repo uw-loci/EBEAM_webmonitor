@@ -497,7 +497,6 @@ app.get('/', async (req, res) => {
             border-radius: 50%;
             margin: 0 auto 5px auto;
             transition: transform 0.3s ease, filter 0.3s ease;
-            background-color: #28a745;
           }
           .interlock-item:hover .circle {
             transform: scale(1.1);
@@ -547,7 +546,6 @@ app.get('/', async (req, res) => {
             height: 30px;
             border-radius: 50%;
             margin: 0 auto 5px auto;
-            background-color: #28a745; /* Green */
             transition: transform 0.3s ease, filter 0.3s ease;
           }
           .vacuum-indicators-item:hover .vacuum-indicators-circle {
@@ -800,35 +798,35 @@ app.get('/', async (req, res) => {
             <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure || '--'} mbar</h3>
             <div class="vacuum-indicators-container">
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-success"></div>
                 <div>Pumps Power ON</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-success"></div>
                 <div>Turbo Rotor ON</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-success"></div>
                 <div>Turbo Vent Open</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-success"></div>
                 <div>972b Power On</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-success"></div>
                 <div>Turbo Gate Valve Closed</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-success"></div>
                 <div>Turbo Gate Valve Open</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-success"></div>
                 <div>Argon Gate Valve Open</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-success"></div>
                 <div>Argon Gate Valve Closed</div>
               </div>
             </div>

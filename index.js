@@ -463,11 +463,11 @@ app.get('/', async (req, res) => {
             background: rgba(255, 255, 255, 0.08);
             color: rgba(255, 255, 255, 0.85);
             font-size: 0.75em;
-            border-radius: 12px;
+            text-align: left;
+            border-radius: 6px;
             padding: 6px 12px;
             margin-top: -18px;
             margin-left: 40px;
-            text-align: left;
           }
 
           .pressure-value {

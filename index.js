@@ -465,8 +465,10 @@ app.get('/', async (req, res) => {
             padding: 5px;
             background: rgba(255, 255, 255, 0.08);
             border-radius: 15px;
-            text-align: center;
+            text-align: left;
             color: white;
+            margin-left: 40px;
+            margin-top: -10px;
           }
 
           .pressure-section h4 {

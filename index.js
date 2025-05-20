@@ -455,27 +455,6 @@ app.get('/', async (req, res) => {
             color: rgba(255, 255, 255, 0.8);
           }
 
-          /* =========================
-             PRESSURE SECTION
-          ========================== */
-          <!-- .pressure-section {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 0.75em;
-            text-align: left;
-            border-radius: 6px;
-            padding: 6px 12px;
-            margin-top: -18px;
-            margin-left: 40px;
-          }
-
-          .pressure-value {
-            font-size: 0.85em;
-            font-weight: bold;
-            color: #ffffff;
-          } -->
-
 
           /* =========================
              INTERLOCKS SECTION
@@ -757,13 +736,6 @@ app.get('/', async (req, res) => {
             <strong>Last Updated:</strong> ${currentTime}
           </p>
 
-          <!-- 
-          <div class="pressure-section">
-            <span>Pressure</span>
-            <span class="pressure-value"> mbar</span>
-          </div> 
-          -->
-
 
           <!-- Example Cards (Optional) -->
           <!--
@@ -867,27 +839,27 @@ app.get('/', async (req, res) => {
             <h3 class="dashboard-subtitle env-title">Environmental</h3>
             <div class="gauge-grid">
               <div class="gauge" id="sensor-1">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["1"] || '--'}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["1"] === "Disconnected" ? '--' : temperatures["1"]}°C</div></div>
                 <div class="sensor-label">Solenoid 1</div>
               </div>
               <div class="gauge" id="sensor-2">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["2"] || '--'}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["2"] === "Disconnected" ? '--' : temperatures["2"]}°C</div></div>
                 <div class="sensor-label">Solenoid 2</div>
               </div>
               <div class="gauge" id="sensor-3">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] || '--'}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] === "Disconnected" ? '--' : temperatures["3"]}°C</div></div>
                 <div class="sensor-label">Chmbr Bot</div>
               </div>
               <div class="gauge" id="sensor-4">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] || '--'}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] === "Disconnected" ? '--' : temperatures["4"]}°C</div></div>
                 <div class="sensor-label">Chmbr Top</div>
               </div>
               <div class="gauge" id="sensor-5">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] || '--'}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] === "Disconnected" ? '--' : temperatures["5"]}°C</div></div>
                 <div class="sensor-label">Air temp</div>
               </div>
               <div class="gauge" id="sensor-6">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] || '--'}°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] === "Disconnected" ? '--' : temperatures["6"]}°C</div></div>
                 <div class="sensor-label">Extra 6</div>
               </div>
             </div>

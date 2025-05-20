@@ -461,15 +461,16 @@ app.get('/', async (req, res) => {
           .pressure-section {
             display: inline-flex;
             align-items: center;
-            margin-left: 10px;
-            margin-top: -12px;
+            justify-content: flex-start; /* ensures internal alignment */
             background: rgba(0, 230, 118, 0.1);
             color: white;
             font-size: 0.75em;
             border-radius: 6px;
             gap: 8px;
+            padding: 4px 10px;
+            margin-top: -12px;
+            margin-left: 40px;
             text-align: left;
-            margin-left: 0; 
           }
 
           .pressure-value {
@@ -761,8 +762,8 @@ app.get('/', async (req, res) => {
 
           <!-- Pressure Section -->
           <div class="pressure-section">
-          <h4>Pressure</h4>
-          <p class="pressure-value">${pressure || '--'} mbar</p>
+          <span>Pressure</span>
+          <span class="pressure-value">${pressure || '--'} mbar</span>
           </div>
 
           <!-- Example Cards (Optional) -->

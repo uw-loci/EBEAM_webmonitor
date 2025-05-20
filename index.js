@@ -456,6 +456,25 @@ app.get('/', async (req, res) => {
           }
 
           /* =========================
+             PRESSURE SECTION
+          ========================== */
+          <div class="pressure-section" style="max-width: 300px; margin-bottom: 20px;">
+            <h4 style="margin-bottom: 10px;">Pressure</h4>
+            <div style="
+              font-size: 2em;
+              font-weight: bold;
+              color: #00e676;
+              background: rgba(255, 255, 255, 0.08);
+              padding: 15px 25px;
+              border-radius: 12px;
+              border: 2px solid #00e676;
+            ">
+
+              ${pressure || '--'} mbar
+            </div>
+          </div>
+
+          /* =========================
              INTERLOCKS SECTION
           ========================== */
           .interlocks-title {
@@ -732,7 +751,7 @@ app.get('/', async (req, res) => {
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
           <p class="dashboard-subtitle">
             <strong>File Last Modified:</strong> ${fileModified} | 
-            <strong>Last Update:</strong> ${currentTime}
+            <strong>Last Updated:</strong> ${currentTime}
           </p>
 
           <!-- Example Cards (Optional) -->

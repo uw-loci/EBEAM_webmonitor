@@ -464,17 +464,16 @@ app.get('/', async (req, res) => {
             margin-left: 10px;
             margin-top: -12px;
             background: rgba(0, 230, 118, 0.1);
-            color: #00e676;
+            color: white;
             font-size: 0.75em;
-            padding: 6px 14px;
             border-radius: 6px;
-            border: 1px solid #00e676;
-            vertical-align: middle;
-            gap: 8px; /* adds spacing between "Pressure" and the value */
+            gap: 8px;
+            text-align: left;
+            margin-left: 0; 
           }
 
           .pressure-value {
-            font-size: 0.85em;
+            font-size: 0.75em;
             font-weight: bold;
             color: #ffffff;
           }

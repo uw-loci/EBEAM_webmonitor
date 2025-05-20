@@ -458,21 +458,33 @@ app.get('/', async (req, res) => {
           /* =========================
              PRESSURE SECTION
           ========================== */
-          <div class="pressure-section" style="max-width: 300px; margin-bottom: 20px;">
-            <h4 style="margin-bottom: 10px;">Pressure</h4>
-            <div style="
-              font-size: 2em;
-              font-weight: bold;
-              color: #00e676;
-              background: rgba(255, 255, 255, 0.08);
-              padding: 15px 25px;
-              border-radius: 12px;
-              border: 2px solid #00e676;
-            ">
-
-              ${pressure || '--'} mbar
-            </div>
+          <div class="pressure-section">
+          <h4>Pressure</h4>
+          <div class="pressure-value">${pressure || '--'} mbar</div>
           </div>
+
+          .pressure-section {
+            max-width: 300px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            text-align: center;
+            color: #00e676;
+            border: 2px solid #00e676;
+          }
+
+          .pressure-section h4 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+            color: #ffffff;
+          }
+
+          .pressure-value {
+            font-size: 2em;
+            font-weight: bold;
+          }
+
 
           /* =========================
              INTERLOCKS SECTION

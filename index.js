@@ -460,14 +460,13 @@ app.get('/', async (req, res) => {
           ========================== */
 
           .pressure-section {
-            max-width: 300px;
-            margin: 20px auto;
-            padding: 20px;
+            width: 60%;
+            height: 5px;
+            padding: 5px;
             background: rgba(255, 255, 255, 0.08);
             border-radius: 15px;
             text-align: center;
-            color: #00e676;
-            border: 2px solid #00e676;
+            color: white;
           }
 
           .pressure-section h4 {

@@ -796,7 +796,7 @@ app.get('/', async (req, res) => {
 
           <!-- Vacuum Indicators Section -->
           <div class="vacuum-indicators">
-            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure || '--'}</h3>
+            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure || '--'} mbar</h3>
             <div class="vacuum-indicators-container">
               <div class="vacuum-indicators-item">
                 <div class="vacuum-indicators-circle"></div>

@@ -459,22 +459,19 @@ app.get('/', async (req, res) => {
              PRESSURE SECTION
           ========================== */
           .pressure-section {
-            display: inline-flex;
-            align-items: center;
-            justify-content: flex-start; /* ensures internal alignment */
-            background: rgba(0, 230, 118, 0.1);
-            color: white;
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.85);
             font-size: 0.75em;
-            border-radius: 6px;
-            gap: 8px;
-            padding: 4px 10px;
-            margin-top: -12px;
+            border-radius: 12px;
+            padding: 6px 12px;
+            margin-top: -18px;
             margin-left: 40px;
             text-align: left;
           }
 
           .pressure-value {
-            font-size: 0.75em;
+            font-size: 0.85em;
             font-weight: bold;
             color: #ffffff;
           }

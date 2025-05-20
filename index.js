@@ -458,7 +458,7 @@ app.get('/', async (req, res) => {
           /* =========================
              PRESSURE SECTION
           ========================== */
-          /* .pressure-section {
+          <!-- .pressure-section {
             display: inline-block;
             background: rgba(255, 255, 255, 0.08);
             color: rgba(255, 255, 255, 0.85);
@@ -474,7 +474,7 @@ app.get('/', async (req, res) => {
             font-size: 0.85em;
             font-weight: bold;
             color: #ffffff;
-          } */
+          } -->
 
 
           /* =========================
@@ -757,11 +757,13 @@ app.get('/', async (req, res) => {
             <strong>Last Updated:</strong> ${currentTime}
           </p>
 
-          /* <!-- Pressure Section -->
+          <!-- 
           <div class="pressure-section">
-          <span>Pressure</span>
-          <span class="pressure-value"> mbar</span>
-          </div> */
+            <span>Pressure</span>
+            <span class="pressure-value"> mbar</span>
+          </div> 
+          -->
+
 
           <!-- Example Cards (Optional) -->
           <!--

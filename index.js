@@ -458,7 +458,7 @@ app.get('/', async (req, res) => {
           /* =========================
              PRESSURE SECTION
           ========================== */
-          .pressure-section {
+          /* .pressure-section {
             display: inline-block;
             background: rgba(255, 255, 255, 0.08);
             color: rgba(255, 255, 255, 0.85);
@@ -474,7 +474,7 @@ app.get('/', async (req, res) => {
             font-size: 0.85em;
             font-weight: bold;
             color: #ffffff;
-          }
+          } */
 
 
           /* =========================
@@ -757,11 +757,11 @@ app.get('/', async (req, res) => {
             <strong>Last Updated:</strong> ${currentTime}
           </p>
 
-          <!-- Pressure Section -->
+          /* <!-- Pressure Section -->
           <div class="pressure-section">
           <span>Pressure</span>
-          <span class="pressure-value">${pressure || '--'} mbar</span>
-          </div>
+          <span class="pressure-value"> mbar</span>
+          </div> */
 
           <!-- Example Cards (Optional) -->
           <!--
@@ -822,7 +822,7 @@ app.get('/', async (req, res) => {
 
           <!-- Vacuum Indicators Section -->
           <div class="vacuum-indicators">
-            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators</h3>
+            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure || '--'}</h3>
             <div class="vacuum-indicators-container">
               <div class="vacuum-indicators-item">
                 <div class="vacuum-indicators-circle"></div>

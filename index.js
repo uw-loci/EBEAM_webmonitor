@@ -459,20 +459,24 @@ app.get('/', async (req, res) => {
              PRESSURE SECTION
           ========================== */
           .pressure-section {
-            display: inline-block;
-            margin-left: 40px;
-            margin-top: -10px;
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.8);
+            display: inline-flex;
+            align-items: center;
+            margin-left: 10px;
+            margin-top: -12px;
+            background: rgba(0, 230, 118, 0.1);
+            color: #00e676;
             font-size: 0.75em;
-            padding: 6px 12px;
-            border-radius: 8px;
+            padding: 6px 14px;
+            border-radius: 6px;
             border: 1px solid #00e676;
+            vertical-align: middle;
+            gap: 8px; /* adds spacing between "Pressure" and the value */
           }
 
           .pressure-value {
-            font-size: 0.75em;
+            font-size: 0.85em;
             font-weight: bold;
+            color: #ffffff;
           }
 
 

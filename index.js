@@ -463,7 +463,7 @@ app.get('/', async (req, res) => {
             margin-left: 40px;
             margin-top: -10px;
             background: rgba(255, 255, 255, 0.08);
-            color: white;
+            color: rgba(255, 255, 255, 0.8);
             font-size: 0.75em;
             padding: 6px 12px;
             border-radius: 8px;

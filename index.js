@@ -458,10 +458,6 @@ app.get('/', async (req, res) => {
           /* =========================
              PRESSURE SECTION
           ========================== */
-          <div class="pressure-section">
-          <h4>Pressure</h4>
-          <div class="pressure-value">${pressure || '--'} mbar</div>
-          </div>
 
           .pressure-section {
             max-width: 300px;
@@ -765,6 +761,12 @@ app.get('/', async (req, res) => {
             <strong>File Last Modified:</strong> ${fileModified} | 
             <strong>Last Updated:</strong> ${currentTime}
           </p>
+
+          <!-- Pressure Section -->
+          <div class="pressure-section">
+          <h4>Pressure</h4>
+          <p class="pressure-value">${pressure || '--'} mbar</p>
+          </div>
 
           <!-- Example Cards (Optional) -->
           <!--

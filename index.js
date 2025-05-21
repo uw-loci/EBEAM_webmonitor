@@ -725,8 +725,8 @@ app.get('/', async (req, res) => {
       </head>
       <body>
         <div class="container-fluid mt-4">
-          <!-- If experiment isn't running, show a neon warning -->
-          ${!experimentRunning ? `<div class="neon-warning fixed-top-right">Experiment is not running</div>` : ''}
+          <!-- If experiment isn't running, show a neon warning. In the alternate case, show a neon success -->
+          ${!experimentRunning ? `<div class="neon-warning fixed-top-right">Experiment is not running</div>` : `<div class="neon-success fixed-top-right">Experiment is running</div>`}
 
           <!-- Title & Subtitle -->
           <h2 class="dashboard-title">E-beam Web Monitor</h2>

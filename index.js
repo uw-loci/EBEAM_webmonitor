@@ -698,19 +698,22 @@ app.get('/', async (req, res) => {
             right: 25px;
             padding: 5px 10px;
             font-size: 0.7em;
-            background-color: rgba(255, 0, 0, 0.2);
             border-radius: 8px;
-            box-shadow: 0 0 10px red;
-            text-shadow: 0 0 10px red;
             color: white;
             font-weight: bold;
             z-index: 9999;
           }
           .neon-warning {
             border: 2px solid red;
+            box-shadow: 0 0 10px red;
+            text-shadow: 0 0 10px red;
+            background-color: rgba(255, 0, 0, 0.2);
           }
           .neon-success {
             border: 2px solid green;
+            box-shadow: 0 0 10px green;
+            text-shadow: 0 0 10px green;
+            background-color: rgba(0, 255, 0, 0.2);
           }
           @media (max-width: 768px) {
             .fixed-top-right {

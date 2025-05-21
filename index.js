@@ -699,13 +699,18 @@ app.get('/', async (req, res) => {
             padding: 5px 10px;
             font-size: 0.7em;
             background-color: rgba(255, 0, 0, 0.2);
-            border: 2px solid red;
             border-radius: 8px;
             box-shadow: 0 0 10px red;
             text-shadow: 0 0 10px red;
             color: white;
             font-weight: bold;
             z-index: 9999;
+          }
+          .neon-warning {
+            border: 2px solid red;
+          }
+          .neon-success {
+            border: 2px solid green;
           }
           @media (max-width: 768px) {
             .fixed-top-right {

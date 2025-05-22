@@ -25,6 +25,7 @@ let currentData = {
 // Current interval time in seconds since start of day
 let currentTimeInSeconds = 0;
 let lastValidPressureTimestamp = null;
+let lastValidTemperatureTimestamp = null;
 
 // Function to convert HH:MM:SS to total seconds
 function timeToSeconds(time) {
@@ -122,6 +123,7 @@ function processLogLines(logLines) {
                                 .replace(/(\d+):/g, '"$1":');
                             
                             currentData.temperatures = JSON.parse(tempsStr);
+                            lastValidTemperatureTimestamp = timestampInSeconds;
                             // if currentData object has been filled with valid values stop processing log lines
                             if (Object.values(currentData).every(value => value !== null)) {
                                 console.log(`data object has been filled`)
@@ -140,6 +142,16 @@ function processLogLines(logLines) {
     if (currentData.pressure !== null && (lastValidPressureTimestamp === null || currentTimeInSeconds - lastValidPressureTimestamp > 60)) {
         currentData.pressure = '--'; 
     }
+    if (currentData.temperatures !== null && (lastValidTemperatureTimestamp === null || currentTimeInSeconds - lastValidTemperatureTimestamp > 60)) {
+        currentData.temperatures = {
+          "1": "--",
+          "2": "--",
+          "3": "--",
+          "4": "--",
+          "5": "--",
+          "6": "--"
+        };
+      }
 }
 
 

@@ -905,10 +905,32 @@ app.get('/', async (req, res) => {
               console.error('Could not poll for reload', e);
             }
           }, 60000);
+
+          // Toggle between preview/full log
+
+          const toggleButton = document.getElementById('toggleButton');
+          const previewSection = document.getElementById('previewContent');
+          const fullSection = document.getElementById('fullContent');
+          let showingFull = false;
+          
+          function toggleContent() {
+            if (showingFull) {
+              previewSection.className = 'content-section active';
+              fullSection.className = 'content-section';
+              toggleButton.textContent = 'Show Full Log';
+            } else {
+              previewSection.className = 'content-section';
+              fullSection.className = 'content-section active';
+              toggleButton.textContent = 'Show Preview';
+            }
+            showingFull = !showingFull;
+          }
+          toggleButton.onclick = toggleContent;
         </script>
 
       </body>
       </html>
+      
     `);
     shouldReload = false; // reset shouldReload to false after page has been loaded
   } catch (err) {

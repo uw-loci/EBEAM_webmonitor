@@ -144,12 +144,12 @@ function processLogLines(logLines) {
     }
     if (currentData.temperatures !== null && (lastValidTemperatureTimestamp === null || currentTimeInSeconds - lastValidTemperatureTimestamp > 60)) {
         currentData.temperatures = {
-          "1": "--",
-          "2": "--",
-          "3": "--",
-          "4": "--",
-          "5": "--",
-          "6": "--"
+          "1": "DISCONNECTED",
+          "2": "DISCONNECTED",
+          "3": "DISCONNECTED",
+          "4": "DISCONNECTED",
+          "5": "DISCONNECTED",
+          "6": "DISCONNECTED"
         };
       }
 }

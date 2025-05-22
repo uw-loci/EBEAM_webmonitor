@@ -891,47 +891,31 @@ app.get('/', async (req, res) => {
         </div>
 
 
-        <!-- Auto-refresh & Toggle Script -->
+        <!-- Auto-refresh & Toggle Script -->   
+
         <script>
-          // Refresh every minute
-          const shouldReload = ${shouldReload};
-          const experimentRunning = ${experimentRunning};
-          setTimeout(function() {
-            if (shouldReload && experimentRunning) {
-              location.reload();
+          setInterval(async function () {
+            try {
+              const response = await fetch('/should-reload');
+              const { shouldReload, experimentRunning } = await response.json();
+              if (shouldReload && experimentRunning) {
+                location.reload();
+              }
+            } catch (e) {
+              console.error('Could not poll for reload', e);
             }
           }, 60000);
-
-          // Toggle between preview/full log
-          const toggleButton = document.getElementById('toggleButton');
-          const previewSection = document.getElementById('previewContent');
-          const fullSection = document.getElementById('fullContent');
-          let showingFull = false;
-          
-          function toggleContent() {
-            if (showingFull) {
-              previewSection.className = 'content-section active';
-              fullSection.className = 'content-section';
-              toggleButton.textContent = 'Show Full Log';
-            } else {
-              previewSection.className = 'content-section';
-              fullSection.className = 'content-section active';
-              toggleButton.textContent = 'Show Preview';
-            }
-            showingFull = !showingFull;
-          }
-          toggleButton.onclick = toggleContent;
         </script>
+
       </body>
       </html>
     `);
+    shouldReload = false; // reset shouldReload to false after page has been loaded
   } catch (err) {
     console.error(err);
     res.status(500).send(`Error: ${err.message}`);
   }
 });
-
-
 
 /**
  * GET /raw : Returns just the reversed text (newest at top).
@@ -954,6 +938,9 @@ app.get('/raw', async (req, res) => {
   }
 });
 
+app.get('/should-reload', (req, res) => {
+  res.json({ shouldReload, experimentRunning });
+});
 
 // Start the server
 app.listen(PORT, () => {

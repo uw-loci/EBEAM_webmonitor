@@ -24,6 +24,7 @@ let currentData = {
 
 // Current interval time in seconds since start of day
 let currentTimeInSeconds = 0;
+let lastValidPressureTimestamp = null;
 
 // Function to convert HH:MM:SS to total seconds
 function timeToSeconds(time) {
@@ -41,6 +42,7 @@ function getCurrentTimeInSeconds() {
 
 // Process log lines for current interval
 function processLogLines(logLines) {
+
     const currentTimeInSeconds = getCurrentTimeInSeconds(); // Get current time ONCE
 
     // Process each log line
@@ -83,11 +85,12 @@ function processLogLines(logLines) {
                     const pressureMatch = logLine.match(PRESSURE_REGEX);
                     if (pressureMatch && pressureMatch[1]) {
                         currentData.pressure = parseFloat(pressureMatch[1]);
+                        lastValidPressureTimestamp = timestampInSeconds;
                         // if currentData object has been filled with valid values stop processing log lines
-                        if (Object.values(currentData).every(value => value !== null)) {
-                            console.log(`data object has been filled`)
-                            return;
-                        }
+                        // if (Object.values(currentData).every(value => value !== null)) {
+                        //     console.log(`data object has been filled`)
+                        //     return;
+                        // }
                     }
                 }
                 break;
@@ -133,7 +136,12 @@ function processLogLines(logLines) {
                 break;
         }
     }
+    // set the pressure to -- if it's been over 60 seconds since the last pressure reading.
+    if (currentData.pressure !== null && (lastValidPressureTimestamp === null || currentTimeInSeconds - lastValidPressureTimestamp > 60)) {
+        currentData.pressure = '--'; 
+    }
 }
+
 
 // Middleware to check the secret key in the request headers
 // router.use('/data', (req, res, next) => {

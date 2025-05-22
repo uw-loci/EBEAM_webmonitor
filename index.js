@@ -894,8 +894,10 @@ app.get('/', async (req, res) => {
         <!-- Auto-refresh & Toggle Script -->
         <script>
           // Refresh every minute
+          const shouldReload = ${shouldReload};
+          const experimentRunning = ${experimentRunning};
           setTimeout(function() {
-            if (shouldReload) {
+            if (shouldReload && experimentRunning) {
               location.reload();
             }
           }, 60000);

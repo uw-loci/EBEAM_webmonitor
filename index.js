@@ -763,7 +763,7 @@ app.get('/', async (req, res) => {
             <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
             <div class="interlocks-container">
               <div class="interlock-item">
-                <div class="circle bg-danger"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Vacuum</div>
               </div>
               <div class="interlock-item">

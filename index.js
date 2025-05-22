@@ -767,35 +767,35 @@ app.get('/', async (req, res) => {
                 <div>Vacuum</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Water</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Door</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Timer</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Oil High</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Oil Low</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-danger"></div>
+                <div class="circle bg-secondary"></div>
                 <div>E-stop Ext</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-danger"></div>
+                <div class="circle bg-secondary"></div>
                 <div>E-stop Int</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>QGSP Active</div>
               </div>
             </div>
@@ -806,35 +806,35 @@ app.get('/', async (req, res) => {
             <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure || '--'} mbar</h3>
             <div class="vacuum-indicators-container">
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-success"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Pumps Power ON</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-success"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Turbo Rotor ON</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-success"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Turbo Vent Open</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-success"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>972b Power On</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-success"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Turbo Gate Valve Closed</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-success"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Turbo Gate Valve Open</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-success"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Argon Gate Valve Open</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-success"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Argon Gate Valve Closed</div>
               </div>
             </div>

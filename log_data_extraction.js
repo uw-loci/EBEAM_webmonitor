@@ -24,8 +24,6 @@ let currentData = {
 
 // Current interval time in seconds since start of day
 let currentTimeInSeconds = 0;
-let lastValidPressureTimestamp = null;
-let lastValidTemperatureTimestamp = null;
 
 // Function to convert HH:MM:SS to total seconds
 function timeToSeconds(time) {
@@ -43,7 +41,6 @@ function getCurrentTimeInSeconds() {
 
 // Process log lines for current interval
 function processLogLines(logLines) {
-
     const currentTimeInSeconds = getCurrentTimeInSeconds(); // Get current time ONCE
 
     // Process each log line
@@ -82,11 +79,10 @@ function processLogLines(logLines) {
         // Process based on log type
         switch(logType) {
             case "DEBUG: GUI updated with pressure":
-                if (currentData.pressure === null && difference < 60) {
+                if (currentData.pressure === null) {
                     const pressureMatch = logLine.match(PRESSURE_REGEX);
                     if (pressureMatch && pressureMatch[1]) {
                         currentData.pressure = parseFloat(pressureMatch[1]);
-                        lastValidPressureTimestamp = timestampInSeconds;
                         // if currentData object has been filled with valid values stop processing log lines
                         if (Object.values(currentData).every(value => value !== null)) {
                             console.log(`data object has been filled`)
@@ -114,7 +110,7 @@ function processLogLines(logLines) {
                 
             case "DEBUG: PMON temps":
                 console.log("Found PMON log line:", logLine);
-                if (currentData.temperatures === null && difference < 60) {
+                if (currentData.temperatures === null) {
                     const tempsMatch = logLine.match(TEMPS_REGEX);
                     if (tempsMatch && tempsMatch[1]) {
                         try {
@@ -123,7 +119,6 @@ function processLogLines(logLines) {
                                 .replace(/(\d+):/g, '"$1":');
                             
                             currentData.temperatures = JSON.parse(tempsStr);
-                            lastValidTemperatureTimestamp = timestampInSeconds;
                             // if currentData object has been filled with valid values stop processing log lines
                             if (Object.values(currentData).every(value => value !== null)) {
                                 console.log(`data object has been filled`)
@@ -139,6 +134,17 @@ function processLogLines(logLines) {
         }
     }
 }
+
+// Middleware to check the secret key in the request headers
+// router.use('/data', (req, res, next) => {
+//     // If the API key doesn't match the expected key, deny access
+//     if (req.headers['x-api-key'] !== LOG_DATA_EXTRACTION_KEY) {
+//       return res.status(403).json({ error: 'Forbidden: Invalid API Key' });
+//     }
+    
+//     // If the key matches, proceed to the actual API route handler
+//     next();
+// });
 
 // Define the /api/data endpoint that returns the JSON object
 router.get('/data', (req, res) => {

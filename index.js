@@ -198,17 +198,22 @@ async function fetchAndUpdateFile() {
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { 
       // experiment is inactive and we are outside the 15 min. window
       experimentRunning = false; // experiment is not running
+      data = {
+        pressure: null,
+        safetyFlags: null,
+        temperatures: null
+      };    
       if (!fs.existsSync(REVERSED_FILE_PATH)) {
-        // We don't have a "REVERSED_FILE_PATH.file" on server so we fetch the file from google
+        // We don't have a local file, just log and pass
         console.log("Experiment not running but passing through");
       } else {
-        // if REVERSED_FILE_PATH.file exists then return, no need to read.
+        // No update needed if file is old and exists
         console.log("Experiment not running - no updates in 15 minutes");
         shouldReload = false;
-        data = await extractData(); // only for testing has to be removed after
         return false;
       }
     }
+    
     //The experiment is running
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       // Use the cached file if it didn't change from last time instead of fetching again. 

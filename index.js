@@ -344,6 +344,7 @@ app.get('/', async (req, res) => {
     // Accessing each data field:
     const pressure = data.pressure; // Access Pressure (e.g., 1200)
     const temperatures = data.temperatures;
+  
     // const safetyFlags = data.data.safetyFlags; // Access Safety Flags array
     // const temperatures = response.Temperatures; // Access Temperatures object
     // const timestamp = response.NEW; // Access the timestamp (or NEW field)

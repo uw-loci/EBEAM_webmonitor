@@ -69,10 +69,10 @@ function processLogLines(logLines) {
         IMP: commenting it out for now 
         */
 
-        // if (difference > 60) {
-        //     console.log(`Stopping log processing: timestamp ${timestamp}, difference: ${difference}`);
-        //     break; // Exit the loop since logs are in descending order
-        // }
+        if (difference > 300) {
+            console.log(`Stopping log processing: timestamp ${timestamp}, difference: ${difference}`);
+            break; // Exit the loop since logs are in descending order
+        }
         
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);
@@ -88,10 +88,10 @@ function processLogLines(logLines) {
                         currentData.pressure = parseFloat(pressureMatch[1]);
                         lastValidPressureTimestamp = timestampInSeconds;
                         // if currentData object has been filled with valid values stop processing log lines
-                        // if (Object.values(currentData).every(value => value !== null)) {
-                        //     console.log(`data object has been filled`)
-                        //     return;
-                        // }
+                        if (Object.values(currentData).every(value => value !== null)) {
+                            console.log(`data object has been filled`)
+                            return;
+                        }
                     }
                 }
                 break;
@@ -138,55 +138,7 @@ function processLogLines(logLines) {
                 break;
         }
     }
-
-
-    // make sure to set all to -- and Disconnected when system is off
-
-    // There is a possibility this coule be overriding the values
-
-    if(currentData.pressure === null && (lastValidPressureTimestamp === null || currentTimeInSeconds - lastValidPressureTimestamp > 60)){
-        currentData.pressure = '--';
-      }
-
-    if(currentData.temperatures === null && (lastValidTemperatureTimestamp === null || currentTimeInSeconds - lastValidTemperatureTimestamp > 60)){
-    currentData.temperatures = {
-        "1": "DISCONNECTED",
-        "2": "DISCONNECTED",
-        "3": "DISCONNECTED",
-        "4": "DISCONNECTED",
-        "5": "DISCONNECTED",
-        "6": "DISCONNECTED"
-    };
-    }
-
-    // set the pressure to -- if it's been over 60 seconds since the last pressure reading.
-    // make sure stale values are not getting populated
-    if (currentData.pressure !== null && (lastValidPressureTimestamp === null || currentTimeInSeconds - lastValidPressureTimestamp > 60)) {
-        currentData.pressure = '--'; 
-    }
-    if (currentData.temperatures !== null && (lastValidTemperatureTimestamp === null || currentTimeInSeconds - lastValidTemperatureTimestamp > 60)) {
-        currentData.temperatures = {
-          "1": "DISCONNECTED",
-          "2": "DISCONNECTED",
-          "3": "DISCONNECTED",
-          "4": "DISCONNECTED",
-          "5": "DISCONNECTED",
-          "6": "DISCONNECTED"
-        };
-      }
-    }
-
-
-// Middleware to check the secret key in the request headers
-// router.use('/data', (req, res, next) => {
-//     // If the API key doesn't match the expected key, deny access
-//     if (req.headers['x-api-key'] !== LOG_DATA_EXTRACTION_KEY) {
-//       return res.status(403).json({ error: 'Forbidden: Invalid API Key' });
-//     }
-    
-//     // If the key matches, proceed to the actual API route handler
-//     next();
-// });
+}
 
 // Define the /api/data endpoint that returns the JSON object
 router.get('/data', (req, res) => {

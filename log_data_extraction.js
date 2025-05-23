@@ -141,11 +141,14 @@ function processLogLines(logLines) {
 
 
     // make sure to set all to -- and Disconnected when system is off
-    if(currentData.pressure === null){
+
+    // There is a possibility this coule be overriding the values
+
+    if(currentData.pressure === null && (lastValidPressureTimestamp === null || currentTimeInSeconds - lastValidPressureTimestamp > 60)){
         currentData.pressure = '--';
       }
-      
-    if(currentData.temperatures === null){
+
+    if(currentData.temperatures === null && (lastValidPressureTimestamp === null || currentTimeInSeconds - lastValidPressureTimestamp > 60)){
     currentData.temperatures = {
         "1": "DISCONNECTED",
         "2": "DISCONNECTED",

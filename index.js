@@ -203,6 +203,7 @@ async function fetchAndUpdateFile() {
         safetyFlags: null,
         temperatures: null
       };    
+
       if (!fs.existsSync(REVERSED_FILE_PATH)) {
         // We don't have a local file, just log and pass
         console.log("Experiment not running but passing through");
@@ -213,7 +214,7 @@ async function fetchAndUpdateFile() {
         return false;
       }
     }
-    
+
     //The experiment is running
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       // Use the cached file if it didn't change from last time instead of fetching again. 

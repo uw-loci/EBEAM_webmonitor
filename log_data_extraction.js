@@ -148,7 +148,7 @@ function processLogLines(logLines) {
         currentData.pressure = '--';
       }
 
-    if(currentData.temperatures === null && (lastValidPressureTimestamp === null || currentTimeInSeconds - lastValidPressureTimestamp > 60)){
+    if(currentData.temperatures === null && (lastValidTemperatureTimestamp === null || currentTimeInSeconds - lastValidTemperatureTimestamp > 60)){
     currentData.temperatures = {
         "1": "DISCONNECTED",
         "2": "DISCONNECTED",

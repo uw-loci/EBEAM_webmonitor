@@ -82,7 +82,7 @@ function processLogLines(logLines) {
         // Process based on log type
         switch(logType) {
             case "DEBUG: GUI updated with pressure":
-                if (currentData.pressure === null) {
+                if (currentData.pressure === null && difference < 60) {
                     const pressureMatch = logLine.match(PRESSURE_REGEX);
                     if (pressureMatch && pressureMatch[1]) {
                         currentData.pressure = parseFloat(pressureMatch[1]);
@@ -114,7 +114,7 @@ function processLogLines(logLines) {
                 
             case "DEBUG: PMON temps":
                 console.log("Found PMON log line:", logLine);
-                if (currentData.temperatures === null) {
+                if (currentData.temperatures === null && difference < 60) {
                     const tempsMatch = logLine.match(TEMPS_REGEX);
                     if (tempsMatch && tempsMatch[1]) {
                         try {

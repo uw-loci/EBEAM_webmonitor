@@ -145,17 +145,16 @@ function processLogLines(logLines) {
         currentData.pressure = '--';
       }
       
-    
-      if(currentData.temperatures === null){
-        currentData.temperatures = {
-          "1": "DISCONNECTED",
-          "2": "DISCONNECTED",
-          "3": "DISCONNECTED",
-          "4": "DISCONNECTED",
-          "5": "DISCONNECTED",
-          "6": "DISCONNECTED"
-        };
-      }
+    if(currentData.temperatures === null){
+    currentData.temperatures = {
+        "1": "DISCONNECTED",
+        "2": "DISCONNECTED",
+        "3": "DISCONNECTED",
+        "4": "DISCONNECTED",
+        "5": "DISCONNECTED",
+        "6": "DISCONNECTED"
+    };
+    }
 
     // set the pressure to -- if it's been over 60 seconds since the last pressure reading.
     // make sure stale values are not getting populated

@@ -28,6 +28,7 @@ const INACTIVE_THRESHOLD = 15 * 60 * 1000;
 const app = express();
 app.use('/log-data-extraction', logDataExtractionApiRoutes);
 
+
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });
 

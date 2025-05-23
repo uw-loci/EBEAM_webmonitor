@@ -144,8 +144,8 @@ function processLogLines(logLines) {
 router.get('/data', (req, res) => {
     // 'reversed.txt'
     // 'test_logs', 'sample_logs.txt'
-    const logFilePath = path.join(__dirname, 'reversed.txt'); // change this for sample log reading
-    // const logFilePath = './test_logs/sample_logs.txt'
+    // const logFilePath = path.join(__dirname, 'reversed.txt'); // change this for sample log reading
+    const logFilePath = './test_logs/sample_logs.txt'
     fs.readFile(logFilePath, 'utf-8', (err, data) => {
         if (err) {
             console.error('Failed to read log file:', err);

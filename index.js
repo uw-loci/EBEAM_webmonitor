@@ -343,7 +343,14 @@ app.get('/', async (req, res) => {
 
     // Accessing each data field:
     const pressure = data.pressure; // Access Pressure (e.g., 1200)
-    const temperatures = data.temperatures;
+    const temperatures = data.temperatures || {
+      "1": "DISCONNECTED",
+      "2": "DISCONNECTED",
+      "3": "DISCONNECTED",
+      "4": "DISCONNECTED",
+      "5": "DISCONNECTED",
+      "6": "DISCONNECTED"
+    };
   
     // const safetyFlags = data.data.safetyFlags; // Access Safety Flags array
     // const temperatures = response.Temperatures; // Access Temperatures object

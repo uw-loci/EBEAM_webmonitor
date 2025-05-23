@@ -351,6 +351,7 @@ app.get('/', async (req, res) => {
       "5": "DISCONNECTED",
       "6": "DISCONNECTED"
     };
+
   
     // const safetyFlags = data.data.safetyFlags; // Access Safety Flags array
     // const temperatures = response.Temperatures; // Access Temperatures object

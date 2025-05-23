@@ -69,10 +69,10 @@ function processLogLines(logLines) {
         IMP: commenting it out for now 
         */
 
-        if (difference > 300) {
-            console.log(`Stopping log processing: timestamp ${timestamp}, difference: ${difference}`);
-            break; // Exit the loop since logs are in descending order
-        }
+        // if (difference > 300) {
+        //     console.log(`Stopping log processing: timestamp ${timestamp}, difference: ${difference}`);
+        //     break; // Exit the loop since logs are in descending order
+        // }
         
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);

@@ -139,13 +139,12 @@ function processLogLines(logLines) {
         }
     }
 
-
-    if(currentData.pressure === null){
+    
+    if (currentData.pressure === null) {
         currentData.pressure = '--';
       }
       
-    
-      if(currentData.temperatures === null){
+      if (currentData.temperatures === null) {
         currentData.temperatures = {
           "1": "DISCONNECTED",
           "2": "DISCONNECTED",
@@ -154,23 +153,8 @@ function processLogLines(logLines) {
           "5": "DISCONNECTED",
           "6": "DISCONNECTED"
         };
-      }
-
-    // set the pressure to -- if it's been over 60 seconds since the last pressure reading.
-    if (currentData.pressure !== null && (lastValidPressureTimestamp === null || currentTimeInSeconds - lastValidPressureTimestamp > 60)) {
-        currentData.pressure = '--'; 
+      }      
     }
-    if (currentData.temperatures !== null && (lastValidTemperatureTimestamp === null || currentTimeInSeconds - lastValidTemperatureTimestamp > 60)) {
-        currentData.temperatures = {
-          "1": "DISCONNECTED",
-          "2": "DISCONNECTED",
-          "3": "DISCONNECTED",
-          "4": "DISCONNECTED",
-          "5": "DISCONNECTED",
-          "6": "DISCONNECTED"
-        };
-      }
-}
 
 
 // Middleware to check the secret key in the request headers

@@ -14,7 +14,6 @@ const LOG_TYPE_REGEX = / - (DEBUG: .+?):/;
 const PRESSURE_REGEX = /DEBUG: GUI updated with pressure: ([\d\.E\+]+)/;
 const FLAGS_REGEX = /DEBUG: Safety Output Terminal Data Flags: (\[.*\])/;
 const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
-let lastPressureTimestamp = null;
 
 // Store current interval data
 let currentData = {
@@ -84,7 +83,6 @@ function processLogLines(logLines) {
                     const pressureMatch = logLine.match(PRESSURE_REGEX);
                     if (pressureMatch && pressureMatch[1]) {
                         currentData.pressure = parseFloat(pressureMatch[1]);
-                        lastPressureTimestamp = timestampInSeconds;
                         // if currentData object has been filled with valid values stop processing log lines
                         if (Object.values(currentData).every(value => value !== null)) {
                             console.log(`data object has been filled`)
@@ -164,22 +162,6 @@ router.get('/data', (req, res) => {
         
         console.log(logLines)
         processLogLines(logLines);
-        const nowInSeconds = getCurrentTimeInSeconds();
-        if (lastPressureTimestamp === null) {
-            currentData.pressure = null;
-          } 
-        else {
-            let delta = nowInSeconds - lastPressureTimestamp;
-          
-            // Handle midnight crossover
-            if (delta < 0) {
-              delta += 86400; // add 24 hours in seconds
-            }
-          
-            if (delta > 120) {
-              currentData.pressure = null; // too old
-            }
-          }
 
         // Send back the processed interval data
         console.log(currentData)

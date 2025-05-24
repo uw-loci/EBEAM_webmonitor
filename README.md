@@ -18,6 +18,30 @@ File contents are reversed by line and stored in a local log file in render's te
 
 Webpage autoupdates every minute to reflect any new logs.
 
+
+
+## Logic for Updating Numerical Readings on the Dashboard
+
+1. **Live Polling**  
+   The dashboard polls for updates every 1 minute while the experiment is running  
+   (i.e., as long as the log file on Google Drive continues to receive new updates).
+
+2. **Experiment Inactivity**  
+   If the log file is **not modified for 15 consecutive minutes**, the experiment is considered **inactive**, and the dashboard displays:  
+   `"Experiment is not running"`  
+   This is determined by comparing the current time to the `modifiedTime` of the most recently fetched log file.
+
+3. **Temperature Readings is set to `'--'` if**  
+   Temperature readings are shown as `'--'` in the following cases:
+   - If the **PMON subsystem was never connected**, in which case the `DEBUG: PMON temps:` log line shows `None` for temperature values.
+   - If the **PMON is disconnected during an active experiment**, and the log explicitly shows the temperature readings as `'DISCONNECTED'`.
+   - If the **experiment has stopped**, and the log file is no longer being updated (i.e., stale), we discard the temperature readings **15 minutes after exiting** the EBEAM dashboard.
+
+4. **Pressure is set to `'--'` if**:
+   - No valid pressure reading has been received in the **last 2 minutes** (tracked via `lastPressureTimestamp`).
+   - The **experiment has been stopped** and the log file is stale. Like with temperatures, pressure readings are discarded **15 minutes after exiting** the dashboard.
+
+
 ## Hosting Information:
 [render.com](https://render.com/) is the hosting service. Render automatically restarts the hosting server for each change to the git main branch.
 render requires the following environment variables:

@@ -29,7 +29,7 @@ const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
 // 2 minutes in seconds
-const PRESSURE_THRESHOLD = 120; 
+const PRESSURE_THRESHOLD = 300; 
 
 // Initialize Express app
 const app = express();
@@ -370,6 +370,13 @@ app.get('/', async (req, res) => {
 
         const now = getCurrentTimeInSeconds();
         let diff = now - data.pressureTimestamp;
+
+
+        // debug statements
+        console.log("Current time:", now);
+        console.log("Pressure timestamp:", data.pressureTimestamp);
+        console.log("Time difference:", diff);
+
 
         if (diff < 0){
           diff += 86400;

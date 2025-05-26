@@ -11,9 +11,10 @@ const logDataExtractionApiRoutes = require('./log_data_extraction');
 // Load environment variables
 require('dotenv').config();
 
-function getCurrentTimeInSeconds() {
+function getCurrentTimeInSeconds(){
   const now = new Date();
-  return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  const chicagoTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Chicago" }));
+  return chicagoTime.getHours() * 3600 + chicagoTime.getMinutes() * 60 + chicagoTime.getSeconds();
 }
 
 const FOLDER_ID = process.env.FOLDER_ID;
@@ -361,30 +362,29 @@ app.get('/', async (req, res) => {
     // Accessing each data field:
     // add logic for setting pressure to null if we have crossed the pressure threshold
 
-    const pressure = data.pressure; 
-    console.log("Data(X):", data);
+    let pressure = null;
     // console.log("Pressure (X):", pressure);
     // console.log("Pressure timestamp (X):", data.pressureTimestamp);
 
-    // if (data.pressure !== null) {
-    //   if (data.pressureTimestamp === null) {
-    //     pressure = data.pressure;} 
+    if (data.pressure !== null) {
+      if (data.pressureTimestamp === null) {
+        pressure = data.pressure;} 
       
-    //   else {
+      else {
 
-    //     const now = getCurrentTimeInSeconds();
-    //     let diff = now - data.pressureTimestamp;
+        const now = getCurrentTimeInSeconds();
+        let diff = now - data.pressureTimestamp;
 
-    //     if (diff < 0){
-    //       diff += 86400;
-    //     }
+        if (diff < 0){
+          diff += 86400;
+        }
 
-    //     if (diff < PRESSURE_THRESHOLD) {
-    //       pressure = data.pressure;
-    //     }
+        if (diff < PRESSURE_THRESHOLD) {
+          pressure = data.pressure;
+        }
 
-    //   }
-    // }
+      }
+    }
 
     const temperatures = data.temperatures || {
       "1": "DISCONNECTED",

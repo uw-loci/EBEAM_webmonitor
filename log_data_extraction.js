@@ -18,6 +18,7 @@ const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
 // Store current interval data
 let currentData = {
   pressure: null,
+  pressureTimestamp: null,
   safetyFlags: null,
   temperatures: null
 };
@@ -83,6 +84,7 @@ function processLogLines(logLines) {
                     const pressureMatch = logLine.match(PRESSURE_REGEX);
                     if (pressureMatch && pressureMatch[1]) {
                         currentData.pressure = parseFloat(pressureMatch[1]);
+                        currentData.pressureTimestamp = timestampInSeconds;
                         // if currentData object has been filled with valid values stop processing log lines
                         if (Object.values(currentData).every(value => value !== null)) {
                             console.log(`data object has been filled`)
@@ -169,6 +171,7 @@ router.get('/data', (req, res) => {
 
         currentData = {
             pressure: null,
+            pressureTimestamp: null,
             safetyFlags: null,
             temperatures: null
         };

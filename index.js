@@ -23,9 +23,8 @@ const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
-// 2 minutes in milliseconds
-const PRESSURE_THRESHOLD = 120 * 1000; 
-let lastPressureTimestamp = null;
+// 2 minutes in seconds
+const PRESSURE_THRESHOLD = 120; 
 
 // Initialize Express app
 const app = express();
@@ -155,15 +154,13 @@ async function fetchFileContents(fileId) {
           console.warn(`API request failed with status: ${response.status}. Returning empty data.`);
           return {
             pressure: null,
+            pressureTimestamp: null,
             safetyFlags: null,
             temperatures: null
           };
         }
     
         const data = response.data;
-        if (data.pressure !== null){
-          lastPressureTimestamp = Date.now();
-        }
     
         // For debugging purposes
         console.log("Data:", data);
@@ -175,6 +172,7 @@ async function fetchFileContents(fileId) {
         console.error("Error fetching data:", e.message);
         return {
           pressure: null,
+          pressureTimestamp: null,
           safetyFlags: null,
           temperatures: null
         };
@@ -206,6 +204,7 @@ async function fetchAndUpdateFile() {
       experimentRunning = false; // experiment is not running
       data = {
         pressure: null,
+        pressureTimestamp: null,
         safetyFlags: null,
         temperatures: null
       };    
@@ -357,7 +356,20 @@ app.get('/', async (req, res) => {
     // Accessing each data field:
     // add logic for setting pressure to null if we have crossed the pressure threshold
     const present_time = Date.now();
-    const pressure = (data.pressure && lastPressureTimestamp && present_time - lastPressureTimestamp < PRESSURE_THRESHOLD) ? data.pressure : null;
+
+    let pressure = null;
+
+    if (data.pressure !== null && data.pressureTimestamp !== null) {
+
+      const now = getCurrentTimeInSeconds();
+      let diff = now - data.pressureTimestamp;
+      if (diff < 0) diff += 86400;
+
+      if (diff < PRESSURE_THRESHOLD) {
+        pressure = data.pressure;
+
+      }
+    }
     const temperatures = data.temperatures || {
       "1": "DISCONNECTED",
       "2": "DISCONNECTED",

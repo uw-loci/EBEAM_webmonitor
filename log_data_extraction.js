@@ -107,8 +107,8 @@ function processLogLines(logLines) {
                             }
                         } catch (error) {}
                     }
+                    break;
                 }
-                break;
                 
             case "DEBUG: PMON temps":
                 console.log("Found PMON log line:", logLine);

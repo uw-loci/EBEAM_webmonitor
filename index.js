@@ -362,29 +362,19 @@ app.get('/', async (req, res) => {
     // Accessing each data field:
     // add logic for setting pressure to null if we have crossed the pressure threshold
 
-    let pressure = null;
+    // let pressure = null;
+    const pressure = data.pressure;
     // console.log("Pressure (X):", pressure);
     // console.log("Pressure timestamp (X):", data.pressureTimestamp);
 
-    if (data.pressure !== null) {
-      if (data.pressureTimestamp === null) {
-        pressure = data.pressure;} 
+    // if (data.pressure !== null) {
+    //   if (data.pressureTimestamp === null) {
+    //     pressure = data.pressure;} 
       
-      else {
-
-        const now = getCurrentTimeInSeconds();
-        let diff = now - data.pressureTimestamp;
-
-        if (diff < 0){
-          diff += 86400;
-        }
-
-        if (diff < PRESSURE_THRESHOLD) {
-          pressure = data.pressure;
-        }
-
-      }
-    }
+    //   else {
+    //     pressure = data.pressure;
+    //   }
+    // }
 
     const temperatures = data.temperatures || {
       "1": "DISCONNECTED",

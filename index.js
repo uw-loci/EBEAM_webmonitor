@@ -364,17 +364,21 @@ app.get('/', async (req, res) => {
 
     let pressure = null;
 
-    if (data.pressure !== null && data.pressureTimestamp !== null) {
+    if (data.pressure !== null) {
+      if (data.pressureTimestamp === null) {
+        pressure = data.pressure;} 
+      
+      else {
+        const now = getCurrentTimeInSeconds();
+        let diff = now - data.pressureTimestamp;
+        if (diff < 0) diff += 86400;
 
-      const now = getCurrentTimeInSeconds();
-      let diff = now - data.pressureTimestamp;
-      if (diff < 0) diff += 86400;
-
-      if (diff < PRESSURE_THRESHOLD) {
-        pressure = data.pressure;
-
+        if (diff < PRESSURE_THRESHOLD) {
+          pressure = data.pressure;
+        }
       }
     }
+
     const temperatures = data.temperatures || {
       "1": "DISCONNECTED",
       "2": "DISCONNECTED",

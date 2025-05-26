@@ -360,7 +360,8 @@ app.get('/', async (req, res) => {
 
     // Accessing each data field:
     // add logic for setting pressure to null if we have crossed the pressure threshold
-    const present_time = Date.now();
+
+    let pressure = null;
     if (data.pressure !== null) {
       if (data.pressureTimestamp === null) {
         pressure = data.pressure;} 

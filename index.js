@@ -11,6 +11,11 @@ const logDataExtractionApiRoutes = require('./log_data_extraction');
 // Load environment variables
 require('dotenv').config();
 
+function getCurrentTimeInSeconds() {
+  const now = new Date();
+  return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+}
+
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;

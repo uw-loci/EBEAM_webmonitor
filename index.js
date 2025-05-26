@@ -369,13 +369,18 @@ app.get('/', async (req, res) => {
         pressure = data.pressure;} 
       
       else {
+        
         const now = getCurrentTimeInSeconds();
         let diff = now - data.pressureTimestamp;
-        if (diff < 0) diff += 86400;
+
+        if (diff < 0){
+          diff += 86400;
+        }
 
         if (diff < PRESSURE_THRESHOLD) {
           pressure = data.pressure;
         }
+
       }
     }
 

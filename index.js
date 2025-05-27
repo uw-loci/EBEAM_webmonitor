@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { google } = require('googleapis');
 const fs = require('fs');
@@ -12,6 +11,12 @@ const logDataExtractionApiRoutes = require('./log_data_extraction');
 // Load environment variables
 require('dotenv').config();
 
+function getCurrentTimeInSeconds(){
+  const now = new Date();
+  const chicagoTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Chicago" }));
+  return chicagoTime.getHours() * 3600 + chicagoTime.getMinutes() * 60 + chicagoTime.getSeconds();
+}
+
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
@@ -24,10 +29,13 @@ const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
+// 2 minutes in seconds
+const PRESSURE_THRESHOLD = 300; 
 
 // Initialize Express app
 const app = express();
 app.use('/log-data-extraction', logDataExtractionApiRoutes);
+
 
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });
@@ -144,48 +152,39 @@ async function fetchFileContents(fileId) {
       }
     }
  */
-async function extractData() {
-  try {
-
-    response = await axios.get('https://ebeam-webmonitor.onrender.com/log-data-extraction/data', {
-      headers: {
-        'x-api-key': LOG_DATA_EXTRACTION_KEY
-      }});
+    async function extractData() {
+      try {
+        const response = await axios.get('https://ebeam-webmonitor.onrender.com/log-data-extraction/data');
     
-    if (response.status !== 200) {
-      console.warn(`API request failed with status: ${response.status}. Returning empty data.`);
-      return { // Return an empty object on failure
-        pressure: null,
-        safetyFlags: null,
-        temperatures: null
-      };
+        if (response.status !== 200) {
+          console.warn(`API request failed with status: ${response.status}. Returning empty data.`);
+          return {
+            pressure: null,
+            pressureTimestamp: null,
+            safetyFlags: null,
+            temperatures: null
+          };
+        }
+    
+        const data = response.data;
+    
+        // For debugging purposes
+        console.log("Data:", data);
+        console.log("Pressure:", data.pressure);
+        console.log("Temperatures:", data.temperatures?.["1"]);
+    
+        return data;
+      } catch (e) {
+        console.error("Error fetching data:", e.message);
+        return {
+          pressure: null,
+          pressureTimestamp: null,
+          safetyFlags: null,
+          temperatures: null
+        };
+      }
     }
-
-    // only for testing accessing
-    console.log("Data: ", response.data);
-    // console.log("Data: ", data.data);
-
-    // Accessing each data field:
-    const pressure = response.data.pressure; // Access Pressure (e.g., 1200)
-    // const safetyFlags = data.data.safetyFlags[0]; // Access Safety Flags array
-    const temperatures = response.data.temperatures; // Access Temperatures object
-    // const timestamp = response.NEW; // Access the timestamp (or NEW field)
     
-
-    // For example, to access the first temperature reading:
-    // const temperatureSensor1 = temperatures["1"]; // "18.94"
-
-    // You can now use these variables as needed in your front end.
-    console.log('Pressure:', pressure);
-    // console.log('Safety Flags:', safetyFlags);
-    console.log('Temperatures:', temperatures['1']);
-    
-  } catch (e) {
-    console.log("Error: ", e);
-  }
-
-  return response;
-}
 
 
 /**
@@ -209,17 +208,24 @@ async function fetchAndUpdateFile() {
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { 
       // experiment is inactive and we are outside the 15 min. window
       experimentRunning = false; // experiment is not running
+      data = {
+        pressure: null,
+        pressureTimestamp: null,
+        safetyFlags: null,
+        temperatures: null
+      };    
+
       if (!fs.existsSync(REVERSED_FILE_PATH)) {
-        // We don't have a "REVERSED_FILE_PATH.file" on server so we fetch the file from google
+        // We don't have a local file, just log and pass
         console.log("Experiment not running but passing through");
       } else {
-        // if REVERSED_FILE_PATH.file exists then return, no need to read.
+        // No update needed if file is old and exists
         console.log("Experiment not running - no updates in 15 minutes");
         shouldReload = false;
-        data = extractData(); // only for testing has to be removed after
         return false;
       }
     }
+
     //The experiment is running
     if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
       // Use the cached file if it didn't change from last time instead of fetching again. 
@@ -227,7 +233,7 @@ async function fetchAndUpdateFile() {
       experimentRunning = true;
       shouldReload = false;
       if (fs.existsSync(REVERSED_FILE_PATH)) {
-        data = extractData();
+        data = await extractData();
       } else {
         data = null;
         console.log("File None existant -- Could not extract the log data");
@@ -344,6 +350,8 @@ app.get('/', async (req, res) => {
 
     const contentLines = reversedContents.split('\n');
     const previewContent = contentLines.slice(0, 20).join('\n');
+    // console.log("Preview content (first 20 lines):\n", previewContent);
+
     const fileModified = lastModifiedTime 
       ? new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })
       : "N/A";
@@ -352,7 +360,32 @@ app.get('/', async (req, res) => {
     console.log("Data: ", data) // throwing an error on render.
 
     // Accessing each data field:
-    const pressure = data.pressure; // Access Pressure (e.g., 1200)
+    // add logic for setting pressure to null if we have crossed the pressure threshold
+
+    // let pressure = null;
+    const pressure = data.pressure;
+    // console.log("Pressure (X):", pressure);
+    // console.log("Pressure timestamp (X):", data.pressureTimestamp);
+
+    // if (data.pressure !== null) {
+    //   if (data.pressureTimestamp === null) {
+    //     pressure = data.pressure;} 
+      
+    //   else {
+    //     pressure = data.pressure;
+    //   }
+    // }
+
+    const temperatures = data.temperatures || {
+      "1": "DISCONNECTED",
+      "2": "DISCONNECTED",
+      "3": "DISCONNECTED",
+      "4": "DISCONNECTED",
+      "5": "DISCONNECTED",
+      "6": "DISCONNECTED"
+    };
+
+  
     // const safetyFlags = data.data.safetyFlags; // Access Safety Flags array
     // const temperatures = response.Temperatures; // Access Temperatures object
     // const timestamp = response.NEW; // Access the timestamp (or NEW field)
@@ -363,13 +396,14 @@ app.get('/', async (req, res) => {
 
     // You can now use these variables as needed in your front end.
     console.log('Pressure:', pressure);
+    console.log('Temperatures', temperatures);
     // console.log('Safety Flags:', safetyFlags);
     // console.log('Temperatures:', temperatures);
     // console.log('Timestamp:', timestamp);
     // console.log('Temperature from sensor 1:', temperatureSensor1);
 
     // temp var 
-    const temp = JSON.stringify(data.data);
+    const temp = JSON.stringify(data);
 
     //  keep your HTML generation as-is below this
     res.send(`
@@ -387,9 +421,9 @@ app.get('/', async (req, res) => {
           body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background: linear-gradient(-45deg, #001f3f, #003366, #005a9e);
+            /* background: linear-gradient(-45deg, #001f3f, #003366, #005a9e); */
+            background: #0d1117;
             background-size: 400% 400%;
-            animation: gradientMove 12s ease infinite;
             color: white;
             padding: 20px;
             margin: 0;
@@ -404,15 +438,20 @@ app.get('/', async (req, res) => {
              GLASSMORPHISM CONTAINERS
           ========================== */
           .glass-container {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 15px;
+            background: rgba(30, 30, 30, 0.9);
+
+            /* backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px); */
+
+            border-radius: 8px;
             padding: 30px;
-            box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15);
+
+            /* box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15); */
+
             width: 100%;
             margin: 0 auto;
           }
+            
           /* For sections like Interlocks, Environmental, and Green Indicators */
           .interlocks-section,
           .env-section,
@@ -422,7 +461,7 @@ app.get('/', async (req, res) => {
             -webkit-backdrop-filter: blur(20px);
             border-radius: 15px;
             padding: 20px;
-            margin: 30px auto;
+            margin: 50px auto;
             width: 90%;
           }
 
@@ -430,13 +469,16 @@ app.get('/', async (req, res) => {
              TITLES / HEADERS
           ========================== */
           .dashboard-title {
-            font-size: 3.5em;
-            font-weight: 900;
+            font-size: 2em;
+            font-weight: 700;
             color: #d6eaff;
-            text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
-                         0px 0px 20px rgba(214, 234, 255, 0.4);
+            text-align: left;
+            padding-left: 40px;
+            /* text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
+                         0px 0px 20px rgba(214, 234, 255, 0.4); */
           }
-          .dashboard-title::after {
+          
+          /* .dashboard-title::after {
             content: "";
             display: block;
             width: 60%;
@@ -445,13 +487,16 @@ app.get('/', async (req, res) => {
             margin: 10px auto;
             box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
             border-radius: 10px;
-          }
+          } */
+
           .dashboard-subtitle {
-            font-size: 1.2em;
+            font-size: 0.9em;
             margin-bottom: 25px;
+            text-align: left;
             opacity: 0.9;
             color: rgba(255, 255, 255, 0.8);
           }
+
 
           /* =========================
              INTERLOCKS SECTION
@@ -460,6 +505,7 @@ app.get('/', async (req, res) => {
             font-weight: bold;
             transition: text-shadow 0.3s ease;
             cursor: pointer;
+            font-size: 0.9em;
           }
           .interlocks-title:hover {
             text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
@@ -472,6 +518,7 @@ app.get('/', async (req, res) => {
           }
           .interlock-item {
             text-align: center;
+            font-size: 0.75em;
             margin: 10px;
             transition: transform 0.3s ease, filter 0.3s ease;
             cursor: pointer;
@@ -487,8 +534,8 @@ app.get('/', async (req, res) => {
             font-weight: bold;
           }
           .circle {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             margin: 0 auto 5px auto;
             transition: transform 0.3s ease, filter 0.3s ease;
@@ -505,6 +552,7 @@ app.get('/', async (req, res) => {
             font-weight: bold;
             transition: text-shadow 0.3s ease;
             cursor: pointer;
+            font-size: 0.9em;
           }
           .vacuum-indicators-title:hover {
             text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
@@ -519,6 +567,7 @@ app.get('/', async (req, res) => {
           /* Items here are the same as interlock items but will only use green circles */
           .vacuum-indicators-item {
             text-align: center;
+            font-size: 0.75em;
             margin: 10px;
             transition: transform 0.3s ease, filter 0.3s ease;
             cursor: pointer;
@@ -535,11 +584,10 @@ app.get('/', async (req, res) => {
           }
           /* Use same circle styling */
           .vacuum-indicators-circle {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             margin: 0 auto 5px auto;
-            background-color: #28a745; /* Green */
             transition: transform 0.3s ease, filter 0.3s ease;
           }
           .vacuum-indicators-item:hover .vacuum-indicators-circle {
@@ -562,19 +610,19 @@ app.get('/', async (req, res) => {
             text-align: center;
             color: #fff;
           }
-          .gauge-circle {
-            width: 80px;
-            height: 80px;
+          /* .gauge-circle {
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: conic-gradient(#ccc 0deg, #ccc 360deg);
             position: relative;
             margin: 0 auto 0.5rem;
             transition: background 0.3s;
-          }
-          .gauge-cover {
+          } */
+          /* .gauge-cover {
             position: absolute;
             top: 12px; left: 12px;
-            width: 56px; height: 56px;
+            width: 60px; height: 60px;
             background: rgba(0,0,0,0.4);
             border-radius: 50%;
             display: flex;
@@ -583,7 +631,7 @@ app.get('/', async (req, res) => {
             font-size: 1em;
             color: #fff;
           }
-          .sensor-label { font-weight: bold; }
+          .sensor-label { font-weight: bold; } */
           
 
           /* horizontal layout */
@@ -597,49 +645,54 @@ app.get('/', async (req, res) => {
           }
           .gauge {
             text-align: center;
+            font-size: 0.75em;
             color: #fff;
           }
+
+          // gauge circle now displays the attributes of a textbox
           .gauge-circle {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: conic-gradient(#ccc 0deg, #ccc 360deg);
-            position: relative;
-            margin: 0 auto 0.5rem;
-            transition: background 0.3s;
+            width: 80px; 
+            height: 37px;
+            padding: 10px;
+            background-color: conic-gradient(#ccc 0deg, #ccc 360deg);
+            color: white;
+            border: 1px solid #ccc;
+            text-align: center;
+            font-size: 0.9em;
           }
-          .gauge-cover {
-            position: absolute;
-            top: 12px; left: 12px;
-            width: 56px; height: 56px;
-            background: rgba(0,0,0,0.4);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1em;
-            color: #fff;
-          }
-          .sensor-label { font-weight: bold; }
+
+          // .gauge-cover {
+          //   width: 100%;
+          //   height: 100%;
+          //   border-radius: 50%;
+          //   background: rgba(0, 0, 0, 0.4);
+          //   display: flex;
+          //   align-items: center;
+          //   justify-content: center;
+          //   font-size: 1em;
+          //   color: #fff;
+          // }
+          // .sensor-label { font-weight: bold; }
 
 
           /* =========================
              LOG VIEWER
           ========================== */
+
           pre {
             white-space: pre-wrap;
             font-family: 'Courier New', monospace;
             text-align: left;
-            background: rgba(10, 10, 10, 0.85);
+            background-color: #000;
             color: #ffffff;
-            padding: 20px;
-            border-radius: 12px;
+            padding: 20px 0;
             max-height: 600px;
             overflow-y: auto;
-            font-size: 1.2em;
-            box-shadow: 0px 0px 15px rgba(0, 255, 255, 0.3);
-            border: 1px solid rgba(0, 255, 255, 0.5);
-          }
+            font-size: 0.9em;
+            border-radius: 9px;
+            margin-top: 2.75em;
+            }
+
           .content-section {
             display: none;
           }
@@ -647,14 +700,17 @@ app.get('/', async (req, res) => {
             display: block;
           }
           .btn-toggle {
-            background: rgba(0, 255, 255, 0.5);
+            background-color: #00bcd4;
             color: white;
-            border: 1px solid rgba(0, 255, 255, 0.8);
-            border-radius: 8px;
-            padding: 12px 25px;
-            font-size: 1.1em;
-            margin-bottom: 20px;
-            transition: background 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            padding: 10px 20px;
+            font-size: 0.75em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            float: right;
+            margin-top: -3.5em;
+            margin-bottom: 10px;
           }
           .btn-toggle:hover {
             background: rgba(0, 255, 255, 0.8);
@@ -682,22 +738,24 @@ app.get('/', async (req, res) => {
             position: absolute;
             top: 20px;
             right: 25px;
-            padding: 10px 20px;
-            font-size: 1.3em;
-            background-color: rgba(255, 0, 0, 0.2);
-            border: 2px solid red;
+            padding: 5px 10px;
+            font-size: 0.7em;
             border-radius: 8px;
-            box-shadow: 0 0 20px red;
-            text-shadow: 0 0 15px red;
             color: white;
             font-weight: bold;
-            animation: neonBlink 8s infinite alternate;
             z-index: 9999;
           }
-          @keyframes neonBlink {
-            0% { opacity: 1; text-shadow: 0 0 10px red; }
-            50% { opacity: 0.8; text-shadow: 0 0 5px red; }
-            100% { opacity: 1; text-shadow: 0 0 10px red; }
+          .neon-warning {
+            border: 2px solid red;
+            box-shadow: 0 0 10px red;
+            text-shadow: 0 0 10px red;
+            background-color: rgba(255, 0, 0, 0.2);
+          }
+          .neon-success {
+            border: 2px solid green;
+            box-shadow: 0 0 10px green;
+            text-shadow: 0 0 10px green;
+            background-color: rgba(0, 255, 0, 0.2);
           }
           @media (max-width: 768px) {
             .fixed-top-right {
@@ -717,8 +775,8 @@ app.get('/', async (req, res) => {
       </head>
       <body>
         <div class="container-fluid mt-4">
-          <!-- If experiment isn't running, show a neon warning -->
-          ${!experimentRunning ? `<div class="neon-warning fixed-top-right">Experiment is not running</div>` : ''}
+          <!-- If experiment isn't running, show a neon warning. In the alternate case, show a neon success -->
+          ${!experimentRunning ? `<div class="neon-warning fixed-top-right">Experiment is not running</div>` : `<div class="neon-success fixed-top-right">Experiment is running</div>`}
 
           <!-- Title & Subtitle -->
           <h2 class="dashboard-title">E-beam Web Monitor</h2>
@@ -726,6 +784,7 @@ app.get('/', async (req, res) => {
             <strong>File Last Modified:</strong> ${fileModified} | 
             <strong>Last Updated:</strong> ${currentTime}
           </p>
+
 
           <!-- Example Cards (Optional) -->
           <!--
@@ -746,39 +805,39 @@ app.get('/', async (req, res) => {
             <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
             <div class="interlocks-container">
               <div class="interlock-item">
-                <div class="circle bg-danger"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Vacuum</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Water</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Door</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Timer</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Oil High</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>Oil Low</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-danger"></div>
+                <div class="circle bg-secondary"></div>
                 <div>E-stop Ext</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-danger"></div>
+                <div class="circle bg-secondary"></div>
                 <div>E-stop Int</div>
               </div>
               <div class="interlock-item">
-                <div class="circle bg-success"></div>
+                <div class="circle bg-secondary"></div>
                 <div>QGSP Active</div>
               </div>
             </div>
@@ -786,38 +845,38 @@ app.get('/', async (req, res) => {
 
           <!-- Vacuum Indicators Section -->
           <div class="vacuum-indicators">
-            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators</h3>
+            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure || '--'} mbar</h3>
             <div class="vacuum-indicators-container">
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Pumps Power ON</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Turbo Rotor ON</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Turbo Vent Open</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>972b Power On</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Turbo Gate Valve Closed</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Turbo Gate Valve Open</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Argon Gate Valve Open</div>
               </div>
               <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle"></div>
+                <div class="vacuum-indicators-circle bg-secondary"></div>
                 <div>Argon Gate Valve Closed</div>
               </div>
             </div>
@@ -829,69 +888,68 @@ app.get('/', async (req, res) => {
             <h3 class="dashboard-subtitle env-title">Environmental</h3>
             <div class="gauge-grid">
               <div class="gauge" id="sensor-1">
-                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["1"] === "DISCONNECTED" || temperatures["1"] === "None" ? '--' : temperatures["1"] + '°C'}</div></div>
                 <div class="sensor-label">Solenoid 1</div>
               </div>
               <div class="gauge" id="sensor-2">
-                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["2"] === "DISCONNECTED" || temperatures["2"] === "None" ? '--' : temperatures["2"] + '°C'}</div></div>
                 <div class="sensor-label">Solenoid 2</div>
               </div>
               <div class="gauge" id="sensor-3">
-                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] === "DISCONNECTED" || temperatures["3"] === "None" ? '--' : temperatures["3"] + '°C'}</div></div>
                 <div class="sensor-label">Chmbr Bot</div>
               </div>
               <div class="gauge" id="sensor-4">
-                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] === "DISCONNECTED" || temperatures["4"] === "None" ? '--' : temperatures["4"] + '°C'}</div></div>
                 <div class="sensor-label">Chmbr Top</div>
               </div>
               <div class="gauge" id="sensor-5">
-                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] === "DISCONNECTED" || temperatures["5"] === "None" ? '--' : temperatures["5"] + '°C'}</div></div>
                 <div class="sensor-label">Air temp</div>
               </div>
               <div class="gauge" id="sensor-6">
-                <div class="gauge-circle"><div class="gauge-cover">--°C</div></div>
+                <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] === "DISCONNECTED" || temperatures["6"] === "None" ? '--' : temperatures["6"] + '°C'}</div></div>
                 <div class="sensor-label">Extra 6</div>
               </div>
             </div>
           </div>
 
-
-
-
-
           <!-- Log Viewer -->
-          <div class="row justify-content-center">
-            <div class="col-lg-12">
-              <div class="glass-container p-4">
+            <div class="env-section">
+              <h3 class="dashboard-subtitle env-title">System Logs</h3>
                 <button id="toggleButton" class="btn-toggle">Show Full Log</button>
-                <div id="previewContent" class="content-section active">
-                <!-- change the next line with previewContent -->
-                  <pre>${temp}</pre>
-                  <p class="text-center text-info mt-2">
-                    Showing first 20 lines. Click the button above to see the full log.
-                  </p>
-                </div>
+                  <div id="previewContent" class="content-section active">
+                    <pre>${previewContent}</pre>
+                      <p class="text-center text-info mt-2">
+                        Showing first 20 lines. Click the button above to see the full log.
+                      </p>
+                  </div>
                 <div id="fullContent" class="content-section">
-                  <pre>${reversedContents}</pre>
-                  <p class="text-center text-info mt-2">
-                    Showing full log. Click the button above to see the preview.
-                  </p>
-                </div>
-              </div>
-            </div>
+              <pre>${reversedContents}</pre>
+            <p class="text-center text-info mt-2">
+                  Showing full log. Click the button above to see the preview.
+            </p>
           </div>
         </div>
 
-        <!-- Auto-refresh & Toggle Script -->
+
+        <!-- Auto-refresh & Toggle Script -->   
+
         <script>
-          // Refresh every minute
-          setTimeout(function() {
-            if (shouldReload) {
-              location.reload();
+          setInterval(async function () {
+            try {
+              const response = await fetch('/should-reload');
+              const { shouldReload, experimentRunning } = await response.json();
+              if (shouldReload && experimentRunning) {
+                location.reload();
+              }
+            } catch (e) {
+              console.error('Could not poll for reload', e);
             }
           }, 60000);
 
           // Toggle between preview/full log
+
           const toggleButton = document.getElementById('toggleButton');
           const previewSection = document.getElementById('previewContent');
           const fullSection = document.getElementById('fullContent');
@@ -911,16 +969,17 @@ app.get('/', async (req, res) => {
           }
           toggleButton.onclick = toggleContent;
         </script>
+
       </body>
       </html>
+      
     `);
+    shouldReload = false; // reset shouldReload to false after page has been loaded
   } catch (err) {
     console.error(err);
     res.status(500).send(`Error: ${err.message}`);
   }
 });
-
-
 
 /**
  * GET /raw : Returns just the reversed text (newest at top).
@@ -943,6 +1002,9 @@ app.get('/raw', async (req, res) => {
   }
 });
 
+app.get('/should-reload', (req, res) => {
+  res.json({ shouldReload, experimentRunning });
+});
 
 // Start the server
 app.listen(PORT, () => {

@@ -11,12 +11,6 @@ const logDataExtractionApiRoutes = require('./log_data_extraction');
 // Load environment variables
 require('dotenv').config();
 
-function getCurrentTimeInSeconds(){
-  const now = new Date();
-  const chicagoTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Chicago" }));
-  return chicagoTime.getHours() * 3600 + chicagoTime.getMinutes() * 60 + chicagoTime.getSeconds();
-}
-
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
@@ -29,8 +23,14 @@ const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
-// 2 minutes in seconds
-const PRESSURE_THRESHOLD = 300; 
+
+// function to convert current time to seconds
+function timeToSeconds(time) {
+  const hours = (time[0] - '0') * 10 + (time[1] - '0');   // First two characters for hours
+  const minutes = (time[3] - '0') * 10 + (time[4] - '0'); // Characters at index 3 and 4 for minutes
+  const seconds = (time[6] - '0') * 10 + (time[7] - '0'); // Characters at index 6 and 7 for seconds
+  return hours * 3600 + minutes * 60 + seconds;
+}
 
 // Initialize Express app
 const app = express();
@@ -165,8 +165,21 @@ async function fetchFileContents(fileId) {
             temperatures: null
           };
         }
+
+        function secondsSinceMidnightChicago() {
+          // take the current UTC time, format to Chicago and re-parse it
+          const nowLocal = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+          const d = new Date(nowLocal);
+          return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+        }
+        
+        const nowSec = secondsSinceMidnightChicago();
     
         const data = response.data;
+        let diff = nowSec - data.pressureTimestamp;
+    
+        if (diff < 0) diff += 24 * 3600;
+        data.differenceTimestamp = diff;
     
         // For debugging purposes
         console.log("Data:", data);
@@ -202,7 +215,8 @@ async function fetchAndUpdateFile() {
     }
 
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
-    const currentTime = new Date().getTime();
+    const currentTime = Date.now();
+
 
     // First check if the experiment is active
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { 
@@ -357,24 +371,17 @@ app.get('/', async (req, res) => {
       : "N/A";
     const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
 
-    console.log("Data: ", data) // throwing an error on render.
+    console.log("Data: ", data); // throwing an error on render.
 
     // Accessing each data field:
     // add logic for setting pressure to null if we have crossed the pressure threshold
 
     // let pressure = null;
-    const pressure = data.pressure;
-    // console.log("Pressure (X):", pressure);
-    // console.log("Pressure timestamp (X):", data.pressureTimestamp);
-
-    // if (data.pressure !== null) {
-    //   if (data.pressureTimestamp === null) {
-    //     pressure = data.pressure;} 
-      
-    //   else {
-    //     pressure = data.pressure;
-    //   }
-    // }
+    // let timeStampDebug = data.pressureTimestamp;
+    let pressure = null;
+    if (data.differenceTimestamp != null && data.differenceTimestamp <= 75) {
+      pressure = data.pressure;
+    }
 
     const temperatures = data.temperatures || {
       "1": "DISCONNECTED",
@@ -395,8 +402,12 @@ app.get('/', async (req, res) => {
     // const temperatureSensor1 = temperatures["1"]; // "18.94"
 
     // You can now use these variables as needed in your front end.
+
+    //DEBUG:
     console.log('Pressure:', pressure);
     console.log('Temperatures', temperatures);
+    console.log('PressureTimestamp', data.pressureTimestamp);
+
     // console.log('Safety Flags:', safetyFlags);
     // console.log('Temperatures:', temperatures);
     // console.log('Timestamp:', timestamp);
@@ -845,7 +856,7 @@ app.get('/', async (req, res) => {
 
           <!-- Vacuum Indicators Section -->
           <div class="vacuum-indicators">
-            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure || '--'} mbar</h3>
+            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
             <div class="vacuum-indicators-container">
               <div class="vacuum-indicators-item">
                 <div class="vacuum-indicators-circle bg-secondary"></div>

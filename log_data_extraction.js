@@ -23,8 +23,11 @@ let currentData = {
   temperatures: null
 };
 
-// Current interval time in seconds since start of day
-let currentTimeInSeconds = 0;
+function getCurrentTimeInSeconds(){
+    const now = new Date();
+    const chicagoTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Chicago" }));
+    return chicagoTime.getHours() * 3600 + chicagoTime.getMinutes() * 60 + chicagoTime.getSeconds();
+  }
 
 // Function to convert HH:MM:SS to total seconds
 function timeToSeconds(time) {
@@ -34,15 +37,8 @@ function timeToSeconds(time) {
     return hours * 3600 + minutes * 60 + seconds;
 }
 
-// Get current time in seconds since start of day
-function getCurrentTimeInSeconds() {
-    const now = new Date();
-    return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-}
-
 // Process log lines for current interval
 function processLogLines(logLines) {
-    const currentTimeInSeconds = getCurrentTimeInSeconds(); // Get current time ONCE
 
     // Process each log line
     for (const logLine of logLines) {
@@ -52,6 +48,8 @@ function processLogLines(logLines) {
 
         const timestamp = timestampMatch[1];
         const timestampInSeconds = timeToSeconds(timestamp);
+
+        const currentTimeInSeconds = getCurrentTimeInSeconds(); // Get current time ONCE
 
         // Calculate the difference in seconds
         let difference = currentTimeInSeconds - timestampInSeconds;
@@ -67,10 +65,10 @@ function processLogLines(logLines) {
         IMP: commenting it out for now 
         */
 
-        // if (difference > 300) {
-        //     console.log(`Stopping log processing: timestamp ${timestamp}, difference: ${difference}`);
-        //     break; // Exit the loop since logs are in descending order
-        // }
+        if (difference > 300) {
+            console.log(`Stopping log processing: timestamp ${timestamp}, difference: ${difference}`);
+            break; // Exit the loop since logs are in descending order
+        }
         
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);
@@ -83,15 +81,24 @@ function processLogLines(logLines) {
                 if (currentData.pressure === null) {
                     const pressureMatch = logLine.match(PRESSURE_REGEX);
                     if (pressureMatch && pressureMatch[1]) {
-                        currentData.pressure = parseFloat(pressureMatch[1]);
-                        currentData.pressureTimestamp = timestampInSeconds;
-                        // if currentData object has been filled with valid values stop processing log lines
+                        const parsedPressure_val = parseFloat(pressureMatch[1]);
+                        if (difference <= 120){
+                            currentData.pressure = parsedPressure_val;
+                            currentData.pressureTimestamp = timestampInSeconds;
+                            console.log("Timestamp being assigned to pressureTimestamp:", timestamp);
+                            // if currentData object has been filled with valid values stop processing log lines
+                        }
+                        else {
+                            console.log(`Skipping pressure value due to stale timestamp (${difference} seconds ago)`);
+                            currentData.pressure = null;
+                            currentData.pressureTimestamp = null;
+                        }
                         if (Object.values(currentData).every(value => value !== null)) {
                             console.log(`data object has been filled`)
                             return;
                         }
+                        }
                     }
-                }
                 break;
                 
             case "DEBUG: Safety Output Terminal Data Flags":

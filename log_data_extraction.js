@@ -41,36 +41,36 @@ function getCurrentTimeInSeconds() {
 
 // Process log lines for current interval
 function processLogLines(logLines) {
-    const currentTimeInSeconds = getCurrentTimeInSeconds(); // Get current time ONCE
-
     // Process each log line
     for (const logLine of logLines) {
         // Extract timestamp
         const timestampMatch = logLine.match(TIMESTAMP_REGEX);
         if (!timestampMatch) continue;
-
+        
         const timestamp = timestampMatch[1];
         const timestampInSeconds = timeToSeconds(timestamp);
-
-        // Calculate the difference in seconds
+        
+        // Check if log is within 60 seconds of current interval time
         let difference = currentTimeInSeconds - timestampInSeconds;
 
-        // Handle the case where the log timestamp is from the previous day
-        if (difference < 0) {
-            difference += 86400; // Add 24 hours in seconds
+        // Handle midnight wraparound (only need to check for "yesterday")
+        if (difference < -43200) { // Log is from "yesterday" relative to currentTime
+            difference += 86400;
         }
 
-        // Only process if the log is within the last 60 seconds
-        if (difference > 60) {
-            console.log(`Stopping log processing: timestamp ${timestamp}, difference: ${difference}`);
-            break; // Exit the loop since logs are in descending order
-        }
+        const adjustedDifference = Math.abs(difference);
+
+        // Only process if within 60 seconds
+        // if (adjustedDifference > 60) {
+        //     console.log(`Stopping log processing: timestamp ${timestamp} is out of interval.`);
+        //     break;
+        // }
         
         // Extract log type
         const logTypeMatch = logLine.match(LOG_TYPE_REGEX);
         if (!logTypeMatch) continue;
         
-        const logType = logTypeMatch[1];        // trim might be necessary but not important for now
+        const logType = logTypeMatch[1];
         
         // Process based on log type
         switch(logType) {
@@ -143,6 +143,21 @@ router.use('/data', (req, res, next) => {
 
 // Define the /api/data endpoint that returns the JSON object
 router.get('/data', (req, res) => {
+    // const data = {
+    //   message: 'Hello from the API!',
+    //   success: true,
+    //   timestamp: new Date().toISOString()
+    // };
+  
+    // // Send the JSON object as the response
+    // res.json(data);
+
+    // Reset data for next interval
+    
+    
+    // Set the new interval time (in seconds)
+    currentTimeInSeconds = getCurrentTimeInSeconds();
+    
     // 'reversed.txt'
     // 'test_logs', 'sample_logs.txt'
     const logFilePath = path.join(__dirname, 'reversed.txt'); // change this for sample log reading

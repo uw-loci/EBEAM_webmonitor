@@ -344,6 +344,11 @@ app.get('/', async (req, res) => {
     //   // Temp write is in progress — delay response briefly
     //   await new Promise((r) => setTimeout(r, 500));
     // }
+    
+    if (!data) {
+      console.log("Data is missing or incomplete, extracting fresh data...");
+      data = await extractData();
+    }
 
     let reversedContents = "No data available.";
     if (fs.existsSync(REVERSED_FILE_PATH)) {

@@ -13,7 +13,6 @@ require('dotenv').config();
 
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
-const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
 const PORT = process.env.PORT || 3000;
 
 // File paths for local storage
@@ -102,7 +101,8 @@ async function fetchFileContents(fileId) {
       });
 
       // Process the stream line by line
-      const lines = [];
+      // const lines = [];
+      writeStream = fs.createWriteStream('raw_logfile.txt')
       let currentLine = '';
 
       await new Promise((resolve, reject) => {
@@ -110,18 +110,25 @@ async function fetchFileContents(fileId) {
           const chunkStr = chunk.toString();
           const chunkLines = (currentLine + chunkStr).split('\n');
           currentLine = chunkLines.pop();
-          lines.push(...chunkLines);
+
+          for (const line of chunkLines){
+            writeStream.write(line + '\n');
+          }
+          // lines.push(...chunkLines);
         });
 
         response.on('end', () => {
-          if (currentLine) lines.push(currentLine);
+          if (currentLine)writeStream.write(currentLine + '\n');
+          writeStream.end();
           resolve();
         });
 
-        response.on('error', reject);
+        response.on('error', (err) => {
+          writeStream.end();
+          reject(err);
+        });
       });
-
-      return lines;
+      return;
     } catch (err) {
       console.log(`Retry ${4 - retries}: ${err.message}`);
       retries--;
@@ -258,7 +265,8 @@ async function fetchAndUpdateFile() {
     
     // fetch file
     console.log("Fetching new file...");
-    let lines = await fetchFileContents(mostRecentFile.id);
+    await fetchFileContents(mostRecentFile.id);
+    const lines = fs.readFileSync('raw_logfile.txt', 'utf-8').split('\n');
     lines.reverse();
 
     // Write to file first

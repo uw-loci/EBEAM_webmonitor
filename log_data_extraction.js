@@ -11,9 +11,10 @@ const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
 // Precompile regex patterns for better performance
 const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
 const LOG_TYPE_REGEX = / - (DEBUG: .+?):/;
-const PRESSURE_REGEX = /DEBUG: GUI updated with pressure: ([\d\.E\+]+)/;
+const PRESSURE_REGEX = /DEBUG: GUI updated with pressure: ([\d.]+)E([+-]?\d+)/;
 const FLAGS_REGEX = /DEBUG: Safety Output Terminal Data Flags: (\[.*\])/;
 const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
+const EXP_REGEX = /[eE]([+-]?\d+)/;
 
 // Store current interval data
 let currentData = {
@@ -81,9 +82,12 @@ function processLogLines(logLines) {
                 if (currentData.pressure === null) {
                     const pressureMatch = logLine.match(PRESSURE_REGEX);
                     if (pressureMatch && pressureMatch[1]) {
-                        const parsedPressure_val = parseFloat(pressureMatch[1]);
+                        const parsedPressure_val = pressureMatch[1] + "E" + pressureMatch[2];
+                        let [numerical_val, exp] = parsedPressure_val.split(/[E]/);
+                        let pressureMbar = parseFloat(numerical_val) * Math.pow(10, parseInt(exp))
+
                         if (difference <= 120){
-                            currentData.pressure = parsedPressure_val;
+                            currentData.pressure = pressureMbar;
                             currentData.pressureTimestamp = timestampInSeconds;
                             console.log("Timestamp being assigned to pressureTimestamp:", timestamp);
                             // if currentData object has been filled with valid values stop processing log lines

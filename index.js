@@ -13,12 +13,11 @@ require('dotenv').config();
 
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
+const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
 const PORT = process.env.PORT || 3000;
 
 // File paths for local storage
-const REVERSED_FILE_PATH = path.join(TMP, 'reversed.txt');
-const RAW_FILE_PATH = path.join(TMP, 'raw_logfile.txt'); 
-
+const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 // Temp_File paths for local storage
 // const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
 
@@ -103,10 +102,7 @@ async function fetchFileContents(fileId) {
       });
 
       // Process the stream line by line
-      // const lines = [];
-      writeStream = fs.createWriteStream(RAW_FILE_PATH);
-      writeStream.on('error', err => console.error("writeStream error:", err));
-
+      const lines = [];
       let currentLine = '';
 
       await new Promise((resolve, reject) => {
@@ -114,25 +110,18 @@ async function fetchFileContents(fileId) {
           const chunkStr = chunk.toString();
           const chunkLines = (currentLine + chunkStr).split('\n');
           currentLine = chunkLines.pop();
-
-          for (const line of chunkLines){
-            writeStream.write(line + '\n');
-          }
-          // lines.push(...chunkLines);
+          lines.push(...chunkLines);
         });
 
         response.on('end', () => {
-          if (currentLine)writeStream.write(currentLine + '\n');
-          writeStream.end();
+          if (currentLine) lines.push(currentLine);
           resolve();
         });
 
-        response.on('error', (err) => {
-          writeStream.end();
-          reject(err);
-        });
+        response.on('error', reject);
       });
-      return;
+
+      return lines;
     } catch (err) {
       console.log(`Retry ${4 - retries}: ${err.message}`);
       retries--;
@@ -269,8 +258,7 @@ async function fetchAndUpdateFile() {
     
     // fetch file
     console.log("Fetching new file...");
-    await fetchFileContents(mostRecentFile.id);
-    const lines = fs.readFileSync(RAW_FILE_PATH, 'utf-8').split('\n');
+    let lines = await fetchFileContents(mostRecentFile.id);
     lines.reverse();
 
     // Write to file first

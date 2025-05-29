@@ -16,8 +16,8 @@ const API_KEY = process.env.API_KEY;
 const PORT = process.env.PORT || 3000;
 
 // File paths for local storage
-const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
-const RAW_FILE_PATH = path.join(__dirname, 'raw_logfile.txt'); 
+const REVERSED_FILE_PATH = path.join(TMP, 'reversed.txt');
+const RAW_FILE_PATH = path.join(TMP, 'raw_logfile.txt'); 
 
 // Temp_File paths for local storage
 // const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
@@ -104,7 +104,9 @@ async function fetchFileContents(fileId) {
 
       // Process the stream line by line
       // const lines = [];
-      writeStream = fs.createWriteStream(RAW_FILE_PATH)
+      writeStream = fs.createWriteStream(RAW_FILE_PATH);
+      writeStream.on('error', err => console.error("writeStream error:", err));
+
       let currentLine = '';
 
       await new Promise((resolve, reject) => {

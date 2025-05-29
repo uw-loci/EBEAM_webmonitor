@@ -15,21 +15,28 @@ const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const PORT = process.env.PORT || 3000;
 
-// File paths for local storage
-const TMP = path.join(__dirname, 'tmp');
-const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
-const RAW_FILE_PATH = path.join(TMP, 'raw_logfile.txt'); 
-
-//dynamically create the TMP folder for the raw_logfile.txt
+const TMP = path.join(__dirname, 'tmp')
 if (!fs.existsSync(TMP)) {
-  fs.mkdirSync(TMP);
+  fs.mkdirSync(TMP, { recursive: true });
 }
+
+// File paths for local storage
+const REVERSED_FILE_PATH = path.join(TMP, 'reversed.txt');
+const RAW_FILE_PATH = path.join(TMP, 'raw_logfile.txt'); 
 
 // Temp_File paths for local storage
 // const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
+
+// function to convert current time to seconds
+function timeToSeconds(time) {
+  const hours = (time[0] - '0') * 10 + (time[1] - '0');   // First two characters for hours
+  const minutes = (time[3] - '0') * 10 + (time[4] - '0'); // Characters at index 3 and 4 for minutes
+  const seconds = (time[6] - '0') * 10 + (time[7] - '0'); // Characters at index 6 and 7 for seconds
+  return hours * 3600 + minutes * 60 + seconds;
+}
 
 // Initialize Express app
 const app = express();

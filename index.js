@@ -17,6 +17,8 @@ const PORT = process.env.PORT || 3000;
 
 // File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
+const RAW_FILE_PATH = path.join(__dirname, 'raw_logfile.txt'); 
+
 // Temp_File paths for local storage
 // const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
 
@@ -102,7 +104,7 @@ async function fetchFileContents(fileId) {
 
       // Process the stream line by line
       // const lines = [];
-      writeStream = fs.createWriteStream('raw_logfile.txt')
+      writeStream = fs.createWriteStream(RAW_FILE_PATH)
       let currentLine = '';
 
       await new Promise((resolve, reject) => {
@@ -266,7 +268,7 @@ async function fetchAndUpdateFile() {
     // fetch file
     console.log("Fetching new file...");
     await fetchFileContents(mostRecentFile.id);
-    const lines = fs.readFileSync('raw_logfile.txt', 'utf-8').split('\n');
+    const lines = fs.readFileSync(RAW_FILE_PATH, 'utf-8').split('\n');
     lines.reverse();
 
     // Write to file first

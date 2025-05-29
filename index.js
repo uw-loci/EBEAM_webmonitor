@@ -173,7 +173,7 @@ async function fetchFileContents(fileId) {
     
         // For debugging purposes
         console.log("Data:", data);
-        console.log("Pressure:", data.pressure);
+        console.log("Pressure:", Number(data.pressure).toExponential(3));
         console.log("Temperatures:", data.temperatures?.["1"]);
     
         return data;
@@ -370,7 +370,8 @@ app.get('/', async (req, res) => {
     // let timeStampDebug = data.pressureTimestamp;
     let pressure = null;
     if (data.differenceTimestamp != null && data.differenceTimestamp <= 75) {
-      pressure = data.pressure;
+      // pressure = data.pressure;
+      pressure = Number(data.pressure).toExponential(3);
     }
 
     const temperatures = data.temperatures || {
@@ -392,11 +393,6 @@ app.get('/', async (req, res) => {
     // const temperatureSensor1 = temperatures["1"]; // "18.94"
 
     // You can now use these variables as needed in your front end.
-
-    //DEBUG:
-    console.log('Pressure:', pressure);
-    console.log('Temperatures', temperatures);
-    console.log('PressureTimestamp', data.pressureTimestamp);
 
     // console.log('Safety Flags:', safetyFlags);
     // console.log('Temperatures:', temperatures);

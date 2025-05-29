@@ -344,7 +344,7 @@ app.get('/', async (req, res) => {
     //   // Temp write is in progress — delay response briefly
     //   await new Promise((r) => setTimeout(r, 500));
     // }
-    
+
     if (!data) {
       console.log("Data is missing or incomplete, extracting fresh data...");
       data = await extractData();
@@ -729,7 +729,7 @@ app.get('/', async (req, res) => {
           }
           @media (max-width: 600px) {
             .card-container {
-              grid-template-columns: repeat(1, 1fr);
+              grid-template-columns: repeat(2, 1fr);
             }
           }
 

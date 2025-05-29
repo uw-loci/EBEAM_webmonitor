@@ -344,7 +344,7 @@ app.get('/', async (req, res) => {
     //   // Temp write is in progress — delay response briefly
     //   await new Promise((r) => setTimeout(r, 500));
     // }
-    
+
     let reversedContents = "No data available.";
     if (fs.existsSync(REVERSED_FILE_PATH)) {
       reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');

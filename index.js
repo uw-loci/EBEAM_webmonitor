@@ -253,9 +253,33 @@ async function fetchAndUpdateFile() {
 
     // slice the number of lines stored in memory to avoid a heap overflow
     // approaximately 6 lines are processed every minute, that would be 6*60*12 in 12 hours; change number of lines as per the number of log lines being processed every minute
-    const MAX_LINES = 30 * 60 * 60 * 12;
-    lines = lines.slice(0, MAX_LINES); // there should be 4320 lines in total
+    // const MAX_LINES = 30 * 60 * 60 * 12;
+    // lines = lines.slice(0, MAX_LINES); // there should be 4320 lines in total
 
+    // making an attempt to dynamically adjust the total number of lines logged on the web dashboard given the variable number of lines that are logged every minute
+
+    let estimatedLinesPerMinute = 30;
+    const estimationWindow = 120;
+    TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
+    let times = [];
+
+    for (let i = 0; i < Math.min(lines.length, estimationWindow); i++){
+      const match = lines[i].match(TIMESTAMP_REGEX);
+      if (match){
+        const [h, m, s] = match.map(Number);
+        times.push(h*3600 + m*60 + s);
+      }
+    }
+
+    if (times.length > 1){
+      const duration = times[0] - times[times.length - 1];
+      if (duration > 0){
+        estimatedLinesPerMinute = Math.round((times.length / duration) * 60); 
+      }
+    } 
+
+    const MAX_LINES = estimatedLinesPerMinute * 12 * 60;
+    lines = lines.slice(0, MAX_LINES);
 
     // Write to file first
     // if (!fs.existsSync(REVERSED_FILE_PATH)) {

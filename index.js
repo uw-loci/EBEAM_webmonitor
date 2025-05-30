@@ -276,8 +276,7 @@ async function fetchAndUpdateFile() {
 
         let ok = true;
         while (i < lines.length && ok) {
-          const numberedLine = `${i + 1}: ${lines[i]}`;
-          ok = writeStream.write(numberedLine + '\n');
+          ok = writeStream.write(lines[i] + '\n');
           i++;
         }
         if (i < lines.length) {

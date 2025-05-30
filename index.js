@@ -253,7 +253,7 @@ async function fetchAndUpdateFile() {
 
     // slice the number of lines stored in memory to avoid a heap overflow
     // approaximately 6 lines are processed every minute, that would be 6*60*12 in 12 hours; change number of lines as per the number of log lines being processed every minute
-    const MAX_LINES = 6 * 60 * 60 * 12;
+    const MAX_LINES = 30 * 60 * 60 * 12;
     lines = lines.slice(0, MAX_LINES); // there should be 4320 lines in total
 
 

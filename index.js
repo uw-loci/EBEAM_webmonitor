@@ -251,6 +251,12 @@ async function fetchAndUpdateFile() {
     let lines = await fetchFileContents(mostRecentFile.id);
     lines.reverse();
 
+    // slice the number of lines stored in memory to avoid a heap overflow
+    // approaximately 6 lines are processed every minute, that would be 6*60*12 in 12 hours; change number of lines as per the number of log lines being processed every minute
+    const MAX_LINES = 6 * 60 * 12;
+    lines = lines.slice(0, MAX_LINES); // there should be 4320 lines in total
+
+
     // Write to file first
     // if (!fs.existsSync(REVERSED_FILE_PATH)) {
     //   fs.writeFileSync(REVERSED_FILE_PATH, '', 'utf8');
@@ -270,7 +276,8 @@ async function fetchAndUpdateFile() {
 
         let ok = true;
         while (i < lines.length && ok) {
-          ok = writeStream.write(lines[i] + '\n');
+          const numberedLine = `${i + 1}: ${lines[i]}`;
+          ok = writeStream.write(numberedLine + '\n');
           i++;
         }
         if (i < lines.length) {

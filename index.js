@@ -260,19 +260,26 @@ async function fetchAndUpdateFile() {
 
     let estimatedLinesPerMinute = 30;
     const estimationWindow = 120;
-    TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
+    const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
     let times = [];
 
+    function timeToSeconds(time) {
+      const hours = (time[0] - '0') * 10 + (time[1] - '0');   // First two characters for hours
+      const minutes = (time[3] - '0') * 10 + (time[4] - '0'); // Characters at index 3 and 4 for minutes
+      const seconds = (time[6] - '0') * 10 + (time[7] - '0'); // Characters at index 6 and 7 for seconds
+      return hours * 3600 + minutes * 60 + seconds;
+    }
+  
     for (let i = 0; i < Math.min(lines.length, estimationWindow); i++){
       const match = lines[i].match(TIMESTAMP_REGEX);
-      if (match){
-        const [h, m, s] = match.map(Number);
-        times.push(h*3600 + m*60 + s);
+      const timestamp = match[1];
+      if (timestamp){
+        times.push(timeToSeconds(timestamp));
       }
     }
 
     if (times.length > 1){
-      const duration = times[0] - times[times.length - 1];
+      const duration = Math.abs(times[0] - times[times.length - 1]); // negative durations can be obtained, best to take the absolute value
       if (duration > 0){
         estimatedLinesPerMinute = Math.round((times.length / duration) * 60); 
       }

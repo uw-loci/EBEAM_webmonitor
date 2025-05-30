@@ -309,8 +309,7 @@ async function fetchAndUpdateFile() {
 
         let ok = true;
         while (i < lines.length && ok) {
-          numbered_lines = `${i + 1}: ${lines[i]}`;
-          ok = writeStream.write(numbered_lines + '\n');
+          ok = writeStream.write(lines[i] + '\n');
           i++;
         }
         if (i < lines.length) {
@@ -326,6 +325,7 @@ async function fetchAndUpdateFile() {
         try {
           // fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
           console.log('Reversed log updated successfully.');
+          console.log(maxLines);
           lastModifiedTime = mostRecentFile.modifiedTime;
           logFileName = mostRecentFile.name;
           experimentRunning = true;

@@ -258,10 +258,8 @@ async function fetchAndUpdateFile() {
 
     // making an attempt to dynamically adjust the total number of lines logged on the web dashboard given the variable number of lines that are logged every minute
 
-    let estimatedLinesPerMinute = 30;
-    const estimationWindow = 120;
     const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
-    let times = [];
+    let linesPerTimestamp = {};
 
     function timeToSeconds(time) {
       const hours = (time[0] - '0') * 10 + (time[1] - '0');   // First two characters for hours
@@ -269,23 +267,27 @@ async function fetchAndUpdateFile() {
       const seconds = (time[6] - '0') * 10 + (time[7] - '0'); // Characters at index 6 and 7 for seconds
       return hours * 3600 + minutes * 60 + seconds;
     }
+
+    function secondsSinceMidnightChicago() {
+      const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+      const d = new Date(now);
+      return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+    }
+
+    const currentTimeInSeconds = secondsSinceMidnightChicago();
   
-    for (let i = 0; i < Math.min(lines.length, estimationWindow); i++){
-      const match = lines[i].match(TIMESTAMP_REGEX);
+    for (const line of lines){
+      const match = line.match(TIMESTAMP_REGEX);
       const timestamp = match[1];
-      if (timestamp){
-        times.push(timeToSeconds(timestamp));
+      const timestampInSeconds = timeToSeconds(timestamp);
+      if (Math.abs(currentTimeInSeconds - timestampInSeconds) <= 12 * 60 * 60){
+        linesPerTimestamp[timestampInSeconds] = (linesPerTimestamp[timestampInSeconds] || 0) + 1;
       }
     }
 
-    if (times.length > 1){
-      const duration = Math.abs(times[0] - times[times.length - 1]); // negative durations can be obtained, best to take the absolute value
-      if (duration > 0){
-        estimatedLinesPerMinute = Math.round((times.length / duration) * 60); 
-      }
-    } 
+    const maxLines = Math.max(...Object.values(linesPerTimestamp));
 
-    const MAX_LINES = estimatedLinesPerMinute * 12 * 60;
+    const MAX_LINES = maxLines * 60 * 60 * 12;
     lines = lines.slice(0, MAX_LINES);
 
     // Write to file first

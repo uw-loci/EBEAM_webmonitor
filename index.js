@@ -409,7 +409,7 @@ app.get('/', async (req, res) => {
     // let pressure = null;
     // let timeStampDebug = data.pressureTimestamp;
     let pressure = null;
-    if (data.differenceTimestamp != null && data.differenceTimestamp <= 75) {
+    if (data && data.differenceTimestamp != null && data.differenceTimestamp <= 75) {
       // pressure = data.pressure;
       pressure = Number(data.pressure).toExponential(3);
     }

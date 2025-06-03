@@ -11,27 +11,17 @@ const logDataExtractionApiRoutes = require('./log_data_extraction');
 // Load environment variables
 require('dotenv').config();
 
-function getCurrentTimeInSeconds(){
-  const now = new Date();
-  const chicagoTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Chicago" }));
-  return chicagoTime.getHours() * 3600 + chicagoTime.getMinutes() * 60 + chicagoTime.getSeconds();
-}
-
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
 const PORT = process.env.PORT || 3000;
 
-// File paths for local storage
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 // Temp_File paths for local storage
 // const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
 
 // 15 minutes in milliseconds
-const INACTIVE_THRESHOLD = 15 * 60 * 1000;
-// 2 minutes in seconds
-const PRESSURE_THRESHOLD = 300; 
-
+const INACTIVE_THRESHOLD = 5 * 60 * 1000;
 // Initialize Express app
 const app = express();
 app.use('/log-data-extraction', logDataExtractionApiRoutes);
@@ -165,12 +155,25 @@ async function fetchFileContents(fileId) {
             temperatures: null
           };
         }
+
+        function secondsSinceMidnightChicago() {
+          // take the current UTC time, format to Chicago and re-parse it
+          const nowLocal = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+          const d = new Date(nowLocal);
+          return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+        }
+        
+        const nowSec = secondsSinceMidnightChicago();
     
         const data = response.data;
+        let diff = nowSec - data.pressureTimestamp;
+    
+        if (diff < 0) diff += 24 * 3600;
+        data.differenceTimestamp = diff;
     
         // For debugging purposes
         console.log("Data:", data);
-        console.log("Pressure:", data.pressure);
+        console.log("Pressure:", Number(data.pressure).toExponential(3));
         console.log("Temperatures:", data.temperatures?.["1"]);
     
         return data;
@@ -202,7 +205,8 @@ async function fetchAndUpdateFile() {
     }
 
     const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
-    const currentTime = new Date().getTime();
+    const currentTime = Date.now();
+
 
     // First check if the experiment is active
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { 
@@ -247,6 +251,45 @@ async function fetchAndUpdateFile() {
     let lines = await fetchFileContents(mostRecentFile.id);
     lines.reverse();
 
+    // slice the number of lines stored in memory to avoid a heap overflow
+    // approaximately 6 lines are processed every minute, that would be 6*60*12 in 12 hours; change number of lines as per the number of log lines being processed every minute
+    // const MAX_LINES = 30 * 60 * 60 * 12;
+    // lines = lines.slice(0, MAX_LINES); // there should be 4320 lines in total
+
+    // making an attempt to dynamically adjust the total number of lines logged on the web dashboard given the variable number of lines that are logged every minute
+
+    const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
+    let linesPerTimestamp = {};
+
+    function timeToSeconds(time) {
+      const hours = (time[0] - '0') * 10 + (time[1] - '0');   // First two characters for hours
+      const minutes = (time[3] - '0') * 10 + (time[4] - '0'); // Characters at index 3 and 4 for minutes
+      const seconds = (time[6] - '0') * 10 + (time[7] - '0'); // Characters at index 6 and 7 for seconds
+      return hours * 3600 + minutes * 60 + seconds;
+    }
+
+    function secondsSinceMidnightChicago() {
+      const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+      const d = new Date(now);
+      return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+    }
+
+    const currentTimeInSeconds = secondsSinceMidnightChicago();
+  
+    for (const line of lines){
+      const match = line.match(TIMESTAMP_REGEX);
+      const timestamp = match[1];
+      const timestampInSeconds = timeToSeconds(timestamp);
+      if (Math.abs(currentTimeInSeconds - timestampInSeconds) <= 12 * 60 * 60){
+        linesPerTimestamp[timestampInSeconds] = (linesPerTimestamp[timestampInSeconds] || 0) + 1;
+      }
+    }
+
+    const maxLines = Math.max(...Object.values(linesPerTimestamp));
+
+    const MAX_LINES = maxLines * 60 * 60 * 12;
+    lines = lines.slice(0, MAX_LINES);
+
     // Write to file first
     // if (!fs.existsSync(REVERSED_FILE_PATH)) {
     //   fs.writeFileSync(REVERSED_FILE_PATH, '', 'utf8');
@@ -282,6 +325,7 @@ async function fetchAndUpdateFile() {
         try {
           // fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
           console.log('Reversed log updated successfully.');
+          console.log(maxLines);
           lastModifiedTime = mostRecentFile.modifiedTime;
           logFileName = mostRecentFile.name;
           experimentRunning = true;
@@ -326,9 +370,9 @@ async function fetchAndUpdateFile() {
   }
 }
 
-// Schedule updates
+// // Schedule updates
 fetchAndUpdateFile(); // Initial fetch
-setInterval(fetchAndUpdateFile, 60000); // Check every minute
+setInterval(fetchAndUpdateFile, 2000); // Check every second
 
 
 /**
@@ -357,26 +401,18 @@ app.get('/', async (req, res) => {
       : "N/A";
     const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
 
-    console.log("Data: ", data) // throwing an error on render.
-
     // Accessing each data field:
     // add logic for setting pressure to null if we have crossed the pressure threshold
 
     // let pressure = null;
-    const pressure = data.pressure;
-    // console.log("Pressure (X):", pressure);
-    // console.log("Pressure timestamp (X):", data.pressureTimestamp);
+    // let timeStampDebug = data.pressureTimestamp;
+    let pressure = null;
+    if (data && data.differenceTimestamp != null && data.differenceTimestamp <= 75) {
+      // pressure = data.pressure;
+      pressure = Number(data.pressure).toExponential(3);
+    }
 
-    // if (data.pressure !== null) {
-    //   if (data.pressureTimestamp === null) {
-    //     pressure = data.pressure;} 
-      
-    //   else {
-    //     pressure = data.pressure;
-    //   }
-    // }
-
-    const temperatures = data.temperatures || {
+    const temperatures = (data && data.temperatures) || {
       "1": "DISCONNECTED",
       "2": "DISCONNECTED",
       "3": "DISCONNECTED",
@@ -395,8 +431,7 @@ app.get('/', async (req, res) => {
     // const temperatureSensor1 = temperatures["1"]; // "18.94"
 
     // You can now use these variables as needed in your front end.
-    console.log('Pressure:', pressure);
-    console.log('Temperatures', temperatures);
+
     // console.log('Safety Flags:', safetyFlags);
     // console.log('Temperatures:', temperatures);
     // console.log('Timestamp:', timestamp);
@@ -404,6 +439,11 @@ app.get('/', async (req, res) => {
 
     // temp var 
     const temp = JSON.stringify(data);
+
+    console.log('XX', experimentRunning);
+    console.log('YY', data);
+    console.log('ZZ', pressure);
+    console.log('AA', temperatures);
 
     //  keep your HTML generation as-is below this
     res.send(`
@@ -845,7 +885,7 @@ app.get('/', async (req, res) => {
 
           <!-- Vacuum Indicators Section -->
           <div class="vacuum-indicators">
-            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure || '--'} mbar</h3>
+            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
             <div class="vacuum-indicators-container">
               <div class="vacuum-indicators-item">
                 <div class="vacuum-indicators-circle bg-secondary"></div>
@@ -946,7 +986,7 @@ app.get('/', async (req, res) => {
             } catch (e) {
               console.error('Could not poll for reload', e);
             }
-          }, 60000);
+          }, 2000);
 
           // Toggle between preview/full log
 
@@ -1006,7 +1046,14 @@ app.get('/should-reload', (req, res) => {
   res.json({ shouldReload, experimentRunning });
 });
 
-// Start the server
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+
+
+// // Start the server
+// app.listen(PORT, () => {
+//   console.log(`Server running on port ${PORT}`);
+// });

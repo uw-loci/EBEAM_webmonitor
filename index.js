@@ -371,8 +371,8 @@ async function fetchAndUpdateFile() {
 }
 
 // // Schedule updates
-// fetchAndUpdateFile(); // Initial fetch
-// setInterval(fetchAndUpdateFile, 60000); // Check every minute
+fetchAndUpdateFile(); // Initial fetch
+setInterval(fetchAndUpdateFile, 60000); // Check every minute
 
 
 /**
@@ -1047,15 +1047,9 @@ app.get('/should-reload', (req, res) => {
 });
 
 
-async function startServer() {
-  await fetchAndUpdateFile();
-  setInterval(fetchAndUpdateFile, 60000);
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
-
-startServer();
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 
 

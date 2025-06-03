@@ -372,7 +372,7 @@ async function fetchAndUpdateFile() {
 
 // // Schedule updates
 fetchAndUpdateFile(); // Initial fetch
-setInterval(fetchAndUpdateFile, 60000); // Check every minute
+setInterval(fetchAndUpdateFile, 1000); // Check every second
 
 
 /**
@@ -986,7 +986,7 @@ app.get('/', async (req, res) => {
             } catch (e) {
               console.error('Could not poll for reload', e);
             }
-          }, 60000);
+          }, 1000);
 
           // Toggle between preview/full log
 

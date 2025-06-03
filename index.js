@@ -370,9 +370,9 @@ async function fetchAndUpdateFile() {
   }
 }
 
-// Schedule updates
-fetchAndUpdateFile(); // Initial fetch
-setInterval(fetchAndUpdateFile, 60000); // Check every minute
+// // Schedule updates
+// fetchAndUpdateFile(); // Initial fetch
+// setInterval(fetchAndUpdateFile, 60000); // Check every minute
 
 
 /**
@@ -400,8 +400,6 @@ app.get('/', async (req, res) => {
       ? new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })
       : "N/A";
     const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
-
-    console.log("Data: ", data); // throwing an error on render.
 
     // Accessing each data field:
     // add logic for setting pressure to null if we have crossed the pressure threshold
@@ -441,6 +439,11 @@ app.get('/', async (req, res) => {
 
     // temp var 
     const temp = JSON.stringify(data);
+
+    console.log('XX', experimentRunning);
+    console.log('YY', data);
+    console.log('ZZ', pressure);
+    console.log('AA', temperatures);
 
     //  keep your HTML generation as-is below this
     res.send(`
@@ -1043,7 +1046,20 @@ app.get('/should-reload', (req, res) => {
   res.json({ shouldReload, experimentRunning });
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+async function startServer() {
+  await fetchAndUpdateFile();
+  setInterval(fetchAndUpdateFile, 60000);
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+startServer();
+
+
+
+// // Start the server
+// app.listen(PORT, () => {
+//   console.log(`Server running on port ${PORT}`);
+// });

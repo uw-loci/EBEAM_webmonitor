@@ -21,7 +21,7 @@ const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 // const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
 
 // 15 minutes in milliseconds
-const INACTIVE_THRESHOLD = 15 * 60 * 1000;
+const INACTIVE_THRESHOLD = 5 * 60 * 1000;
 // Initialize Express app
 const app = express();
 app.use('/log-data-extraction', logDataExtractionApiRoutes);
@@ -372,7 +372,7 @@ async function fetchAndUpdateFile() {
 
 // // Schedule updates
 fetchAndUpdateFile(); // Initial fetch
-setInterval(fetchAndUpdateFile, 1000); // Check every second
+setInterval(fetchAndUpdateFile, 2000); // Check every second
 
 
 /**
@@ -986,7 +986,7 @@ app.get('/', async (req, res) => {
             } catch (e) {
               console.error('Could not poll for reload', e);
             }
-          }, 1000);
+          }, 2000);
 
           // Toggle between preview/full log
 

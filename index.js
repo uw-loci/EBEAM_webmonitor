@@ -8,17 +8,21 @@ const lockFile = require('proper-lockfile');
 const { PassThrough } = require('stream');
 const logDataExtractionApiRoutes = require('./log_data_extraction');
 
+
 // Load environment variables
 require('dotenv').config();
+
 
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
 const PORT = process.env.PORT || 3000;
 
+
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 // Temp_File paths for local storage
 // const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
+
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 5 * 60 * 1000;
@@ -27,35 +31,47 @@ const app = express();
 app.use('/log-data-extraction', logDataExtractionApiRoutes);
 
 
+
+
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });
 
+
 // variable to store the data extracted
-let data = null;
+let data = {
+ pressure: null,
+ pressureTimestamp: null,
+ safetyFlags: null,
+ temperatures: null
+};
+
 
 /**
- * Fetch the most recent file from Google Drive.
- */
+* Fetch the most recent file from Google Drive.
+*/
 async function getMostRecentFile() {
-  try {
-    const res = await drive.files.list({
-      q: `'${FOLDER_ID}' in parents and mimeType='text/plain'`,
-      orderBy: 'modifiedTime desc',
-      pageSize: 1,
-      fields: 'files(id, name, modifiedTime)',
-    });
+ try {
+   const res = await drive.files.list({
+     q: `'${FOLDER_ID}' in parents and mimeType='text/plain'`,
+     orderBy: 'modifiedTime desc',
+     pageSize: 1,
+     fields: 'files(id, name, modifiedTime)',
+   });
 
-    const files = res.data.files;
-    if (!files || files.length === 0) {
-      throw new Error('No files found in the folder.');
-    }
 
-    return files[0]; // Returns the most recent file (ID, name, modifiedTime)
-  } catch (err) {
-    console.error(`Google Drive API Error: ${err.message}`);
-    return null;
-  }
+   const files = res.data.files;
+   if (!files || files.length === 0) {
+     throw new Error('No files found in the folder.');
+   }
+
+
+   return files[0]; // Returns the most recent file (ID, name, modifiedTime)
+ } catch (err) {
+   console.error(`Google Drive API Error: ${err.message}`);
+   return null;
+ }
 }
+
 
 let lastModifiedTime = null;
 let logFileName = null;
@@ -63,997 +79,1205 @@ let experimentRunning = false;
 let response = null;
 let shouldReload = false;
 
+
 /**
- * Fetches file contents from Google Drive using streaming
- * @param {string} fileId - The Google Drive file ID
- * @returns {Promise<string[]>} Array of lines from the file
- */
+* Fetches file contents from Google Drive using streaming
+* @param {string} fileId - The Google Drive file ID
+* @returns {Promise<string[]>} Array of lines from the file
+*/
 async function fetchFileContents(fileId) {
-  let retries = 3;
-  
+ let retries = 3;
   while (retries > 0) {
-    try {
-      const response = await new Promise((resolve, reject) => {
-        https.get(
-          `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`,
-          {
-            headers: {
-              'Accept': 'text/plain'
-            }
-          },
-          (res) => {
-            if (res.statusCode !== 200) {
-              reject(new Error(`Google API Failed: ${res.statusCode}`));
-              return;
-            }
-            resolve(res);
-          }
-        ).on('error', reject);
-      });
+   try {
+     const response = await new Promise((resolve, reject) => {
+       https.get(
+         `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`,
+         {
+           headers: {
+             'Accept': 'text/plain'
+           }
+         },
+         (res) => {
+           if (res.statusCode !== 200) {
+             reject(new Error(`Google API Failed: ${res.statusCode}`));
+             return;
+           }
+           resolve(res);
+         }
+       ).on('error', reject);
+     });
 
-      // Process the stream line by line
-      const lines = [];
-      let currentLine = '';
 
-      await new Promise((resolve, reject) => {
-        response.on('data', chunk => {
-          const chunkStr = chunk.toString();
-          const chunkLines = (currentLine + chunkStr).split('\n');
-          currentLine = chunkLines.pop();
-          lines.push(...chunkLines);
-        });
+     // Process the stream line by line
+     const lines = [];
+     let currentLine = '';
 
-        response.on('end', () => {
-          if (currentLine) lines.push(currentLine);
-          resolve();
-        });
 
-        response.on('error', reject);
-      });
+     await new Promise((resolve, reject) => {
+       response.on('data', chunk => {
+         const chunkStr = chunk.toString();
+         const chunkLines = (currentLine + chunkStr).split('\n');
+         currentLine = chunkLines.pop();
+         lines.push(...chunkLines);
+       });
 
-      return lines;
-    } catch (err) {
-      console.log(`Retry ${4 - retries}: ${err.message}`);
-      retries--;
-      if (retries === 0) throw err;
-      await new Promise(res => setTimeout(res, 2000));
-    }
-  }
+
+       response.on('end', () => {
+         if (currentLine) lines.push(currentLine);
+         resolve();
+       });
+
+
+       response.on('error', reject);
+     });
+
+
+     return lines;
+   } catch (err) {
+     console.log(`Retry ${4 - retries}: ${err.message}`);
+     retries--;
+     if (retries === 0) throw err;
+     await new Promise(res => setTimeout(res, 2000));
+   }
+ }
 }
 
 
-/**
- * Get the extracted lof data from log file from API end point
- * 
- * @returns the data read form the log file in the format
- * 
- * 
- * extected repsonse var form the end point once fixed
-  data = {
-      "Pressure": 1200,
-      "Safety Flags": [0, 0, 0, 0, 0, 0, 1],
-      "Temperatures": {
-          "1": "18.94",
-          "2": "19.00",
-          "3": "22.83",
-          "4": "20.38",
-          "5": "21.88",
-          "6": "19.31"
-      }
-    }
- */
-    async function extractData() {
-      try {
-        const response = await axios.get('https://ebeam-webmonitor.onrender.com/log-data-extraction/data');
-    
-        if (response.status !== 200) {
-          console.warn(`API request failed with status: ${response.status}. Returning empty data.`);
-          return {
-            pressure: null,
-            pressureTimestamp: null,
-            safetyFlags: null,
-            temperatures: null
-          };
-        }
-
-        function secondsSinceMidnightChicago() {
-          // take the current UTC time, format to Chicago and re-parse it
-          const nowLocal = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
-          const d = new Date(nowLocal);
-          return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
-        }
-        
-        const nowSec = secondsSinceMidnightChicago();
-    
-        const data = response.data;
-        let diff = nowSec - data.pressureTimestamp;
-    
-        if (diff < 0) diff += 24 * 3600;
-        data.differenceTimestamp = diff;
-    
-        // For debugging purposes
-        console.log("Data:", data);
-        console.log("Pressure:", Number(data.pressure).toExponential(3));
-        console.log("Temperatures:", data.temperatures?.["1"]);
-    
-        return data;
-      } catch (e) {
-        console.error("Error fetching data:", e.message);
-        return {
-          pressure: null,
-          pressureTimestamp: null,
-          safetyFlags: null,
-          temperatures: null
-        };
-      }
-    }
-    
 
 
 /**
- * Fetches and updates the log file if there's a new version
- * @returns {Promise<boolean>} True if file was updated, false otherwise
- */
-async function fetchAndUpdateFile() {
-  let release;
-
-  try {
-    const mostRecentFile = await getMostRecentFile();
-    if (!mostRecentFile) {
-      experimentRunning = false;
-      return false;
-    }
-
-    const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
-    const currentTime = Date.now();
-
-
-    // First check if the experiment is active
-    if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { 
-      // experiment is inactive and we are outside the 15 min. window
-      experimentRunning = false; // experiment is not running
-      data = {
-        pressure: null,
-        pressureTimestamp: null,
-        safetyFlags: null,
-        temperatures: null
-      };    
-
-      if (!fs.existsSync(REVERSED_FILE_PATH)) {
-        // We don't have a local file, just log and pass
-        console.log("Experiment not running but passing through");
-      } else {
-        // No update needed if file is old and exists
-        console.log("Experiment not running - no updates in 15 minutes");
-        shouldReload = false;
-        return false;
-      }
-    }
-
-    //The experiment is running
-    if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
-      // Use the cached file if it didn't change from last time instead of fetching again. 
-      console.log("No new updates. Using cached file.");
-      experimentRunning = true;
-      shouldReload = false;
-      if (fs.existsSync(REVERSED_FILE_PATH)) {
-        data = await extractData();
-      } else {
-        data = null;
-        console.log("File None existant -- Could not extract the log data");
-      }
-
-      return false;
-    }
-    
-    // fetch file
-    console.log("Fetching new file...");
-    let lines = await fetchFileContents(mostRecentFile.id);
-    lines.reverse();
-
-    // slice the number of lines stored in memory to avoid a heap overflow
-    // approaximately 6 lines are processed every minute, that would be 6*60*12 in 12 hours; change number of lines as per the number of log lines being processed every minute
-    // const MAX_LINES = 30 * 60 * 60 * 12;
-    // lines = lines.slice(0, MAX_LINES); // there should be 4320 lines in total
-
-    // making an attempt to dynamically adjust the total number of lines logged on the web dashboard given the variable number of lines that are logged every minute
-
-    const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
-    let linesPerTimestamp = {};
-
-    function timeToSeconds(time) {
-      const hours = (time[0] - '0') * 10 + (time[1] - '0');   // First two characters for hours
-      const minutes = (time[3] - '0') * 10 + (time[4] - '0'); // Characters at index 3 and 4 for minutes
-      const seconds = (time[6] - '0') * 10 + (time[7] - '0'); // Characters at index 6 and 7 for seconds
-      return hours * 3600 + minutes * 60 + seconds;
-    }
-
-    function secondsSinceMidnightChicago() {
-      const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
-      const d = new Date(now);
-      return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
-    }
-
-    const currentTimeInSeconds = secondsSinceMidnightChicago();
+* Get the extracted lof data from log file from API end point
+*
+* @returns the data read form the log file in the format
+*
+*
+* extected repsonse var form the end point once fixed
+ data = {
+     "Pressure": 1200,
+     "Safety Flags": [0, 0, 0, 0, 0, 0, 1],
+     "Temperatures": {
+         "1": "18.94",
+         "2": "19.00",
+         "3": "22.83",
+         "4": "20.38",
+         "5": "21.88",
+         "6": "19.31"
+     }
+   }
+*/
+   async function extractData() {
+     try {
+       const response = await axios.get('https://ebeam-webmonitor.onrender.com/log-data-extraction/data');
   
+       if (response.status !== 200) {
+         console.warn(`API request failed with status: ${response.status}. Returning empty data.`);
+         return {
+           pressure: null,
+           pressureTimestamp: null,
+           safetyFlags: null,
+           temperatures: null
+         };
+       }
+
+
+       function secondsSinceMidnightChicago() {
+         // take the current UTC time, format to Chicago and re-parse it
+         const nowLocal = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+         const d = new Date(nowLocal);
+         return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+       }
+      
+       const nowSec = secondsSinceMidnightChicago();
+  
+       const data = response.data;
+       let diff = nowSec - data.pressureTimestamp;
+  
+       if (diff < 0) diff += 24 * 3600;
+       data.differenceTimestamp = diff;
+  
+       // For debugging purposes
+       console.log("Data:", data);
+       console.log("Pressure:", Number(data.pressure).toExponential(3));
+       console.log("Temperatures:", data.temperatures?.["1"]);
+  
+       return data;
+     } catch (e) {
+       console.error("Error fetching data:", e.message);
+       return {
+         pressure: null,
+         pressureTimestamp: null,
+         safetyFlags: null,
+         temperatures: null
+       };
+     }
+   }
+  
+
+
+
+
+/**
+* Fetches and updates the log file if there's a new version
+* @returns {Promise<boolean>} True if file was updated, false otherwise
+*/
+async function fetchAndUpdateFile() {
+ let release;
+
+
+ try {
+   const mostRecentFile = await getMostRecentFile();
+   if (!mostRecentFile) {
+     experimentRunning = false;
+     return false;
+   }
+
+
+   const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
+   const currentTime = Date.now();
+
+
+
+
+   // First check if the experiment is active
+   if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
+     // experiment is inactive and we are outside the 15 min. window
+     experimentRunning = false; // experiment is not running
+     data = {
+       pressure: null,
+       pressureTimestamp: null,
+       safetyFlags: null,
+       temperatures: null
+     };   
+
+
+     if (!fs.existsSync(REVERSED_FILE_PATH)) {
+       // We don't have a local file, just log and pass
+       console.log("Experiment not running but passing through");
+     } else {
+       // No update needed if file is old and exists
+       console.log("Experiment not running - no updates in 15 minutes");
+       shouldReload = false;
+       return false;
+     }
+   }
+
+
+   //The experiment is running
+   if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
+     // Use the cached file if it didn't change from last time instead of fetching again.
+     console.log("No new updates. Using cached file.");
+     experimentRunning = true;
+     shouldReload = false;
+
+
+     console.log("DATA", data);
+     // if (fs.existsSync(REVERSED_FILE_PATH)) {
+     //   data = await extractData();
+     // } else {
+     //   data = null;
+     //   console.log("File None existant -- Could not extract the log data");
+     // }
+
+
+     return false;
+   }
+  
+   // fetch file
+   console.log("Fetching new file...");
+   let lines = await fetchFileContents(mostRecentFile.id);
+   lines.reverse();
+
+
+   // slice the number of lines stored in memory to avoid a heap overflow
+   // approaximately 6 lines are processed every minute, that would be 6*60*12 in 12 hours; change number of lines as per the number of log lines being processed every minute
+   // const MAX_LINES = 30 * 60 * 60 * 12;
+   // lines = lines.slice(0, MAX_LINES); // there should be 4320 lines in total
+
+
+   // making an attempt to dynamically adjust the total number of lines logged on the web dashboard given the variable number of lines that are logged every minute
+
+
+   const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
+   const LOG_TYPE_REGEX = / - (DEBUG: .+?):/;
+   const PRESSURE_REGEX = /DEBUG: GUI updated with pressure: ([\d.]+)E([+-]?\d+)/;
+   const FLAGS_REGEX = /DEBUG: Safety Output Terminal Data Flags: (\[.*\])/;
+   const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
+   const EXP_REGEX = /[eE]([+-]?\d+)/;
+
+
+   let linesPerTimestamp = {};
+
+
+   function timeToSeconds(time) {
+     const hours = (time[0] - '0') * 10 + (time[1] - '0');   // First two characters for hours
+     const minutes = (time[3] - '0') * 10 + (time[4] - '0'); // Characters at index 3 and 4 for minutes
+     const seconds = (time[6] - '0') * 10 + (time[7] - '0'); // Characters at index 6 and 7 for seconds
+     return hours * 3600 + minutes * 60 + seconds;
+   }
+
+
+   function secondsSinceMidnightChicago() {
+     const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+     const d = new Date(now);
+     return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+   }
+
+
+   const currentTimeInSeconds = secondsSinceMidnightChicago();
+    
+
+
+  // TODO: Deal with this Fix it after
+  // const maxLines = Math.max(...Object.values(linesPerTimestamp));
+  //  const MAX_LINES = maxLines * 60 * 60 * 12;
+  //  lines = lines.slice(0, MAX_LINES);
+    // console.log(MAX_LINES) -- Resulting in "-infinity"
+
+
     for (const line of lines){
-      const match = line.match(TIMESTAMP_REGEX);
-      const timestamp = match[1];
-      const timestampInSeconds = timeToSeconds(timestamp);
-      if (Math.abs(currentTimeInSeconds - timestampInSeconds) <= 12 * 60 * 60){
-        linesPerTimestamp[timestampInSeconds] = (linesPerTimestamp[timestampInSeconds] || 0) + 1;
-      }
-    }
+     const match = line.match(TIMESTAMP_REGEX);
+     const timestamp = match[1];
+     const timestampInSeconds = timeToSeconds(timestamp);
+     if (Math.abs(currentTimeInSeconds - timestampInSeconds) <= 12 * 60 * 60){
+       linesPerTimestamp[timestampInSeconds] = (linesPerTimestamp[timestampInSeconds] || 0) + 1;
+  
+     const timestampMatch = line.match(TIMESTAMP_REGEX);
+     if (!timestampMatch) continue;
 
-    const maxLines = Math.max(...Object.values(linesPerTimestamp));
 
-    const MAX_LINES = maxLines * 60 * 60 * 12;
-    lines = lines.slice(0, MAX_LINES);
+     const currentTimeInSeconds = secondsSinceMidnightChicago(); // Get current time ONCE
+     // Calculate the difference in seconds
+     let difference = currentTimeInSeconds - timestampInSeconds;
 
-    // Write to file first
-    // if (!fs.existsSync(REVERSED_FILE_PATH)) {
-    //   fs.writeFileSync(REVERSED_FILE_PATH, '', 'utf8');
-    // }
 
-    // fs.writeFileSync(REVERSED_TEMP_FILE_PATH, 'hii ', 'utf8'); // only for debugging
+     // Handle the case where the log timestamp is from the previous day
+     if (difference < 0) {
+         difference += 86400; // Add 24 hours in seconds
+     }
 
-    // release = await lockFile.lock(REVERSED_TEMP_FILE_PATH); // lock original path
 
-    const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
-    let hasError = false;
 
-    await new Promise((resolve, reject) => {
-      let i = 0;
-      function writeNext() {
-        if (hasError) return;
+     // Only process if the log is within the last 60 seconds; I switched it to 300 for temperatures to show up on the dashboard.
 
-        let ok = true;
-        while (i < lines.length && ok) {
-          ok = writeStream.write(lines[i] + '\n');
-          i++;
-        }
-        if (i < lines.length) {
-          writeStream.once('drain', writeNext);
-        } else {
-          writeStream.end();
-        }
-      }
 
-      writeNext();
+     /*
+     IMP: commenting it out for now
+     */
 
-      writeStream.on('finish', async () => {
-        try {
-          // fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
-          console.log('Reversed log updated successfully.');
-          console.log(maxLines);
-          lastModifiedTime = mostRecentFile.modifiedTime;
-          logFileName = mostRecentFile.name;
-          experimentRunning = true;
-          shouldReload = true;
 
-          if (fs.existsSync(REVERSED_FILE_PATH)) {
-            try {
-              data = await extractData(); // AWAIT the result!
-            } catch (error) {
-              console.log("Error extracting data:", error);
-              data = null; // Or handle this appropriately
-            }
-          } else {
-            data = null;
-            console.log("File None existant -- Could not extract the log data");
-          }
+     // if (difference > 300) {
+     //     console.log(`Stopping log processing: timestamp ${timestamp}, difference: ${difference}`);
+     //     break; // Exit the loop since logs are in descending order
+     // }
+    
+     // Extract log type
+     const logTypeMatch = line.match(LOG_TYPE_REGEX);
+     if (!logTypeMatch) continue;
+     const logType = logTypeMatch[1];        // trim might be necessary but not important for now
+    
+     // Process based on log type
+     
+     switch(logType) {
+         case "DEBUG: GUI updated with pressure":
+           const pressureMatch = line.match(PRESSURE_REGEX);
+           if (pressureMatch && pressureMatch[1]) {
+               const parsedPressure_val = pressureMatch[1] + "E" + pressureMatch[2];
+               let [numerical_val, exp] = parsedPressure_val.split(/[E]/);
+               let pressureMbar = parseFloat(numerical_val) * Math.pow(10, parseInt(exp))
 
-          resolve(true);
-        } catch (err) {
-          console.error('Rename failed:', err);
-          reject(false);
-        }
-      });
 
-      writeStream.on('error', async (err) => {
-        console.error('Error writing file:', err);
-        hasError = true;
-        reject(false);
-      });
-    });
+               // 5 minutes
+               if (difference <= 300){
+                  console.log("pressure: ", pressureMbar)
+                   data.pressure = pressureMbar;
+                   data.pressureTimestamp = timestampInSeconds;
+                   console.log("Timestamp being assigned to pressureTimestamp:", timestamp);
+                   // if currentData object has been filled with valid values stop processing log lines
+               }
+               else {
+                   console.log(`Skipping pressure value due to stale timestamp (${difference} seconds ago)`);
+                   data.pressure = null;
+                   data.pressureTimestamp = null;
+               }
+               if (Object.values(data).every(value => value !== null)) {
+                   console.log(`data object has been filled`)
+                   return;
+               }
+           }
+         break;
+            
+         case "DEBUG: Safety Output Terminal Data Flags":
+           const flagsMatch = line.match(FLAGS_REGEX);
+           if (flagsMatch && flagsMatch[1] && difference <= 300) {
+               try {
+                   data.safetyFlags = JSON.parse(flagsMatch[1]);
+                   // if currentData object has been filled with valid values stop processing log lines
+                   if (Object.values(data).every(value => value !== null)) {
+                       console.log(`data object has been filled`)
+                       return;
+                   }
+               } catch (error) {}
+           }
+           break;
+            
+         case "DEBUG: PMON temps":
+           console.log("Found PMON log line:", line);
+               const tempsMatch = line.match(TEMPS_REGEX);
+               if (tempsMatch && tempsMatch[1] && difference <= 300) {
+                   try {
+                       let tempsStr = tempsMatch[1]
+                           .replace(/'/g, '"')
+                           .replace(/(\d+):/g, '"$1":');
+                      
+                       data.temperatures = JSON.parse(tempsStr);
+                       // if currentData object has been filled with valid values stop processing log lines
+                       if (Object.values(data).every(value => value !== null)) {
+                           console.log(`data object has been filled`)
+                           return;
+                       }
+                   } catch (error) {}
+               }
+           break;
 
-  } catch (err) {
-    console.error(`Error processing file: ${err.message}`);
-    experimentRunning = false;
-    data = null
-    console.log("Could not extract the log data");
-    return false;
-  } finally {
-    if (release) {
-      await release(); // always release lock
-    }
+
+         default:
+             break;
+   }
   }
+
+   }
+
+
+
+
+   // Write to file first
+   // if (!fs.existsSync(REVERSED_FILE_PATH)) {
+   //   fs.writeFileSync(REVERSED_FILE_PATH, '', 'utf8');
+   // }
+
+
+   // fs.writeFileSync(REVERSED_TEMP_FILE_PATH, 'hii ', 'utf8'); // only for debugging
+
+
+   // release = await lockFile.lock(REVERSED_TEMP_FILE_PATH); // lock original path
+
+
+   const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
+   let hasError = false;
+
+
+   await new Promise((resolve, reject) => {
+     let i = 0;
+     function writeNext() {
+       if (hasError) return;
+
+
+       let ok = true;
+       while (i < lines.length && ok) {
+         ok = writeStream.write(lines[i] + '\n');
+         i++;
+       }
+       if (i < lines.length) {
+         writeStream.once('drain', writeNext);
+       } else {
+         writeStream.end();
+       }
+     }
+
+
+     writeNext();
+
+
+     writeStream.on('finish', async () => {
+       try {
+         // fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
+         console.log('Reversed log updated successfully.');
+         console.log(maxLines);
+         lastModifiedTime = mostRecentFile.modifiedTime;
+         logFileName = mostRecentFile.name;
+         experimentRunning = true;
+         shouldReload = true;
+
+
+         console.log("DEBUG (X): ", data);
+
+
+         // if (fs.existsSync(REVERSED_FILE_PATH)) {
+         //   try {
+         //     // data = await extractData(); // AWAIT the result!
+         //   } catch (error) {
+         //     console.log("Error extracting data:", error);
+         //     data = null; // Or handle this appropriately
+         //   }
+         // } else {
+         //   data = null;
+         //   console.log("File None existant -- Could not extract the log data");
+         // }
+
+
+         resolve(true);
+       } catch (err) {
+         console.error('Rename failed:', err);
+         reject(false);
+       }
+     });
+
+
+     writeStream.on('error', async (err) => {
+       console.error('Error writing file:', err);
+       hasError = true;
+       reject(false);
+     });
+   });
+
+
+ } catch (err) {
+   console.error(`Error processing file: ${err.message}`);
+   experimentRunning = false;
+   data = null
+   console.log("Could not extract the log data");
+   return false;
+ } finally {
+   if (release) {
+     await release(); // always release lock
+   }
+ }
 }
+
 
 // // Schedule updates
 fetchAndUpdateFile(); // Initial fetch
-setInterval(fetchAndUpdateFile, 2000); // Check every second
+setInterval(fetchAndUpdateFile, 60000); // Check every second
+
+
 
 
 /**
- * GET/: Render log dashboard
- */
+* GET/: Render log dashboard
+*/
 app.get('/', async (req, res) => {
-  try {
-    // if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
-    //   // Temp write is in progress — delay response briefly
-    //   await new Promise((r) => setTimeout(r, 500));
-    // }
+ try {
+   // if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
+   //   // Temp write is in progress — delay response briefly
+   //   await new Promise((r) => setTimeout(r, 500));
+   // }
 
-    let reversedContents = "No data available.";
-    if (fs.existsSync(REVERSED_FILE_PATH)) {
-      reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
-    }else{
-      reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server.`;
-    }
 
-    const contentLines = reversedContents.split('\n');
-    const previewContent = contentLines.slice(0, 20).join('\n');
-    // console.log("Preview content (first 20 lines):\n", previewContent);
+   let reversedContents = "No data available.";
+   if (fs.existsSync(REVERSED_FILE_PATH)) {
+     reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
+   }else{
+     reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server.`;
+   }
 
-    const fileModified = lastModifiedTime 
-      ? new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })
-      : "N/A";
-    const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
 
-    // Accessing each data field:
-    // add logic for setting pressure to null if we have crossed the pressure threshold
+   const contentLines = reversedContents.split('\n');
+   const previewContent = contentLines.slice(0, 20).join('\n');
+   // console.log("Preview content (first 20 lines):\n", previewContent);
 
-    // let pressure = null;
-    // let timeStampDebug = data.pressureTimestamp;
-    let pressure = null;
-    if (data && data.differenceTimestamp != null && data.differenceTimestamp <= 75) {
-      // pressure = data.pressure;
-      pressure = Number(data.pressure).toExponential(3);
-    }
 
-    const temperatures = (data && data.temperatures) || {
-      "1": "DISCONNECTED",
-      "2": "DISCONNECTED",
-      "3": "DISCONNECTED",
-      "4": "DISCONNECTED",
-      "5": "DISCONNECTED",
-      "6": "DISCONNECTED"
-    };
+   const fileModified = lastModifiedTime
+     ? new Date(lastModifiedTime).toLocaleString("en-US", { timeZone: "America/Chicago" })
+     : "N/A";
+   const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
 
-  
+
+   // Accessing each data field:
+   // add logic for setting pressure to null if we have crossed the pressure threshold
+
+
+   // let pressure = null;
+   // let timeStampDebug = data.pressureTimestamp;
+
+
+   let pressure = null;
+   if (data && data.differenceTimestamp != null && data.differenceTimestamp <= 300) {
+     // pressure = data.pressure;
+     pressure = Number(data.pressure).toExponential(3);
+   }
+
+
+   const temperatures = (data && data.temperatures) || {
+     "1": "DISCONNECTED",
+     "2": "DISCONNECTED",
+     "3": "DISCONNECTED",
+     "4": "DISCONNECTED",
+     "5": "DISCONNECTED",
+     "6": "DISCONNECTED"
+   };
+
+
     // const safetyFlags = data.data.safetyFlags; // Access Safety Flags array
-    // const temperatures = response.Temperatures; // Access Temperatures object
-    // const timestamp = response.NEW; // Access the timestamp (or NEW field)
+   // const temperatures = response.Temperatures; // Access Temperatures object
+   // const timestamp = response.NEW; // Access the timestamp (or NEW field)
+  
+
+
+   // For example, to access the first temperature reading:
+   // const temperatureSensor1 = temperatures["1"]; // "18.94"
+
+
+   // You can now use these variables as needed in your front end.
+
+
+   // console.log('Safety Flags:', safetyFlags);
+   // console.log('Temperatures:', temperatures);
+   // console.log('Timestamp:', timestamp);
+   // console.log('Temperature from sensor 1:', temperatureSensor1);
+
+
+   // temp var
+   const temp = JSON.stringify(data);
+
+
+   console.log('XX', experimentRunning);
+   console.log('YY', data);
+   console.log('ZZ', pressure);
+   console.log('AA', temperatures);
+
+
+   //  keep your HTML generation as-is below this
+   res.send(`
+     <!DOCTYPE html>
+     <html lang="en">
+     <head>
+       <meta charset="UTF-8" />
+       <meta name="viewport" content="width=device-width, initial-scale=1" />
+       <title>Log System Dashboard</title>
+       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+       <style>
+         /* =========================
+            FUTURISTIC BACKGROUND
+         ========================== */
+         body {
+           font-family: Arial, sans-serif;
+           text-align: center;
+           /* background: linear-gradient(-45deg, #001f3f, #003366, #005a9e); */
+           background: #0d1117;
+           background-size: 400% 400%;
+           color: white;
+           padding: 20px;
+           margin: 0;
+         }
+         @keyframes gradientMove {
+           0% { background-position: 0% 50%; }
+           50% { background-position: 100% 50%; }
+           100% { background-position: 0% 50%; }
+         }
+
+
+         /* =========================
+            GLASSMORPHISM CONTAINERS
+         ========================== */
+         .glass-container {
+           background: rgba(30, 30, 30, 0.9);
+
+
+           /* backdrop-filter: blur(20px);
+           -webkit-backdrop-filter: blur(20px); */
+
+
+           border-radius: 8px;
+           padding: 30px;
+
+
+           /* box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15); */
+
+
+           width: 100%;
+           margin: 0 auto;
+         }
+          
+         /* For sections like Interlocks, Environmental, and Green Indicators */
+         .interlocks-section,
+         .env-section,
+         .vacuum-indicators{
+           background: rgba(255, 255, 255, 0.08);
+           backdrop-filter: blur(20px);
+           -webkit-backdrop-filter: blur(20px);
+           border-radius: 15px;
+           padding: 20px;
+           margin: 50px auto;
+           width: 90%;
+         }
+
+
+         /* =========================
+            TITLES / HEADERS
+         ========================== */
+         .dashboard-title {
+           font-size: 2em;
+           font-weight: 700;
+           color: #d6eaff;
+           text-align: left;
+           padding-left: 40px;
+           /* text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
+                        0px 0px 20px rgba(214, 234, 255, 0.4); */
+         }
+        
+         /* .dashboard-title::after {
+           content: "";
+           display: block;
+           width: 60%;
+           height: 5px;
+           background: rgba(0, 255, 255, 0.8);
+           margin: 10px auto;
+           box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
+           border-radius: 10px;
+         } */
+
+
+         .dashboard-subtitle {
+           font-size: 0.9em;
+           margin-bottom: 25px;
+           text-align: left;
+           opacity: 0.9;
+           color: rgba(255, 255, 255, 0.8);
+         }
+
+
+
+
+         /* =========================
+            INTERLOCKS SECTION
+         ========================== */
+         .interlocks-title {
+           font-weight: bold;
+           transition: text-shadow 0.3s ease;
+           cursor: pointer;
+           font-size: 0.9em;
+         }
+         .interlocks-title:hover {
+           text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
+         }
+         .interlocks-container {
+           display: flex;
+           justify-content: space-around;
+           align-items: center;
+           flex-wrap: wrap;
+         }
+         .interlock-item {
+           text-align: center;
+           font-size: 0.75em;
+           margin: 10px;
+           transition: transform 0.3s ease, filter 0.3s ease;
+           cursor: pointer;
+         }
+         .interlock-item:hover {
+           transform: translateY(-5px);
+           filter: brightness(1.3);
+         }
+         .interlock-item div:last-child {
+           transition: font-weight 0.3s ease;
+         }
+         .interlock-item:hover div:last-child {
+           font-weight: bold;
+         }
+         .circle {
+           width: 30px;
+           height: 30px;
+           border-radius: 50%;
+           margin: 0 auto 5px auto;
+           transition: transform 0.3s ease, filter 0.3s ease;
+         }
+         .interlock-item:hover .circle {
+           transform: scale(1.1);
+           filter: brightness(1.3);
+         }
+
+
+         /* =========================
+            GREEN INDICATORS SECTION
+         ========================== */
+         .vacuum-indicators-title {
+           font-weight: bold;
+           transition: text-shadow 0.3s ease;
+           cursor: pointer;
+           font-size: 0.9em;
+         }
+         .vacuum-indicators-title:hover {
+           text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
+         }
+         /* Reusing the interlocks container style for consistency */
+         .vacuum-indicators-container {
+           display: flex;
+           justify-content: space-around;
+           align-items: center;
+           flex-wrap: wrap;
+         }
+         /* Items here are the same as interlock items but will only use green circles */
+         .vacuum-indicators-item {
+           text-align: center;
+           font-size: 0.75em;
+           margin: 10px;
+           transition: transform 0.3s ease, filter 0.3s ease;
+           cursor: pointer;
+         }
+         .vacuum-indicators-item:hover {
+           transform: translateY(-5px);
+           filter: brightness(1.3);
+         }
+         .vacuum-indicators-item div:last-child {
+           transition: font-weight 0.3s ease;
+         }
+         .vacuum-indicators-item:hover div:last-child {
+           font-weight: bold;
+         }
+         /* Use same circle styling */
+         .vacuum-indicators-circle {
+           width: 30px;
+           height: 30px;
+           border-radius: 50%;
+           margin: 0 auto 5px auto;
+           transition: transform 0.3s ease, filter 0.3s ease;
+         }
+         .vacuum-indicators-item:hover .vacuum-indicators-circle {
+           transform: scale(1.1);
+           filter: brightness(1.3);
+         }
+
+
+         /* =========================
+            ENVIRONMENTAL SECTION
+         ========================== */
+
+
+         /* Radial Gauges*/
+         .gauge-grid {
+           display: grid;
+           grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+           gap: 1rem;
+           margin-top: 1rem;
+         }
+         .gauge {
+           text-align: center;
+           color: #fff;
+         }
+         /* .gauge-circle {
+           width: 40px;
+           height: 40px;
+           border-radius: 50%;
+           background: conic-gradient(#ccc 0deg, #ccc 360deg);
+           position: relative;
+           margin: 0 auto 0.5rem;
+           transition: background 0.3s;
+         } */
+         /* .gauge-cover {
+           position: absolute;
+           top: 12px; left: 12px;
+           width: 60px; height: 60px;
+           background: rgba(0,0,0,0.4);
+           border-radius: 50%;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           font-size: 1em;
+           color: #fff;
+         }
+         .sensor-label { font-weight: bold; } */
+        
+
+
+         /* horizontal layout */
+         .gauge-grid {
+           display: flex;
+           justify-content: space-around;
+           align-items: center;
+           flex-wrap: wrap;
+           gap: 1.5rem;
+           margin-top: 1.5rem;
+         }
+         .gauge {
+           text-align: center;
+           font-size: 0.75em;
+           color: #fff;
+         }
+
+
+         // gauge circle now displays the attributes of a textbox
+         .gauge-circle {
+           width: 80px;
+           height: 37px;
+           padding: 10px;
+           background-color: conic-gradient(#ccc 0deg, #ccc 360deg);
+           color: white;
+           border: 1px solid #ccc;
+           text-align: center;
+           font-size: 0.9em;
+         }
+
+
+         // .gauge-cover {
+         //   width: 100%;
+         //   height: 100%;
+         //   border-radius: 50%;
+         //   background: rgba(0, 0, 0, 0.4);
+         //   display: flex;
+         //   align-items: center;
+         //   justify-content: center;
+         //   font-size: 1em;
+         //   color: #fff;
+         // }
+         // .sensor-label { font-weight: bold; }
+
+
+
+
+         /* =========================
+            LOG VIEWER
+         ========================== */
+
+
+         pre {
+           white-space: pre-wrap;
+           font-family: 'Courier New', monospace;
+           text-align: left;
+           background-color: #000;
+           color: #ffffff;
+           padding: 20px 0;
+           max-height: 600px;
+           overflow-y: auto;
+           font-size: 0.9em;
+           border-radius: 9px;
+           margin-top: 2.75em;
+           }
+
+
+         .content-section {
+           display: none;
+         }
+         .content-section.active {
+           display: block;
+         }
+         .btn-toggle {
+           background-color: #00bcd4;
+           color: white;
+           border: none;
+           padding: 10px 20px;
+           font-size: 0.75em;
+           border-radius: 5px;
+           cursor: pointer;
+           transition: background-color 0.3s ease;
+           float: right;
+           margin-top: -3.5em;
+           margin-bottom: 10px;
+         }
+         .btn-toggle:hover {
+           background: rgba(0, 255, 255, 0.8);
+           box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
+         }
+
+
+         /* =========================
+            RESPONSIVE LAYOUT
+         ========================== */
+         @media (max-width: 992px) {
+           .card-container {
+             grid-template-columns: repeat(2, 1fr);
+           }
+         }
+         @media (max-width: 600px) {
+           .card-container {
+             grid-template-columns: repeat(1, 1fr);
+           }
+         }
+
+
+         /* =========================
+            EXPERIMENT-RUNNING NOTICE
+         ========================== */
+         .fixed-top-right {
+           position: absolute;
+           top: 20px;
+           right: 25px;
+           padding: 5px 10px;
+           font-size: 0.7em;
+           border-radius: 8px;
+           color: white;
+           font-weight: bold;
+           z-index: 9999;
+         }
+         .neon-warning {
+           border: 2px solid red;
+           box-shadow: 0 0 10px red;
+           text-shadow: 0 0 10px red;
+           background-color: rgba(255, 0, 0, 0.2);
+         }
+         .neon-success {
+           border: 2px solid green;
+           box-shadow: 0 0 10px green;
+           text-shadow: 0 0 10px green;
+           background-color: rgba(0, 255, 0, 0.2);
+         }
+         @media (max-width: 768px) {
+           .fixed-top-right {
+             position: static;
+             display: block;
+             margin: 10px auto 20px;
+             width: fit-content;
+             font-size: 1.1em;
+             padding: 8px 16px;
+           }
+           .dashboard-title {
+             margin-top: 10px;
+             font-size: 3.0em;
+           }
+         }
+       </style>
+     </head>
+     <body>
+       <div class="container-fluid mt-4">
+         <!-- If experiment isn't running, show a neon warning. In the alternate case, show a neon success -->
+         ${!experimentRunning ? `<div class="neon-warning fixed-top-right">Experiment is not running</div>` : `<div class="neon-success fixed-top-right">Experiment is running</div>`}
+
+
+         <!-- Title & Subtitle -->
+         <h2 class="dashboard-title">E-beam Web Monitor</h2>
+         <p class="dashboard-subtitle">
+           <strong>File Last Modified:</strong> ${fileModified} |
+           <strong>Last Updated:</strong> ${currentTime}
+         </p>
+
+
+
+
+         <!-- Example Cards (Optional) -->
+         <!--
+         <div class="card-container">
+           <div class="card">Hi, I am Card 1</div>
+           <div class="card">Hi, I am Card 2</div>
+           <div class="card">Hi, I am Card 3</div>
+           <div class="card">Hi, I am Card 4</div>
+           <div class="card">Hi, I am Card 5</div>
+           <div class="card">Hi, I am Card 6</div>
+           <div class="card">Hi, I am Card 7</div>
+           <div class="card">Hi, I am Card 8</div>
+         </div>
+         -->
+
+
+         <!-- Interlocks Section -->
+         <div class="interlocks-section">
+           <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
+           <div class="interlocks-container">
+             <div class="interlock-item">
+               <div class="circle bg-secondary"></div>
+               <div>Vacuum</div>
+             </div>
+             <div class="interlock-item">
+               <div class="circle bg-secondary"></div>
+               <div>Water</div>
+             </div>
+             <div class="interlock-item">
+               <div class="circle bg-secondary"></div>
+               <div>Door</div>
+             </div>
+             <div class="interlock-item">
+               <div class="circle bg-secondary"></div>
+               <div>Timer</div>
+             </div>
+             <div class="interlock-item">
+               <div class="circle bg-secondary"></div>
+               <div>Oil High</div>
+             </div>
+             <div class="interlock-item">
+               <div class="circle bg-secondary"></div>
+               <div>Oil Low</div>
+             </div>
+             <div class="interlock-item">
+               <div class="circle bg-secondary"></div>
+               <div>E-stop Ext</div>
+             </div>
+             <div class="interlock-item">
+               <div class="circle bg-secondary"></div>
+               <div>E-stop Int</div>
+             </div>
+             <div class="interlock-item">
+               <div class="circle bg-secondary"></div>
+               <div>QGSP Active</div>
+             </div>
+           </div>
+         </div>
+
+
+         <!-- Vacuum Indicators Section -->
+         <div class="vacuum-indicators">
+           <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
+           <div class="vacuum-indicators-container">
+             <div class="vacuum-indicators-item">
+               <div class="vacuum-indicators-circle bg-secondary"></div>
+               <div>Pumps Power ON</div>
+             </div>
+             <div class="vacuum-indicators-item">
+               <div class="vacuum-indicators-circle bg-secondary"></div>
+               <div>Turbo Rotor ON</div>
+             </div>
+             <div class="vacuum-indicators-item">
+               <div class="vacuum-indicators-circle bg-secondary"></div>
+               <div>Turbo Vent Open</div>
+             </div>
+             <div class="vacuum-indicators-item">
+               <div class="vacuum-indicators-circle bg-secondary"></div>
+               <div>972b Power On</div>
+             </div>
+             <div class="vacuum-indicators-item">
+               <div class="vacuum-indicators-circle bg-secondary"></div>
+               <div>Turbo Gate Valve Closed</div>
+             </div>
+             <div class="vacuum-indicators-item">
+               <div class="vacuum-indicators-circle bg-secondary"></div>
+               <div>Turbo Gate Valve Open</div>
+             </div>
+             <div class="vacuum-indicators-item">
+               <div class="vacuum-indicators-circle bg-secondary"></div>
+               <div>Argon Gate Valve Open</div>
+             </div>
+             <div class="vacuum-indicators-item">
+               <div class="vacuum-indicators-circle bg-secondary"></div>
+               <div>Argon Gate Valve Closed</div>
+             </div>
+           </div>
+         </div>
+
+
+         <!-- Environmental Section -->
+         <!-- Environmental Section (Horizontal Radial Gauges) -->
+         <div class="env-section">
+           <h3 class="dashboard-subtitle env-title">Environmental</h3>
+           <div class="gauge-grid">
+             <div class="gauge" id="sensor-1">
+               <div class="gauge-circle"><div class="gauge-cover">${temperatures["1"] === "DISCONNECTED" || temperatures["1"] === "None" ? '--' : temperatures["1"] + '°C'}</div></div>
+               <div class="sensor-label">Solenoid 1</div>
+             </div>
+             <div class="gauge" id="sensor-2">
+               <div class="gauge-circle"><div class="gauge-cover">${temperatures["2"] === "DISCONNECTED" || temperatures["2"] === "None" ? '--' : temperatures["2"] + '°C'}</div></div>
+               <div class="sensor-label">Solenoid 2</div>
+             </div>
+             <div class="gauge" id="sensor-3">
+               <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] === "DISCONNECTED" || temperatures["3"] === "None" ? '--' : temperatures["3"] + '°C'}</div></div>
+               <div class="sensor-label">Chmbr Bot</div>
+             </div>
+             <div class="gauge" id="sensor-4">
+               <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] === "DISCONNECTED" || temperatures["4"] === "None" ? '--' : temperatures["4"] + '°C'}</div></div>
+               <div class="sensor-label">Chmbr Top</div>
+             </div>
+             <div class="gauge" id="sensor-5">
+               <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] === "DISCONNECTED" || temperatures["5"] === "None" ? '--' : temperatures["5"] + '°C'}</div></div>
+               <div class="sensor-label">Air temp</div>
+             </div>
+             <div class="gauge" id="sensor-6">
+               <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] === "DISCONNECTED" || temperatures["6"] === "None" ? '--' : temperatures["6"] + '°C'}</div></div>
+               <div class="sensor-label">Extra 6</div>
+             </div>
+           </div>
+         </div>
+
+
+         <!-- Log Viewer -->
+           <div class="env-section">
+             <h3 class="dashboard-subtitle env-title">System Logs</h3>
+               <button id="toggleButton" class="btn-toggle">Show Full Log</button>
+                 <div id="previewContent" class="content-section active">
+                   <pre>${previewContent}</pre>
+                     <p class="text-center text-info mt-2">
+                       Showing first 20 lines. Click the button above to see the full log.
+                     </p>
+                 </div>
+               <div id="fullContent" class="content-section">
+             <pre>${reversedContents}</pre>
+           <p class="text-center text-info mt-2">
+                 Showing full log. Click the button above to see the preview.
+           </p>
+         </div>
+       </div>
+
+
+
+
+       <!-- Auto-refresh & Toggle Script -->  
+
+
+       <script>
+         setInterval(async function () {
+           try {
+             const response = await fetch('/should-reload');
+             const { shouldReload, experimentRunning } = await response.json();
+             if (shouldReload && experimentRunning) {
+               location.reload();
+             }
+           } catch (e) {
+             console.error('Could not poll for reload', e);
+           }
+         }, 60000);
+
+
+         // Toggle between preview/full log
+
+
+         const toggleButton = document.getElementById('toggleButton');
+         const previewSection = document.getElementById('previewContent');
+         const fullSection = document.getElementById('fullContent');
+         let showingFull = false;
+        
+         function toggleContent() {
+           if (showingFull) {
+             previewSection.className = 'content-section active';
+             fullSection.className = 'content-section';
+             toggleButton.textContent = 'Show Full Log';
+           } else {
+             previewSection.className = 'content-section';
+             fullSection.className = 'content-section active';
+             toggleButton.textContent = 'Show Preview';
+           }
+           showingFull = !showingFull;
+         }
+         toggleButton.onclick = toggleContent;
+       </script>
+
+
+     </body>
+     </html>
     
-
-    // For example, to access the first temperature reading:
-    // const temperatureSensor1 = temperatures["1"]; // "18.94"
-
-    // You can now use these variables as needed in your front end.
-
-    // console.log('Safety Flags:', safetyFlags);
-    // console.log('Temperatures:', temperatures);
-    // console.log('Timestamp:', timestamp);
-    // console.log('Temperature from sensor 1:', temperatureSensor1);
-
-    // temp var 
-    const temp = JSON.stringify(data);
-
-    console.log('XX', experimentRunning);
-    console.log('YY', data);
-    console.log('ZZ', pressure);
-    console.log('AA', temperatures);
-
-    //  keep your HTML generation as-is below this
-    res.send(`
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Log System Dashboard</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-        <style>
-          /* =========================
-             FUTURISTIC BACKGROUND
-          ========================== */
-          body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            /* background: linear-gradient(-45deg, #001f3f, #003366, #005a9e); */
-            background: #0d1117;
-            background-size: 400% 400%;
-            color: white;
-            padding: 20px;
-            margin: 0;
-          }
-          @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-
-          /* =========================
-             GLASSMORPHISM CONTAINERS
-          ========================== */
-          .glass-container {
-            background: rgba(30, 30, 30, 0.9);
-
-            /* backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px); */
-
-            border-radius: 8px;
-            padding: 30px;
-
-            /* box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15); */
-
-            width: 100%;
-            margin: 0 auto;
-          }
-            
-          /* For sections like Interlocks, Environmental, and Green Indicators */
-          .interlocks-section,
-          .env-section,
-          .vacuum-indicators{
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 50px auto;
-            width: 90%;
-          }
-
-          /* =========================
-             TITLES / HEADERS
-          ========================== */
-          .dashboard-title {
-            font-size: 2em;
-            font-weight: 700;
-            color: #d6eaff;
-            text-align: left;
-            padding-left: 40px;
-            /* text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
-                         0px 0px 20px rgba(214, 234, 255, 0.4); */
-          }
-          
-          /* .dashboard-title::after {
-            content: "";
-            display: block;
-            width: 60%;
-            height: 5px;
-            background: rgba(0, 255, 255, 0.8);
-            margin: 10px auto;
-            box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
-            border-radius: 10px;
-          } */
-
-          .dashboard-subtitle {
-            font-size: 0.9em;
-            margin-bottom: 25px;
-            text-align: left;
-            opacity: 0.9;
-            color: rgba(255, 255, 255, 0.8);
-          }
-
-
-          /* =========================
-             INTERLOCKS SECTION
-          ========================== */
-          .interlocks-title {
-            font-weight: bold;
-            transition: text-shadow 0.3s ease;
-            cursor: pointer;
-            font-size: 0.9em;
-          }
-          .interlocks-title:hover {
-            text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
-          }
-          .interlocks-container {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            flex-wrap: wrap;
-          }
-          .interlock-item {
-            text-align: center;
-            font-size: 0.75em;
-            margin: 10px;
-            transition: transform 0.3s ease, filter 0.3s ease;
-            cursor: pointer;
-          }
-          .interlock-item:hover {
-            transform: translateY(-5px);
-            filter: brightness(1.3);
-          }
-          .interlock-item div:last-child {
-            transition: font-weight 0.3s ease;
-          }
-          .interlock-item:hover div:last-child {
-            font-weight: bold;
-          }
-          .circle {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            margin: 0 auto 5px auto;
-            transition: transform 0.3s ease, filter 0.3s ease;
-          }
-          .interlock-item:hover .circle {
-            transform: scale(1.1);
-            filter: brightness(1.3);
-          }
-
-          /* =========================
-             GREEN INDICATORS SECTION
-          ========================== */
-          .vacuum-indicators-title {
-            font-weight: bold;
-            transition: text-shadow 0.3s ease;
-            cursor: pointer;
-            font-size: 0.9em;
-          }
-          .vacuum-indicators-title:hover {
-            text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
-          }
-          /* Reusing the interlocks container style for consistency */
-          .vacuum-indicators-container {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            flex-wrap: wrap;
-          }
-          /* Items here are the same as interlock items but will only use green circles */
-          .vacuum-indicators-item {
-            text-align: center;
-            font-size: 0.75em;
-            margin: 10px;
-            transition: transform 0.3s ease, filter 0.3s ease;
-            cursor: pointer;
-          }
-          .vacuum-indicators-item:hover {
-            transform: translateY(-5px);
-            filter: brightness(1.3);
-          }
-          .vacuum-indicators-item div:last-child {
-            transition: font-weight 0.3s ease;
-          }
-          .vacuum-indicators-item:hover div:last-child {
-            font-weight: bold;
-          }
-          /* Use same circle styling */
-          .vacuum-indicators-circle {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            margin: 0 auto 5px auto;
-            transition: transform 0.3s ease, filter 0.3s ease;
-          }
-          .vacuum-indicators-item:hover .vacuum-indicators-circle {
-            transform: scale(1.1);
-            filter: brightness(1.3);
-          }
-
-          /* =========================
-             ENVIRONMENTAL SECTION
-          ========================== */
-
-          /* Radial Gauges*/
-          .gauge-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-          }
-          .gauge {
-            text-align: center;
-            color: #fff;
-          }
-          /* .gauge-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: conic-gradient(#ccc 0deg, #ccc 360deg);
-            position: relative;
-            margin: 0 auto 0.5rem;
-            transition: background 0.3s;
-          } */
-          /* .gauge-cover {
-            position: absolute;
-            top: 12px; left: 12px;
-            width: 60px; height: 60px;
-            background: rgba(0,0,0,0.4);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1em;
-            color: #fff;
-          }
-          .sensor-label { font-weight: bold; } */
-          
-
-          /* horizontal layout */
-          .gauge-grid {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-          }
-          .gauge {
-            text-align: center;
-            font-size: 0.75em;
-            color: #fff;
-          }
-
-          // gauge circle now displays the attributes of a textbox
-          .gauge-circle {
-            width: 80px; 
-            height: 37px;
-            padding: 10px;
-            background-color: conic-gradient(#ccc 0deg, #ccc 360deg);
-            color: white;
-            border: 1px solid #ccc;
-            text-align: center;
-            font-size: 0.9em;
-          }
-
-          // .gauge-cover {
-          //   width: 100%;
-          //   height: 100%;
-          //   border-radius: 50%;
-          //   background: rgba(0, 0, 0, 0.4);
-          //   display: flex;
-          //   align-items: center;
-          //   justify-content: center;
-          //   font-size: 1em;
-          //   color: #fff;
-          // }
-          // .sensor-label { font-weight: bold; }
-
-
-          /* =========================
-             LOG VIEWER
-          ========================== */
-
-          pre {
-            white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
-            text-align: left;
-            background-color: #000;
-            color: #ffffff;
-            padding: 20px 0;
-            max-height: 600px;
-            overflow-y: auto;
-            font-size: 0.9em;
-            border-radius: 9px;
-            margin-top: 2.75em;
-            }
-
-          .content-section {
-            display: none;
-          }
-          .content-section.active {
-            display: block;
-          }
-          .btn-toggle {
-            background-color: #00bcd4;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 0.75em;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            float: right;
-            margin-top: -3.5em;
-            margin-bottom: 10px;
-          }
-          .btn-toggle:hover {
-            background: rgba(0, 255, 255, 0.8);
-            box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
-          }
-
-          /* =========================
-             RESPONSIVE LAYOUT
-          ========================== */
-          @media (max-width: 992px) {
-            .card-container {
-              grid-template-columns: repeat(2, 1fr);
-            }
-          }
-          @media (max-width: 600px) {
-            .card-container {
-              grid-template-columns: repeat(1, 1fr);
-            }
-          }
-
-          /* =========================
-             EXPERIMENT-RUNNING NOTICE
-          ========================== */
-          .fixed-top-right {
-            position: absolute;
-            top: 20px;
-            right: 25px;
-            padding: 5px 10px;
-            font-size: 0.7em;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            z-index: 9999;
-          }
-          .neon-warning {
-            border: 2px solid red;
-            box-shadow: 0 0 10px red;
-            text-shadow: 0 0 10px red;
-            background-color: rgba(255, 0, 0, 0.2);
-          }
-          .neon-success {
-            border: 2px solid green;
-            box-shadow: 0 0 10px green;
-            text-shadow: 0 0 10px green;
-            background-color: rgba(0, 255, 0, 0.2);
-          }
-          @media (max-width: 768px) {
-            .fixed-top-right {
-              position: static;
-              display: block;
-              margin: 10px auto 20px;
-              width: fit-content;
-              font-size: 1.1em;
-              padding: 8px 16px;
-            }
-            .dashboard-title {
-              margin-top: 10px;
-              font-size: 3.0em;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container-fluid mt-4">
-          <!-- If experiment isn't running, show a neon warning. In the alternate case, show a neon success -->
-          ${!experimentRunning ? `<div class="neon-warning fixed-top-right">Experiment is not running</div>` : `<div class="neon-success fixed-top-right">Experiment is running</div>`}
-
-          <!-- Title & Subtitle -->
-          <h2 class="dashboard-title">E-beam Web Monitor</h2>
-          <p class="dashboard-subtitle">
-            <strong>File Last Modified:</strong> ${fileModified} | 
-            <strong>Last Updated:</strong> ${currentTime}
-          </p>
-
-
-          <!-- Example Cards (Optional) -->
-          <!--
-          <div class="card-container">
-            <div class="card">Hi, I am Card 1</div>
-            <div class="card">Hi, I am Card 2</div>
-            <div class="card">Hi, I am Card 3</div>
-            <div class="card">Hi, I am Card 4</div>
-            <div class="card">Hi, I am Card 5</div>
-            <div class="card">Hi, I am Card 6</div>
-            <div class="card">Hi, I am Card 7</div>
-            <div class="card">Hi, I am Card 8</div>
-          </div>
-          -->
-
-          <!-- Interlocks Section -->
-          <div class="interlocks-section">
-            <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
-            <div class="interlocks-container">
-              <div class="interlock-item">
-                <div class="circle bg-secondary"></div>
-                <div>Vacuum</div>
-              </div>
-              <div class="interlock-item">
-                <div class="circle bg-secondary"></div>
-                <div>Water</div>
-              </div>
-              <div class="interlock-item">
-                <div class="circle bg-secondary"></div>
-                <div>Door</div>
-              </div>
-              <div class="interlock-item">
-                <div class="circle bg-secondary"></div>
-                <div>Timer</div>
-              </div>
-              <div class="interlock-item">
-                <div class="circle bg-secondary"></div>
-                <div>Oil High</div>
-              </div>
-              <div class="interlock-item">
-                <div class="circle bg-secondary"></div>
-                <div>Oil Low</div>
-              </div>
-              <div class="interlock-item">
-                <div class="circle bg-secondary"></div>
-                <div>E-stop Ext</div>
-              </div>
-              <div class="interlock-item">
-                <div class="circle bg-secondary"></div>
-                <div>E-stop Int</div>
-              </div>
-              <div class="interlock-item">
-                <div class="circle bg-secondary"></div>
-                <div>QGSP Active</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Vacuum Indicators Section -->
-          <div class="vacuum-indicators">
-            <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
-            <div class="vacuum-indicators-container">
-              <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-secondary"></div>
-                <div>Pumps Power ON</div>
-              </div>
-              <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-secondary"></div>
-                <div>Turbo Rotor ON</div>
-              </div>
-              <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-secondary"></div>
-                <div>Turbo Vent Open</div>
-              </div>
-              <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-secondary"></div>
-                <div>972b Power On</div>
-              </div>
-              <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-secondary"></div>
-                <div>Turbo Gate Valve Closed</div>
-              </div>
-              <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-secondary"></div>
-                <div>Turbo Gate Valve Open</div>
-              </div>
-              <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-secondary"></div>
-                <div>Argon Gate Valve Open</div>
-              </div>
-              <div class="vacuum-indicators-item">
-                <div class="vacuum-indicators-circle bg-secondary"></div>
-                <div>Argon Gate Valve Closed</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Environmental Section -->
-          <!-- Environmental Section (Horizontal Radial Gauges) -->
-          <div class="env-section">
-            <h3 class="dashboard-subtitle env-title">Environmental</h3>
-            <div class="gauge-grid">
-              <div class="gauge" id="sensor-1">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["1"] === "DISCONNECTED" || temperatures["1"] === "None" ? '--' : temperatures["1"] + '°C'}</div></div>
-                <div class="sensor-label">Solenoid 1</div>
-              </div>
-              <div class="gauge" id="sensor-2">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["2"] === "DISCONNECTED" || temperatures["2"] === "None" ? '--' : temperatures["2"] + '°C'}</div></div>
-                <div class="sensor-label">Solenoid 2</div>
-              </div>
-              <div class="gauge" id="sensor-3">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] === "DISCONNECTED" || temperatures["3"] === "None" ? '--' : temperatures["3"] + '°C'}</div></div>
-                <div class="sensor-label">Chmbr Bot</div>
-              </div>
-              <div class="gauge" id="sensor-4">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] === "DISCONNECTED" || temperatures["4"] === "None" ? '--' : temperatures["4"] + '°C'}</div></div>
-                <div class="sensor-label">Chmbr Top</div>
-              </div>
-              <div class="gauge" id="sensor-5">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] === "DISCONNECTED" || temperatures["5"] === "None" ? '--' : temperatures["5"] + '°C'}</div></div>
-                <div class="sensor-label">Air temp</div>
-              </div>
-              <div class="gauge" id="sensor-6">
-                <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] === "DISCONNECTED" || temperatures["6"] === "None" ? '--' : temperatures["6"] + '°C'}</div></div>
-                <div class="sensor-label">Extra 6</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Log Viewer -->
-            <div class="env-section">
-              <h3 class="dashboard-subtitle env-title">System Logs</h3>
-                <button id="toggleButton" class="btn-toggle">Show Full Log</button>
-                  <div id="previewContent" class="content-section active">
-                    <pre>${previewContent}</pre>
-                      <p class="text-center text-info mt-2">
-                        Showing first 20 lines. Click the button above to see the full log.
-                      </p>
-                  </div>
-                <div id="fullContent" class="content-section">
-              <pre>${reversedContents}</pre>
-            <p class="text-center text-info mt-2">
-                  Showing full log. Click the button above to see the preview.
-            </p>
-          </div>
-        </div>
-
-
-        <!-- Auto-refresh & Toggle Script -->   
-
-        <script>
-          setInterval(async function () {
-            try {
-              const response = await fetch('/should-reload');
-              const { shouldReload, experimentRunning } = await response.json();
-              if (shouldReload && experimentRunning) {
-                location.reload();
-              }
-            } catch (e) {
-              console.error('Could not poll for reload', e);
-            }
-          }, 2000);
-
-          // Toggle between preview/full log
-
-          const toggleButton = document.getElementById('toggleButton');
-          const previewSection = document.getElementById('previewContent');
-          const fullSection = document.getElementById('fullContent');
-          let showingFull = false;
-          
-          function toggleContent() {
-            if (showingFull) {
-              previewSection.className = 'content-section active';
-              fullSection.className = 'content-section';
-              toggleButton.textContent = 'Show Full Log';
-            } else {
-              previewSection.className = 'content-section';
-              fullSection.className = 'content-section active';
-              toggleButton.textContent = 'Show Preview';
-            }
-            showingFull = !showingFull;
-          }
-          toggleButton.onclick = toggleContent;
-        </script>
-
-      </body>
-      </html>
-      
-    `);
-    shouldReload = false; // reset shouldReload to false after page has been loaded
-  } catch (err) {
-    console.error(err);
-    res.status(500).send(`Error: ${err.message}`);
-  }
+   `);
+   shouldReload = false; // reset shouldReload to false after page has been loaded
+ } catch (err) {
+   console.error(err);
+   res.status(500).send(`Error: ${err.message}`);
+ }
 });
+
 
 /**
- * GET /raw : Returns just the reversed text (newest at top).
- */
+* GET /raw : Returns just the reversed text (newest at top).
+*/
 app.get('/raw', async (req, res) => {
-  try {
-    // if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
-    //   await new Promise((r) => setTimeout(r, 500));
-    // }
+ try {
+   // if (fs.existsSync(REVERSED_TEMP_FILE_PATH)) {
+   //   await new Promise((r) => setTimeout(r, 500));
+   // }
 
-    if (fs.existsSync(REVERSED_FILE_PATH)) {
-      const content = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
-      res.type('text/plain').send(content);
-    } else {
-      res.status(404).send("No file found.");
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send(`Error: ${err.message}`);
-  }
+
+   if (fs.existsSync(REVERSED_FILE_PATH)) {
+     const content = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
+     res.type('text/plain').send(content);
+   } else {
+     res.status(404).send("No file found.");
+   }
+ } catch (err) {
+   console.error(err);
+   res.status(500).send(`Error: ${err.message}`);
+ }
 });
+
 
 app.get('/should-reload', (req, res) => {
-  res.json({ shouldReload, experimentRunning });
+ res.json({ shouldReload, experimentRunning });
 });
+
+
 
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+ console.log(`Server running on port ${PORT}`);
 });
 
-
-
-// // Start the server
-// app.listen(PORT, () => {
-//   console.log(`Server running on port ${PORT}`);
-// });

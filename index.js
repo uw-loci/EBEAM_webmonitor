@@ -6,29 +6,17 @@ const https = require('https');
 const axios = require('axios');
 const app = express();
 
-
-
-
 // Load environment variables
 require('dotenv').config();
-
-
-
 
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
 const PORT = process.env.PORT || 3000;
 
-
-
-
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 // Temp_File paths for local storage
 // const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
-
-
-
 
 // 15 minutes in milliseconds
 const INACTIVE_THRESHOLD = 5 * 60 * 1000;
@@ -38,8 +26,6 @@ const INACTIVE_THRESHOLD = 5 * 60 * 1000;
 const drive = google.drive({ version: 'v3', auth: API_KEY });
 
 
-
-
 // variable to store the data extracted
 let data = {
 pressure: null,
@@ -47,8 +33,6 @@ pressureTimestamp: null,
 safetyFlags: null,
 temperatures: null
 };
-
-
 
 
 /**
@@ -64,14 +48,10 @@ try {
   });
 
 
-
-
   const files = res.data.files;
   if (!files || files.length === 0) {
     throw new Error('No files found in the folder.');
   }
-
-
 
 
   return files[0]; // Returns the most recent file (ID, name, modifiedTime)
@@ -82,13 +62,9 @@ try {
 }
 
 
-
-
 let lastModifiedTime = null;
 let experimentRunning = false;
 let shouldReload = false;
-
-
 
 
 /**
@@ -119,13 +95,9 @@ let retries = 3;
     });
 
 
-
-
     // Process the stream line by line
     const lines = [];
     let currentLine = '';
-
-
 
 
     await new Promise((resolve, reject) => {
@@ -138,19 +110,13 @@ let retries = 3;
 
 
 
-
       response.on('end', () => {
         if (currentLine) lines.push(currentLine);
         resolve();
       });
 
-
-
-
       response.on('error', reject);
     });
-
-
 
 
     return lines;
@@ -162,12 +128,6 @@ let retries = 3;
   }
 }
 }
-
-
-
-
-
-
 
 
 /**
@@ -203,9 +163,6 @@ data = {
         };
       }
 
-
-
-
       function secondsSinceMidnightChicago() {
         // take the current UTC time, format to Chicago and re-parse it
         const nowLocal = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
@@ -215,9 +172,9 @@ data = {
     
       const nowSec = secondsSinceMidnightChicago();
        const data = response.data;
-      let diff = nowSec - data.pressureTimestamp;
-       if (diff < 0) diff += 24 * 3600;
-      data.differenceTimestamp = diff;
+      let difference = nowSec - data.pressureTimestamp;
+       if (difference < 0) difference += 24 * 3600;
+      data.differenceTimestamp = difference;
        // For debugging purposes
       console.log("Data:", data);
       console.log("Pressure:", Number(data.pressure).toExponential(3));
@@ -235,21 +192,12 @@ data = {
   }
 
 
-
-
-
-
-
-
 /**
 * Fetches and updates the log file if there's a new version
 * @returns {Promise<boolean>} True if file was updated, false otherwise
 */
 async function fetchAndUpdateFile() {
 let release;
-
-
-
 
 try {
   const mostRecentFile = await getMostRecentFile();
@@ -258,18 +206,8 @@ try {
     return false;
   }
 
-
-
-
   const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
   const currentTime = Date.now();
-
-
-
-
-
-
-
 
   // First check if the experiment is active
   if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
@@ -283,8 +221,6 @@ try {
     };  
 
 
-
-
     if (!fs.existsSync(REVERSED_FILE_PATH)) {
       // We don't have a local file, just log and pass
       console.log("Experiment not running but passing through");
@@ -296,30 +232,18 @@ try {
     }
   }
 
-
-
-
   //The experiment is running
-  if (lastModifiedTime && lastModifiedTime === mostRecentFile.modifiedTime) {
-    // Use the cached file if it didn't change from last time instead of fetching again.
-    console.log("No new updates. Using cached file.");
+  if (lastModifiedTime === mostRecentFile.modifiedTime) {
+    console.log("No new updates. Using cached data.");
     experimentRunning = true;
     shouldReload = false;
-
-
-
-
-    console.log("DATA", data);
-
-
     return false;
   }
+
    // fetch file
   console.log("Fetching new file...");
   let lines = await fetchFileContents(mostRecentFile.id);
   lines.reverse();
-
-
 
 
   const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
@@ -327,9 +251,6 @@ try {
   const PRESSURE_REGEX = /DEBUG: GUI updated with pressure: ([\d.]+)E([+-]?\d+)/;
   const FLAGS_REGEX = /DEBUG: Safety Output Terminal Data Flags: (\[.*\])/;
   const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
-  const EXP_REGEX = /[eE]([+-]?\d+)/;
-
-
 
 
   function timeToSeconds(time) {
@@ -340,8 +261,6 @@ try {
   }
 
 
-
-
   function secondsSinceMidnightChicago() {
     const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
     const d = new Date(now);
@@ -349,106 +268,84 @@ try {
   }
 
 
-  const currentTimeInSeconds = secondsSinceMidnightChicago();
+  const nowSec = secondsSinceMidnightChicago();
 
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const tsMatch = line.match(TIMESTAMP_REGEX);
 
-   for (const line of lines){
-    const match = line.match(TIMESTAMP_REGEX);
-    const timestamp = match[1];
-    const timestampInSeconds = timeToSeconds(timestamp);
-     const timestampMatch = line.match(TIMESTAMP_REGEX);
-    if (!timestampMatch) continue;
+    const tsStr = tsMatch[1];                  // e.g. "12:34:56"
+    const lineSec = timeToSeconds(tsStr);
+    let diff = nowSec - lineSec;
+    if (diff < 0) diff += 24 * 3600;            // handle midnight wrap
 
-
-
-
-    const currentTimeInSeconds = secondsSinceMidnightChicago(); // Get current time ONCE
-    // Calculate the difference in seconds
-    let difference = currentTimeInSeconds - timestampInSeconds;
-
-
-
-
-    // Handle the case where the log timestamp is from the previous day
-    if (difference < 0) {
-        difference += 86400; // Add 24 hours in seconds
+    if (diff > 300) {
+      continue;
     }
-  
-    // Extract log type
-    const logTypeMatch = line.match(LOG_TYPE_REGEX);
-    if (!logTypeMatch) continue;
-    const logType = logTypeMatch[1];        // trim might be necessary but not important for now
-  
-    // Process based on log type
-    switch(logType) {
-        case "DEBUG: GUI updated with pressure":
-          const pressureMatch = line.match(PRESSURE_REGEX);
-          if (pressureMatch && pressureMatch[1]) {
-              const parsedPressure_val = pressureMatch[1] + "E" + pressureMatch[2];
-              let [numerical_val, exp] = parsedPressure_val.split(/[E]/);
-              let pressureMbar = parseFloat(numerical_val) * Math.pow(10, parseInt(exp))
 
+    const typeMatch = line.match(LOG_TYPE_REGEX);
+    if (!typeMatch) continue;
 
-
-
-              // 5 minutes
-              if (difference <= 300){
-                  data.pressure = pressureMbar;
-                  data.pressureTimestamp = timestampInSeconds;
-                  console.log("Timestamp being assigned to pressureTimestamp:", timestamp);
-                  // if currentData object has been filled with valid values stop processing log lines
-              }
-              else {
-                  console.log(`Skipping pressure value due to stale timestamp (${difference} seconds ago)`);
-                  data.pressure = null;
-                  data.pressureTimestamp = null;
-              }
-              if (Object.values(data).every(value => value !== null)) {
-                  console.log(`data object has been filled`)
-                  return;
-              }
+    const logType = typeMatch[1].trim(); 
+    switch (logType) {
+      case "GUI updated with pressure":
+        {
+          const pMatch = line.match(PRESSURE_REGEX);
+          if (pMatch) {
+            const mantissa = parseFloat(pMatch[1]);          
+            const exponent = parseInt(pMatch[2], 10);        
+            data.pressure = mantissa * Math.pow(10, exponent);
+            data.pressureTimestamp = lineSec;
+            console.log("→ Found pressure:", data.pressure, "mbar (timestamp:", tsStr, ")");
           }
+        }
         break;
-          
-        case "DEBUG: Safety Output Terminal Data Flags":
-          const flagsMatch = line.match(FLAGS_REGEX);
-          if (flagsMatch && flagsMatch[1] && difference <= 300) {
-              try {
-                  data.safetyFlags = JSON.parse(flagsMatch[1]);
-                  // if currentData object has been filled with valid values stop processing log lines
-                  if (Object.values(data).every(value => value !== null)) {
-                      console.log(`data object has been filled`)
-                      return;
-                  }
-              } catch (error) {}
+
+      case "Safety Output Terminal Data Flags":
+        {
+          const fMatch = line.match(FLAGS_REGEX);
+          if (fMatch) {
+            try {
+              data.safetyFlags = JSON.parse(fMatch[1]);
+              console.log("→ Found safetyFlags:", data.safetyFlags);
+            } catch (e) {
+              console.warn("Couldn’t JSON.parse safety flags:", fMatch[1]);
+            }
           }
-          break;
-          
-        case "DEBUG: PMON temps":
-          console.log("Found PMON log line:", line);
-              const tempsMatch = line.match(TEMPS_REGEX);
-              if (tempsMatch && tempsMatch[1] && difference <= 300) {
-                  try {
-                      let tempsStr = tempsMatch[1]
-                          .replace(/'/g, '"')
-                          .replace(/(\d+):/g, '"$1":');
-                    
-                      data.temperatures = JSON.parse(tempsStr);
-                      // if currentData object has been filled with valid values stop processing log lines
-                      if (Object.values(data).every(value => value !== null)) {
-                          console.log(`data object has been filled`)
-                          return;
-                      }
-                  } catch (error) {}
-              }
-          break;
+        }
+        break;
+
+      case "PMON temps":
+        {
+          const tMatch = line.match(TEMPS_REGEX);
+          if (tMatch) {
+            try {
+              let tempsStr = tMatch[1]
+                .replace(/'/g, '"')                // convert single→double quotes
+                .replace(/(\d+):/g, '"$1":');      // wrap numeric keys in quotes
+              data.temperatures = JSON.parse(tempsStr);
+              console.log("→ Found temperatures:", data.temperatures);
+            } catch (e) {
+              console.warn("Couldn’t JSON.parse temps:", tMatch[1]);
+            }
+          }
+        }
+        break;
 
 
-
-
-        default:
-            break;
-  }}
+      default:
+        // not a field we care about
+        break;
+      }
+      if (
+        data.pressure !== null &&
+        data.pressureTimestamp !== null &&
+        data.safetyFlags !== null &&
+        data.temperatures !== null
+      ) {
+        console.log("All data fields populated, stopping line scan.");
+        break;
+      }}
 
 
 
@@ -456,16 +353,10 @@ try {
   const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
   let hasError = false;
 
-
-
-
   await new Promise((resolve, reject) => {
     let i = 0;
     function writeNext() {
       if (hasError) return;
-
-
-
 
       let ok = true;
       while (i < lines.length && ok) {
@@ -539,8 +430,8 @@ try {
 
 
 // // Schedule updates
-fetchAndUpdateFile(); // Initial fetch
-setInterval(fetchAndUpdateFile, 60000); // Check every second
+// fetchAndUpdateFile(); // Initial fetch
+// setInterval(fetchAndUpdateFile, 60000); // Check every second
 
 
 
@@ -554,6 +445,9 @@ app.get('/data', (req, res) => {
  });
 });
 
+
+fetchAndUpdateFile();
+setInterval(fetchAndUpdateFile, 60000);
 
 
 
@@ -577,10 +471,12 @@ app.get('/', async (req, res) => {
    // let pressure = null;
    // let timeStampDebug = data.pressureTimestamp;
    let pressure = null;
-   if (data && data.differenceTimestamp != null && data.differenceTimestamp <= 75) {
-     // pressure = data.pressure;
-     pressure = Number(data.pressure).toExponential(3);
-   }
+  //  if (data && data.differenceTimestamp != null && data.differenceTimestamp <= 75) {
+  //    // pressure = data.pressure;
+  //    pressure = Number(data.pressure).toExponential(3);
+  //  }
+
+   pressure = Number(data.pressure).toExponential(3);
    const temperatures = (data && data.temperatures) || {
      "1": "DISCONNECTED",
      "2": "DISCONNECTED",
@@ -594,6 +490,7 @@ app.get('/', async (req, res) => {
    console.log('YY', data);
    console.log('ZZ', pressure);
    console.log('AA', temperatures);
+   
    //  keep your HTML generation as-is below this
    res.send(`
      <!DOCTYPE html>

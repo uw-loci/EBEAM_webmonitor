@@ -286,7 +286,7 @@ function secondsSinceMidnightChicago() {
     let diff = nowSec - lineSec;
     if (diff < 0) diff += 24 * 3600; // wrap around midnight
 
-    if (diff > cutoffAge) continue; // skip stale data (> 1 hour old)
+    if (diff > cutoffAge) continue; // skip stale data (> 15 min old)
 
     const typeMatch = line.match(LOG_TYPE_REGEX);
     if (!typeMatch) continue;

@@ -4,19 +4,15 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const axios = require('axios');
-const lockFile = require('proper-lockfile');
-const { PassThrough } = require('stream');
-const logDataExtractionApiRoutes = require('./log_data_extraction');
 
 // Load environment variables
 require('dotenv').config();
 
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
-const LOG_DATA_EXTRACTION_KEY = process.env.LOG_DATA_EXTRACTION_KEY;
 const PORT = process.env.PORT || 3000;
-
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
+
 // Temp_File paths for local storage
 // const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
 
@@ -24,8 +20,6 @@ const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 const INACTIVE_THRESHOLD = 5 * 60 * 1000;
 // Initialize Express app
 const app = express();
-app.use('/log-data-extraction', logDataExtractionApiRoutes);
-
 
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });
@@ -58,9 +52,7 @@ async function getMostRecentFile() {
 }
 
 let lastModifiedTime = null;
-let logFileName = null;
 let experimentRunning = false;
-let response = null;
 let shouldReload = false;
 
 /**
@@ -122,26 +114,6 @@ async function fetchFileContents(fileId) {
 }
 
 
-/**
- * Get the extracted lof data from log file from API end point
- * 
- * @returns the data read form the log file in the format
- * 
- * 
- * extected repsonse var form the end point once fixed
-  data = {
-      "Pressure": 1200,
-      "Safety Flags": [0, 0, 0, 0, 0, 0, 1],
-      "Temperatures": {
-          "1": "18.94",
-          "2": "19.00",
-          "3": "22.83",
-          "4": "20.38",
-          "5": "21.88",
-          "6": "19.31"
-      }
-    }
- */
     async function extractData() {
       try {
         const response = await axios.get('https://ebeam-webmonitor.onrender.com/log-data-extraction/data');

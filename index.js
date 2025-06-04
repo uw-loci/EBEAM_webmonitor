@@ -266,7 +266,8 @@ function secondsSinceMidnightChicago() {
 }
 
   const nowSec = secondsSinceMidnightChicago();
-  const cutoffAge = 3600; // Time window (in seconds) — change as needed
+  const cutoffAge = 900; // 15 minutes = 15 * 60 seconds
+
 
   // Fresh values every scan — old/stale ones get reset if not found
   data = {

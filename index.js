@@ -150,51 +150,51 @@ data = {
     }
   }
 */
-  async function extractData() {
-    try {
-      const response = await axios.get('https://ebeam-webmonitor.onrender.com/data');
-       if (response.status !== 200) {
-        console.warn(`API request failed with status: ${response.status}. Returning empty data.`);
-        return {
-          pressure: null,
-          pressureTimestamp: null,
-          safetyFlags: null,
-          temperatures: null
-        };
-      }
+  // async function extractData() {
+  //   try {
+  //     const response = await axios.get('https://ebeam-webmonitor.onrender.com/data');
+  //      if (response.status !== 200) {
+  //       console.warn(`API request failed with status: ${response.status}. Returning empty data.`);
+  //       return {
+  //         pressure: null,
+  //         pressureTimestamp: null,
+  //         safetyFlags: null,
+  //         temperatures: null
+  //       };
+  //     }
 
-      function secondsSinceMidnightChicago() {
-        // take the current UTC time, format to Chicago and re-parse it
-        const nowLocal = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
-        const d = new Date(nowLocal);
-        return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
-      }
+  //     function secondsSinceMidnightChicago() {
+  //       // take the current UTC time, format to Chicago and re-parse it
+  //       const nowLocal = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+  //       const d = new Date(nowLocal);
+  //       return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+  //     }
     
-      const nowSec = secondsSinceMidnightChicago();
-       const data = response.data;
-      let difference = nowSec - data.pressureTimestamp;
-       if (difference < 0) difference += 24 * 3600;
-      data.differenceTimestamp = difference;
-       // For debugging purposes
-      console.log("Data:", data);
-      console.log("Pressure:", Number(data.pressure).toExponential(3));
-      console.log("Temperatures:", data.temperatures?.["1"]);
-       return data;
-    } catch (e) {
-      console.error("Error fetching data:", e.message);
-      return {
-        pressure: null,
-        pressureTimestamp: null,
-        safetyFlags: null,
-        temperatures: null
-      };
-    }
-  }
+  //     const nowSec = secondsSinceMidnightChicago();
+  //      const data = response.data;
+  //     let difference = nowSec - data.pressureTimestamp;
+  //      if (difference < 0) difference += 24 * 3600;
+  //     data.differenceTimestamp = difference;
+  //      // For debugging purposes
+  //     console.log("Data:", data);
+  //     console.log("Pressure:", Number(data.pressure).toExponential(3));
+  //     console.log("Temperatures:", data.temperatures?.["1"]);
+  //      return data;
+  //   } catch (e) {
+  //     console.error("Error fetching data:", e.message);
+  //     return {
+  //       pressure: null,
+  //       pressureTimestamp: null,
+  //       safetyFlags: null,
+  //       temperatures: null
+  //     };
+  //   }
+  // }
 
 
 /**
 * Fetches and updates the log file if there's a new version
-* @returns {Promise<boolean>} True if file was updated, false otherwise
+// * @returns {Promise<boolean>} True if file was updated, false otherwise
 */
 async function fetchAndUpdateFile() {
 let release;
@@ -245,12 +245,13 @@ try {
   let lines = await fetchFileContents(mostRecentFile.id);
   lines.reverse();
 
-
+    
   const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
-  const LOG_TYPE_REGEX = / - (DEBUG: .+?):/;
-  const PRESSURE_REGEX = /DEBUG: GUI updated with pressure: ([\d.]+)E([+-]?\d+)/;
-  const FLAGS_REGEX = /DEBUG: Safety Output Terminal Data Flags: (\[.*\])/;
+  const LOG_TYPE_REGEX = /^\[\d{2}:\d{2}:\d{2}\]\s*-\s*DEBUG:\s*(.+?):/;
+  const PRESSURE_REGEX = /DEBUG:\s*GUI updated with pressure:\s*([\d.]+)[eE]([+-]?\d+)\s*mbar/;
+  const FLAGS_REGEX = /DEBUG:\s*Safety Output Terminal Data Flags:\s*(\[[^\]]+\])/;
   const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
+
 
 
   function timeToSeconds(time) {
@@ -274,14 +275,10 @@ try {
     const line = lines[i];
     const tsMatch = line.match(TIMESTAMP_REGEX);
 
-    const tsStr = tsMatch[1];                  // e.g. "12:34:56"
+    const tsStr = tsMatch[1];                  
     const lineSec = timeToSeconds(tsStr);
     let diff = nowSec - lineSec;
-    if (diff < 0) diff += 24 * 3600;            // handle midnight wrap
-
-    if (diff > 300) {
-      continue;
-    }
+    if (diff < 0) diff += 24 * 3600;            
 
     const typeMatch = line.match(LOG_TYPE_REGEX);
     if (!typeMatch) continue;
@@ -296,7 +293,6 @@ try {
             const exponent = parseInt(pMatch[2], 10);        
             data.pressure = mantissa * Math.pow(10, exponent);
             data.pressureTimestamp = lineSec;
-            console.log("→ Found pressure:", data.pressure, "mbar (timestamp:", tsStr, ")");
           }
         }
         break;
@@ -307,7 +303,6 @@ try {
           if (fMatch) {
             try {
               data.safetyFlags = JSON.parse(fMatch[1]);
-              console.log("→ Found safetyFlags:", data.safetyFlags);
             } catch (e) {
               console.warn("Couldn’t JSON.parse safety flags:", fMatch[1]);
             }
@@ -324,7 +319,6 @@ try {
                 .replace(/'/g, '"')                // convert single→double quotes
                 .replace(/(\d+):/g, '"$1":');      // wrap numeric keys in quotes
               data.temperatures = JSON.parse(tempsStr);
-              console.log("→ Found temperatures:", data.temperatures);
             } catch (e) {
               console.warn("Couldn’t JSON.parse temps:", tMatch[1]);
             }

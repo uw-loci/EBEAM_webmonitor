@@ -245,51 +245,60 @@ try {
   let lines = await fetchFileContents(mostRecentFile.id);
   lines.reverse();
 
-    
-  const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
-  const LOG_TYPE_REGEX = /^\[\d{2}:\d{2}:\d{2}\]\s*-\s*DEBUG:\s*(.+?):/;
-  const PRESSURE_REGEX = /DEBUG:\s*GUI updated with pressure:\s*([\d.]+)[eE]([+-]?\d+)\s*mbar/;
-  const FLAGS_REGEX = /DEBUG:\s*Safety Output Terminal Data Flags:\s*(\[[^\]]+\])/;
-  const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
+// Extracting the data fields
+const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
+const LOG_TYPE_REGEX = /^\[\d{2}:\d{2}:\d{2}\]\s*-\s*DEBUG:\s*(.+?):/;
+const PRESSURE_REGEX = /DEBUG:\s*GUI updated with pressure:\s*([\d.]+)[eE]([+-]?\d+)\s*mbar/;
+const FLAGS_REGEX = /DEBUG:\s*Safety Output Terminal Data Flags:\s*(\[[^\]]+\])/;
+const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
 
+function timeToSeconds(time) {
+  const hours = (time[0] - '0') * 10 + (time[1] - '0');
+  const minutes = (time[3] - '0') * 10 + (time[4] - '0');
+  const seconds = (time[6] - '0') * 10 + (time[7] - '0');
+  return hours * 3600 + minutes * 60 + seconds;
+}
 
-
-  function timeToSeconds(time) {
-    const hours = (time[0] - '0') * 10 + (time[1] - '0');   // First two characters for hours
-    const minutes = (time[3] - '0') * 10 + (time[4] - '0'); // Characters at index 3 and 4 for minutes
-    const seconds = (time[6] - '0') * 10 + (time[7] - '0'); // Characters at index 6 and 7 for seconds
-    return hours * 3600 + minutes * 60 + seconds;
-  }
-
-
-  function secondsSinceMidnightChicago() {
-    const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
-    const d = new Date(now);
-    return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
-  }
-
+function secondsSinceMidnightChicago() {
+  const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+  const d = new Date(now);
+  return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+}
 
   const nowSec = secondsSinceMidnightChicago();
+  const cutoffAge = 3600; // Time window (in seconds) — change as needed
+
+  // Fresh values every scan — old/stale ones get reset if not found
+  data = {
+    pressure: null,
+    pressureTimestamp: null,
+    safetyFlags: null,
+    temperatures: null,
+  };
 
   for (const line of lines) {
     const tsMatch = line.match(TIMESTAMP_REGEX);
+    if (!tsMatch) continue;
 
-    const tsStr = tsMatch[1];                  
+    const tsStr = tsMatch[1];
     const lineSec = timeToSeconds(tsStr);
     let diff = nowSec - lineSec;
-    if (diff < 0) diff += 24 * 3600;            
+    if (diff < 0) diff += 24 * 3600; // wrap around midnight
+
+    if (diff > cutoffAge) continue; // skip stale data (> 1 hour old)
 
     const typeMatch = line.match(LOG_TYPE_REGEX);
     if (!typeMatch) continue;
 
-    const logType = typeMatch[1].trim(); 
+    const logType = typeMatch[1].trim();
+
     switch (logType) {
       case "GUI updated with pressure":
-        {
+        if (data.pressure === null) {
           const pMatch = line.match(PRESSURE_REGEX);
           if (pMatch) {
-            const mantissa = parseFloat(pMatch[1]);          
-            const exponent = parseInt(pMatch[2], 10);        
+            const mantissa = parseFloat(pMatch[1]);
+            const exponent = parseInt(pMatch[2], 10);
             data.pressure = mantissa * Math.pow(10, exponent);
             data.pressureTimestamp = lineSec;
           }
@@ -297,7 +306,7 @@ try {
         break;
 
       case "Safety Output Terminal Data Flags":
-        {
+        if (data.safetyFlags === null) {
           const fMatch = line.match(FLAGS_REGEX);
           if (fMatch) {
             try {
@@ -310,13 +319,13 @@ try {
         break;
 
       case "PMON temps":
-        {
+        if (data.temperatures === null) {
           const tMatch = line.match(TEMPS_REGEX);
           if (tMatch) {
             try {
               let tempsStr = tMatch[1]
-                .replace(/'/g, '"')                // convert single→double quotes
-                .replace(/(\d+):/g, '"$1":');      // wrap numeric keys in quotes
+                .replace(/'/g, '"')
+                .replace(/(\d+):/g, '"$1":'); // fix numeric keys
               data.temperatures = JSON.parse(tempsStr);
             } catch (e) {
               console.warn("Couldn’t JSON.parse temps:", tMatch[1]);
@@ -324,21 +333,21 @@ try {
           }
         }
         break;
+    }
 
+    // Early stop if all fresh values found
+    if (
+      data.pressure !== null &&
+      data.pressureTimestamp !== null &&
+      data.safetyFlags !== null &&
+      data.temperatures !== null
+    ) {
+      console.log(" All data fields found within 1 hour. Exiting early.");
+      break;
+    }
+  }
 
-      default:
-        // not a field we care about
-        break;
-      }
-      if (
-        data.pressure !== null &&
-        data.pressureTimestamp !== null &&
-        data.safetyFlags !== null &&
-        data.temperatures !== null
-      ) {
-        console.log("All data fields populated, stopping line scan.");
-        break;
-      }}
+    ////////// extraction complete  ///////////
 
 
 

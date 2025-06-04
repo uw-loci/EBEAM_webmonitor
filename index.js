@@ -271,8 +271,7 @@ try {
 
   const nowSec = secondsSinceMidnightChicago();
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  for (const line of lines) {
     const tsMatch = line.match(TIMESTAMP_REGEX);
 
     const tsStr = tsMatch[1];                  

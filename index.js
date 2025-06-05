@@ -479,7 +479,22 @@ app.get('/', async (req, res) => {
   //    pressure = Number(data.pressure).toExponential(3);
   //  }
 
-   pressure = Number(data.pressure).toExponential(3);
+
+  if (data && data.pressure !== null && data.pressureTimestamp !== null) {
+
+    // skips the first pressure reading - find a better way to handle this
+
+    const nowSec = secondsSinceMidnightChicago();
+    let diff = nowSec - data.pressureTimestamp;
+
+    if (diff < 0) diff += 24 * 3600; 
+
+    if (diff <= 120) {
+      pressure = Number(data.pressure).toExponential(3);
+    }
+  }
+  
+
    const temperatures = (data && data.temperatures) || {
      "1": "DISCONNECTED",
      "2": "DISCONNECTED",

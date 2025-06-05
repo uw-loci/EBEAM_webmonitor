@@ -1,0 +1,204 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" version="26.2.14">
+  <diagram name="Page-1" id="yYJd9hsOfyqRx3wqSq9o">
+    <mxGraphModel dx="1454" dy="2084" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" value="Server-Side" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="50" y="280" width="580" height="520" as="geometry" />
+        </mxCell>
+        <mxCell id="3" value="Client-Side" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="310" y="820" width="363.5" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="5" value="- Query Google Drive for latest .txt file&#xa;- If file is older than 15 min → set experimentRunning = false&#xa; Else:&#xa;   - Fetch and reverse file contents&#xa;   - Parse log lines to update pressure, temperature, flags&#xa;   - Set experimentRunning = true, shouldReload = true&#xa;- Called every 60 sec&#xa;" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="160" y="-380" width="400" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="7" value="We send a request to /should-reload every 60 seconds, and only if the server responds with shouldReload === true &amp;&amp; experimentRunning === true, we refresh the page." style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="230" y="290" width="260" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="8" value="&#xa;GET /should-reload&#xa;- Returns: { shouldReload, experimentRunning }&#xa;" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="410" y="480" width="203" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="9" value="Set the Pressure and Temperature Readings to Null" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="57" y="738" width="205" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="10" value="&#xa;GET /data&#xa;- Returns: { pressure, temp, safetyFlags }&#xa;" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="366.5" y="580" width="244" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="11" value="Send full dashboard HTML&#xa;- Includes pressure, temp, log preview" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="337" y="700" width="260" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="12" value="Clients Receive Update" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="334" y="840" width="226" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="13" value="Render Updated Data in HTML" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="329" y="960" width="260" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="14" value="End" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="257.5" y="1120" width="86" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="15" value="Monitor Continues Running" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="175" y="1230" width="251" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="16" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.477;exitY=1.043;entryX=0.5;entryY=0;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" source="Bma5ZD2PKsqFx3RTCrAh-28" target="5" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="300.5" y="62" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="19" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.83;exitY=1;entryX=0.5;entryY=-0.01;" parent="1" source="7" target="8" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="442" y="459" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="20" value="Invalid" style="curved=1;startArrow=none;endArrow=block;exitX=0.16;exitY=1;entryX=0.5;entryY=0;" parent="1" source="7" target="9" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="159" y="459" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="21" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=0.99;entryX=0.5;entryY=0;" parent="1" source="8" target="10" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="22" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="10" target="11" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="23" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="11" target="12" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="24" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="12" target="13" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="25" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0;entryY=0.21;" parent="1" source="9" target="14" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="159" y="1136" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="26" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=1.01;entryY=0.21;" parent="1" source="13" target="14" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="442" y="1136" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="27" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="14" target="15" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-28" value="&lt;div&gt;- Load .env vars (API key, folder ID, etc.)&lt;/div&gt;&lt;div&gt;- Initialize Express app and Google Drive API&lt;/div&gt;&lt;div&gt;- Set initial state: data, experimentRunning = false, shouldReload = false&lt;/div&gt;&lt;div&gt;- Run fetchAndUpdateFile() immediately&lt;/div&gt;&lt;div&gt;- Schedule fetchAndUpdateFile() every 60 sec&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="175" y="-590" width="400" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-30" value="if .txt file is older than 15 minutes" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="220" y="-210" width="220" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-35" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="Bma5ZD2PKsqFx3RTCrAh-30">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="272.6708074534163" y="-39.99577639751544" as="sourcePoint" />
+            <mxPoint x="223" y="110" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="223" y="40" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-36" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.796;exitY=0.72;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1" source="Bma5ZD2PKsqFx3RTCrAh-30">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="425.0000000000001" y="-59.999999999999815" as="sourcePoint" />
+            <mxPoint x="442" y="20" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="440" y="-30" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-37" value="set shouldReload and Experiment Running to False" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="175" y="110" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-38" value="set experimentRunnig to True" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="20" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-39" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.593;exitY=1.056;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1" source="Bma5ZD2PKsqFx3RTCrAh-37" target="7">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="610.5" y="190" as="sourcePoint" />
+            <mxPoint x="650" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-42" value="Yes" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="381.5" y="-90" width="108.5" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-43" value="No" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="160" y="-30" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-45" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.416;exitY=1.012;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1" source="5" target="Bma5ZD2PKsqFx3RTCrAh-30">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="-140" as="sourcePoint" />
+            <mxPoint x="440" y="-190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-48" value="currentTime != lastModifiedTime&amp;nbsp;" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="365" y="110" width="170" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-49" value="" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="Bma5ZD2PKsqFx3RTCrAh-48" target="Bma5ZD2PKsqFx3RTCrAh-55">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="470.75" y="210" as="sourcePoint" />
+            <mxPoint x="400" y="240" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="390" y="200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-52" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="Bma5ZD2PKsqFx3RTCrAh-48" target="Bma5ZD2PKsqFx3RTCrAh-56">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="480.75" y="220" as="sourcePoint" />
+            <mxPoint x="520" y="240" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="520" y="200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-53" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="Bma5ZD2PKsqFx3RTCrAh-38">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="458.38" y="100" as="sourcePoint" />
+            <mxPoint x="450" y="110" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-55" value="yes" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="350" y="190" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-56" value="no" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="510" y="190" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-57" value="set shouldReload to True" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="366.5" y="220" width="86.5" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-58" value="set shouldReload to False" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="468.25" y="220" width="86.5" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-60" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="Bma5ZD2PKsqFx3RTCrAh-57" target="7">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="640" y="170" as="sourcePoint" />
+            <mxPoint x="655" y="210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Bma5ZD2PKsqFx3RTCrAh-61" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.916;entryY=-0.009;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="Bma5ZD2PKsqFx3RTCrAh-58" target="7">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="720" y="75" as="sourcePoint" />
+            <mxPoint x="690" y="120" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

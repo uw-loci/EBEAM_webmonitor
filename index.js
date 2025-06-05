@@ -34,6 +34,18 @@ safetyFlags: null,
 temperatures: null
 };
 
+function timeToSeconds(time) {
+  const hours = (time[0] - '0') * 10 + (time[1] - '0');
+  const minutes = (time[3] - '0') * 10 + (time[4] - '0');
+  const seconds = (time[6] - '0') * 10 + (time[7] - '0');
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+function secondsSinceMidnightChicago() {
+  const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+  const d = new Date(now);
+  return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+}
 
 /**
 * Fetch the most recent file from Google Drive.
@@ -251,19 +263,6 @@ const LOG_TYPE_REGEX = /^\[\d{2}:\d{2}:\d{2}\]\s*-\s*DEBUG:\s*(.+?):/;
 const PRESSURE_REGEX = /DEBUG:\s*GUI updated with pressure:\s*([\d.]+)[eE]([+-]?\d+)\s*mbar/;
 const FLAGS_REGEX = /DEBUG:\s*Safety Output Terminal Data Flags:\s*(\[[^\]]+\])/;
 const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
-
-function timeToSeconds(time) {
-  const hours = (time[0] - '0') * 10 + (time[1] - '0');
-  const minutes = (time[3] - '0') * 10 + (time[4] - '0');
-  const seconds = (time[6] - '0') * 10 + (time[7] - '0');
-  return hours * 3600 + minutes * 60 + seconds;
-}
-
-function secondsSinceMidnightChicago() {
-  const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
-  const d = new Date(now);
-  return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
-}
 
   const nowSec = secondsSinceMidnightChicago();
   const cutoffAge = 900; // 15 minutes = 15 * 60 seconds

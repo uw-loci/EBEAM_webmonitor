@@ -76,7 +76,6 @@ try {
 
 let lastModifiedTime = null;
 let experimentRunning = false;
-let shouldReload = false;
 
 
 /**
@@ -239,7 +238,6 @@ try {
     } else {
       // No update needed if file is old and exists
       console.log("Experiment not running - no updates in 15 minutes");
-      shouldReload = false;
       return false;
     }
   }
@@ -248,7 +246,6 @@ try {
   if (lastModifiedTime === mostRecentFile.modifiedTime) {
     console.log("No new updates. Using cached data.");
     experimentRunning = true;
-    shouldReload = false;
     return false;
   }
 
@@ -387,7 +384,6 @@ const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
         lastModifiedTime = mostRecentFile.modifiedTime;
         logFileName = mostRecentFile.name;
         experimentRunning = true;
-        shouldReload = true;
 
 
 
@@ -1008,17 +1004,11 @@ app.get('/', async (req, res) => {
        </div>
        <!-- Auto-refresh & Toggle Script --> 
        <script>
-         setInterval(async function () {
-           try {
-             const response = await fetch('/should-reload');
-             const { shouldReload, experimentRunning } = await response.json();
-             if (shouldReload && experimentRunning) {
-               location.reload();
-             }
-           } catch (e) {
-             console.error('Could not poll for reload', e);
-           }
-         }, 60000);
+
+          setInterval(() => {
+            location.reload();
+          }, 60000);
+
          // Toggle between preview/full log
          const toggleButton = document.getElementById('toggleButton');
          const previewSection = document.getElementById('previewContent');
@@ -1043,19 +1033,11 @@ app.get('/', async (req, res) => {
      </html>
    
    `);
-   shouldReload = false; // reset shouldReload to false after page has been loaded
  } catch (err) {
    console.error(err);
    res.status(500).send(`Error: ${err.message}`);
  }
 });
-
-
-
-
-
-
-
 
 /**
 * GET /raw : Returns just the reversed text (newest at top).
@@ -1076,9 +1058,7 @@ app.get('/raw', async (req, res) => {
    res.status(500).send(`Error: ${err.message}`);
  }
 });
-app.get('/should-reload', (req, res) => {
- res.json({ shouldReload, experimentRunning });
-});
+
 app.listen(PORT, () => {
  console.log(`Server running on port ${PORT}`);
 });

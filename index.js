@@ -614,7 +614,6 @@ app.get('/', async (req, res) => {
            cursor: pointer;
          }
          .interlock-item:hover {
-           transform: translateY(-5px);
            filter: brightness(1.3);
          }
          .interlock-item div:last-child {
@@ -631,7 +630,6 @@ app.get('/', async (req, res) => {
            transition: transform 0.3s ease, filter 0.3s ease;
          }
          .interlock-item:hover .circle {
-           transform: scale(1.1);
            filter: brightness(1.3);
          }
          /* =========================
@@ -662,7 +660,6 @@ app.get('/', async (req, res) => {
            cursor: pointer;
          }
          .vacuum-indicators-item:hover {
-           transform: translateY(-5px);
            filter: brightness(1.3);
          }
          .vacuum-indicators-item div:last-child {
@@ -680,7 +677,6 @@ app.get('/', async (req, res) => {
            transition: transform 0.3s ease, filter 0.3s ease;
          }
          .vacuum-indicators-item:hover .vacuum-indicators-circle {
-           transform: scale(1.1);
            filter: brightness(1.3);
          }
          /* =========================

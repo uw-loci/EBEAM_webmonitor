@@ -1,7 +1,7 @@
 # EBEAM_webmonitor
 Website for remote monitoring of ebeam experiment
 
-![E-beam Monitor Flowchart](webmonitorFlowchart.drawio.svg)
+![E-beam Monitor Flowchart](webmonitorFlowchart_v2.drawio.svg)
 
 The url for the website is: [ebeam-webmonitor.onrender.com/](https://ebeam-webmonitor.onrender.com/)
 

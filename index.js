@@ -594,11 +594,7 @@ app.get('/', async (req, res) => {
          .interlocks-title {
            font-weight: bold;
            transition: text-shadow 0.3s ease;
-           cursor: pointer;
            font-size: 0.9em;
-         }
-         .interlocks-title:hover {
-           text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
          }
          .interlocks-container {
            display: flex;
@@ -611,16 +607,9 @@ app.get('/', async (req, res) => {
            font-size: 0.75em;
            margin: 10px;
            transition: transform 0.3s ease, filter 0.3s ease;
-           cursor: pointer;
-         }
-         .interlock-item:hover {
-           filter: brightness(1.3);
          }
          .interlock-item div:last-child {
            transition: font-weight 0.3s ease;
-         }
-         .interlock-item:hover div:last-child {
-          /* font-weight: bold;  */ /* responsible for bolding; having issues with this feature */
          }
          .circle {
            width: 30px;
@@ -629,20 +618,13 @@ app.get('/', async (req, res) => {
            margin: 0 auto 5px auto;
            transition: transform 0.3s ease, filter 0.3s ease;
          }
-         .interlock-item:hover .circle {
-           filter: brightness(1.3);
-         }
          /* =========================
             GREEN INDICATORS SECTION
          ========================== */
          .vacuum-indicators-title {
            font-weight: bold;
            transition: text-shadow 0.3s ease;
-           cursor: pointer;
            font-size: 0.9em;
-         }
-         .vacuum-indicators-title:hover {
-           text-shadow: 0px 0px 10px rgba(255,255,255,0.8);
          }
          /* Reusing the interlocks container style for consistency */
          .vacuum-indicators-container {
@@ -657,16 +639,9 @@ app.get('/', async (req, res) => {
            font-size: 0.75em;
            margin: 10px;
            transition: transform 0.3s ease, filter 0.3s ease;
-           cursor: pointer;
-         }
-         .vacuum-indicators-item:hover {
-           filter: brightness(1.3);
          }
          .vacuum-indicators-item div:last-child {
            transition: font-weight 0.3s ease;
-         }
-         .vacuum-indicators-item:hover div:last-child {
-           /* font-weight: bold;  */ /* responsible for bolding; having issues with this feature */
          }
          /* Use same circle styling */
          .vacuum-indicators-circle {
@@ -675,9 +650,6 @@ app.get('/', async (req, res) => {
            border-radius: 50%;
            margin: 0 auto 5px auto;
            transition: transform 0.3s ease, filter 0.3s ease;
-         }
-         .vacuum-indicators-item:hover .vacuum-indicators-circle {
-           filter: brightness(1.3);
          }
          /* =========================
             ENVIRONMENTAL SECTION
@@ -782,15 +754,10 @@ app.get('/', async (req, res) => {
            padding: 10px 20px;
            font-size: 0.75em;
            border-radius: 5px;
-           cursor: pointer;
            transition: background-color 0.3s ease;
            float: right;
            margin-top: -3.5em;
            margin-bottom: 10px;
-         }
-         .btn-toggle:hover {
-           background: rgba(0, 255, 255, 0.8);
-           box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
          }
          /* =========================
             RESPONSIVE LAYOUT

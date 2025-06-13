@@ -36,6 +36,24 @@ safetyInputDataFlags: null,
 temperatures: null
 };
 
+// TODO: see where this var should be used properly covering all the edge cases.
+// Assume All Interlocks Start Red
+const interlockStates = {
+  "Door": "red",
+  "Water": "red",
+  "Vacuum Power": "red",
+  "Vacuum Pressure": "red",
+  "Low Oil": "red",
+  "High Oil": "red",
+  "E-STOP Int": "red",
+  "E-STOP Ext": "red",
+  "All Interlocks": "red",
+  "G9SP Active": "red",
+  "HVolt ON": "red",
+};
+
+
+
 function timeToSeconds(time) {
   const hours = (time[0] - '0') * 10 + (time[1] - '0');
   const minutes = (time[3] - '0') * 10 + (time[4] - '0');
@@ -264,6 +282,7 @@ const PRESSURE_REGEX = /DEBUG:\s*GUI updated with pressure:\s*([\d.]+)[eE]([+-]?
 const OUTPUT_FLAGS_REGEX = /DEBUG:\s*Safety Output Terminal Data Flags:\s*(\[[^\]]+\])/;
 const INPUT_FLAGS_REGEX = /DEBUG:\s*Safety Input Terminal Data Flags:\s*(\[[^\]]+\])/;
 const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
+// TODO: have one for intelrocks extraction --- ex: "INFO: Interlock"
 
   const nowSec = secondsSinceMidnightChicago();
   const cutoffAge = 900; // 15 minutes = 15 * 60 seconds

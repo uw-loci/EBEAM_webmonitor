@@ -863,7 +863,7 @@ app.get('/', async (req, res) => {
            <div class="interlocks-container">
              <div class="interlock-item">
                <div class="circle bg-secondary"></div>
-               <div>Vacuum</div>
+               <div>Door</div>
              </div>
              <div class="interlock-item">
                <div class="circle bg-secondary"></div>
@@ -871,31 +871,39 @@ app.get('/', async (req, res) => {
              </div>
              <div class="interlock-item">
                <div class="circle bg-secondary"></div>
-               <div>Door</div>
+               <div>Vacuum Power</div>
              </div>
              <div class="interlock-item">
                <div class="circle bg-secondary"></div>
-               <div>Timer</div>
+               <div>Vacuum Pressure</div>
              </div>
              <div class="interlock-item">
                <div class="circle bg-secondary"></div>
-               <div>Oil High</div>
+               <div>Low Oil</div>
              </div>
              <div class="interlock-item">
                <div class="circle bg-secondary"></div>
-               <div>Oil Low</div>
+               <div>High Oil</div>
              </div>
              <div class="interlock-item">
                <div class="circle bg-secondary"></div>
-               <div>E-stop Ext</div>
+               <div>E-STOP Int</div>
              </div>
              <div class="interlock-item">
                <div class="circle bg-secondary"></div>
-               <div>E-stop Int</div>
+               <div>E-STOP Ext</div>
              </div>
              <div class="interlock-item">
                <div class="circle bg-secondary"></div>
-               <div>QGSP Active</div>
+               <div>All Interlocks</div>
+             </div>
+             <div class="interlock-item">
+               <div class="circle bg-secondary"></div>
+               <div>G9SP Active</div>
+             </div>
+             <div class="interlock-item">
+               <div class="circle bg-secondary"></div>
+               <div>HVolt ON</div>
              </div>
            </div>
          </div>

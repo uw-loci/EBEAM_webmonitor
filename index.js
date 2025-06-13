@@ -282,7 +282,7 @@ const PRESSURE_REGEX = /DEBUG:\s*GUI updated with pressure:\s*([\d.]+)[eE]([+-]?
 const OUTPUT_FLAGS_REGEX = /DEBUG:\s*Safety Output Terminal Data Flags:\s*(\[[^\]]+\])/;
 const INPUT_FLAGS_REGEX = /DEBUG:\s*Safety Input Terminal Data Flags:\s*(\[[^\]]+\])/;
 const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
-// TODO: have one for intelrocks extraction --- ex: "INFO: Interlock"
+// TODO: have one for intelrocks extraction --- ex: "INFO: Interlock" or "/Interlock (.+?): (\w+) -> (\w+)/" includes grouping, easier to extract and assighn values.
 
   const nowSec = secondsSinceMidnightChicago();
   const cutoffAge = 900; // 15 minutes = 15 * 60 seconds

@@ -31,7 +31,8 @@ const drive = google.drive({ version: 'v3', auth: API_KEY });
 let data = {
 pressure: null,
 pressureTimestamp: null,
-safetyFlags: null,
+safetyOutputDataFlags: null,
+safetyInputDataFlags: null,
 temperatures: null
 };
 
@@ -228,7 +229,8 @@ try {
     data = {
       pressure: null,
       pressureTimestamp: null,
-      safetyFlags: null,
+      safetyOutputDataFlags: null,
+      safetyInputDataFlags: null,
       temperatures: null
     };  
 
@@ -259,7 +261,8 @@ try {
 const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
 const LOG_TYPE_REGEX = /^\[\d{2}:\d{2}:\d{2}\]\s*-\s*DEBUG:\s*(.+?):/;
 const PRESSURE_REGEX = /DEBUG:\s*GUI updated with pressure:\s*([\d.]+)[eE]([+-]?\d+)\s*mbar/;
-const FLAGS_REGEX = /DEBUG:\s*Safety Output Terminal Data Flags:\s*(\[[^\]]+\])/;
+const OUTPUT_FLAGS_REGEX = /DEBUG:\s*Safety Output Terminal Data Flags:\s*(\[[^\]]+\])/;
+const INPUT_FLAGS_REGEX = /DEBUG:\s*Safety Input Terminal Data Flags:\s*(\[[^\]]+\])/;
 const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
 
   const nowSec = secondsSinceMidnightChicago();
@@ -270,7 +273,8 @@ const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
   data = {
     pressure: null,
     pressureTimestamp: null,
-    safetyFlags: null,
+    safetyOutputDataFlags: null,
+    safetyInputDataFlags: null,
     temperatures: null,
   };
 
@@ -304,11 +308,24 @@ const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
         break;
 
       case "Safety Output Terminal Data Flags":
-        if (data.safetyFlags === null) {
-          const fMatch = line.match(FLAGS_REGEX);
+        if (data.safetyOutputDataFlags === null) {
+          const fMatch = line.match(OUTPUT_FLAGS_REGEX);
           if (fMatch) {
             try {
-              data.safetyFlags = JSON.parse(fMatch[1]);
+              data.safetyOutputDataFlags = JSON.parse(fMatch[1]);
+            } catch (e) {
+              console.warn("Couldn’t JSON.parse safety flags:", fMatch[1]);
+            }
+          }
+        }
+        break;
+
+      case "Safety Input Terminal Data Flags":
+        if (data.safetyInputDataFlags === null) {
+          const fMatch = line.match(INPUT_FLAGS_REGEX);
+          if (fMatch) {
+            try {
+              data.safetyInputDataFlags = JSON.parse(fMatch[1]);
             } catch (e) {
               console.warn("Couldn’t JSON.parse safety flags:", fMatch[1]);
             }
@@ -337,7 +354,8 @@ const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
     if (
       data.pressure !== null &&
       data.pressureTimestamp !== null &&
-      data.safetyFlags !== null &&
+      data.safetyOutputDataFlags !== null &&
+      data.safetyInputDataFlags !== null &&
       data.temperatures !== null
     ) {
       console.log(" All data fields found within 1 hour. Exiting early.");
@@ -439,7 +457,8 @@ app.get('/data', (req, res) => {
  res.json({
    pressure: data.pressure,
    pressureTimestamp: data.pressureTimestamp,
-   safetyFlags: data.safetyFlags,
+   safetyOutputDataFlags: data.safetyOutputDataFlags,
+   safetyInputDataFlags: data.safetyInputDataFlags,
    temperatures: data.temperatures
  });
 });

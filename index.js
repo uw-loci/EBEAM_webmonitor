@@ -1077,19 +1077,19 @@ try {
             </div>
             <div class="vacuum-indicators-item">
               <div class="vacuum-indicators-circle bg-secondary"></div>
-              <div>Turbo Gate Valve Closed</div>
+              <div>Turbo Gate Closed</div>
             </div>
             <div class="vacuum-indicators-item">
               <div class="vacuum-indicators-circle bg-secondary"></div>
-              <div>Turbo Gate Valve Open</div>
+              <div>Turbo Gate Open</div>
             </div>
             <div class="vacuum-indicators-item">
               <div class="vacuum-indicators-circle bg-secondary"></div>
-              <div>Argon Gate Valve Open</div>
+              <div>Argon Gate Open</div>
             </div>
             <div class="vacuum-indicators-item">
               <div class="vacuum-indicators-circle bg-secondary"></div>
-              <div>Argon Gate Valve Closed</div>
+              <div>Argon Gate Closed</div>
             </div>
           </div>
         </div>

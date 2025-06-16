@@ -505,13 +505,6 @@ try {
 
    ////////// extraction complete  ///////////
 
-
-
-
-
-
-
-
  const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
  let hasError = false;
 
@@ -535,20 +528,7 @@ try {
    }
 
 
-
-
-
-
-
-
    writeNext();
-
-
-
-
-
-
-
 
    writeStream.on('finish', async () => {
      try {
@@ -558,31 +538,13 @@ try {
        logFileName = mostRecentFile.name;
        experimentRunning = true;
 
-
-
-
-
-
-
-
        console.log("DEBUG (X): ", data);
-
-
-
-
        resolve(true);
      } catch (err) {
        console.error('Rename failed:', err);
        reject(false);
      }
    });
-
-
-
-
-
-
-
 
    writeStream.on('error', async (err) => {
      console.error('Error writing file:', err);
@@ -591,17 +553,17 @@ try {
    });
  });
 
-
-
-
-
-
-
-
 } catch (err) {
  console.error(`Error processing file: ${err.message}`);
  experimentRunning = false;
- data = null
+ data = {
+    pressure: null,
+    pressureTimestamp: null,
+    safetyOutputDataFlags: null,
+    safetyInputDataFlags: null,
+    temperatures: null
+  }; // better than assinghing to just Null.; try to maintain the structure.
+
  console.log("Could not extract the log data");
  return false;
 } finally {
@@ -610,23 +572,6 @@ try {
  }
 }
 }
-
-
-
-
-
-
-
-
-// // Schedule updates
-// fetchAndUpdateFile(); // Initial fetch
-// setInterval(fetchAndUpdateFile, 60000); // Check every second
-
-
-
-
-
-
 
 
 app.get('/data', (req, res) => {
@@ -639,15 +584,8 @@ res.json({
 });
 });
 
-
-
-
 fetchAndUpdateFile();
 setInterval(fetchAndUpdateFile, 60000);
-
-
-
-
 
 
 app.get('/', async (req, res) => {

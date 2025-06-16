@@ -463,16 +463,6 @@ const INTERLOCK_REGEX = /INFO: Interlock (.+?): (\w+) -> (\w+)/; // safety locks
 }
 }
 
-
-
-
-// // Schedule updates
-// fetchAndUpdateFile(); // Initial fetch
-// setInterval(fetchAndUpdateFile, 60000); // Check every second
-
-
-
-
 app.get('/data', (req, res) => {
  res.json({
    pressure: data.pressure,

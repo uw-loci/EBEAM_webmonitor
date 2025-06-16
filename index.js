@@ -613,6 +613,15 @@ try {
  //    pressure = Number(data.pressure).toExponential(3);
  //  }
 
+  const safeData = data || {
+  pressure: null,
+  pressureTimestamp: null,
+  safetyOutputDataFlags: null,
+  safetyInputDataFlags: null,
+  temperatures: null
+  };
+  // todo: use this safedata in place of data var after this point for better "data" null pointer handling.
+
 
 
 

@@ -450,7 +450,7 @@ try {
            data.pressure = mantissa * Math.pow(10, exponent);
            data.pressureTimestamp = lineSec;
           } catch (e) {
-              console.warn("Couldn’t Extract Pressure:", tMatch[1]);
+              console.warn("Couldn’t Extract Pressure:", pMatch);
           }
          }
        }
@@ -1106,11 +1106,11 @@ try {
           <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
           <div class="vacuum-indicators-container">
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle bg-secondary"></div>
+              <div class="vacuum-indicators-circle bg-secondary""></div>
               <div>Pumps Power ON</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle bg-secondary"></div>
+              <div class="vacuum-indicators-circle bg-secondary""></div>
               <div>Turbo Rotor ON</div>
             </div>
             <div class="vacuum-indicators-item">

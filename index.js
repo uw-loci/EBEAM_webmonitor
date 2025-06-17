@@ -392,6 +392,8 @@ try {
  const INPUT_FLAGS_REGEX = /DEBUG:\s*Safety Input Terminal Data Flags:\s*(\[[^\]]+\])/;
  const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
  // TODO: have one for intelrocks extraction --- ex: "INFO: Interlock"
+ const VAC_BITS_REGEX = /DEBUG:\s*VTRX States:\s*([01]{8})/; //only accept eight of these bits from the logger. Change if need be
+
 
 
  const nowSec = secondsSinceMidnightChicago();
@@ -489,6 +491,17 @@ try {
          }
        }
        break;
+
+      case "VTRX States":
+        if (data.vacuumBits === null) {              // only take the freshest
+          const vMatch = line.match(VAC_BITS_REGEX);
+          if (vMatch) {
+            data.vacuumBits = vMatch[1].split('').map(Number);
+            // Example → "11010101"  → [1,1,0,1,0,1,0,1]
+          }
+        }
+        break;
+
    }
 
 

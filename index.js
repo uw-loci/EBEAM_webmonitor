@@ -40,7 +40,8 @@ pressure: null,
 pressureTimestamp: null,
 safetyOutputDataFlags: null,
 safetyInputDataFlags: null,
-temperatures: null
+temperatures: null, 
+vacuumBits: null
 };
 
 
@@ -351,7 +352,8 @@ try {
      pressureTimestamp: null,
      safetyOutputDataFlags: null,
      safetyInputDataFlags: null,
-     temperatures: null
+     temperatures: null, 
+     vacuumBits: null
    }; 
 
 
@@ -405,6 +407,7 @@ try {
    safetyOutputDataFlags: null,
    safetyInputDataFlags: null,
    temperatures: null,
+   vacuumBits: null
  };
 
 
@@ -561,7 +564,8 @@ try {
     pressureTimestamp: null,
     safetyOutputDataFlags: null,
     safetyInputDataFlags: null,
-    temperatures: null
+    temperatures: null, 
+    vacuumBits: null
   }; // better than assinghing to just Null.; try to maintain the structure.
 
  console.log("Could not extract the log data");
@@ -618,7 +622,8 @@ try {
   pressureTimestamp: null,
   safetyOutputDataFlags: null,
   safetyInputDataFlags: null,
-  temperatures: null
+  temperatures: null, 
+  vacuumBits: null
   };
   // todo: use this safedata in place of data var after this point for better "data" null pointer handling.
 

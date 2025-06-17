@@ -439,10 +439,14 @@ try {
        if (data.pressure === null) {
          const pMatch = line.match(PRESSURE_REGEX);
          if (pMatch) {
+          try {
            const mantissa = parseFloat(pMatch[1]);
            const exponent = parseInt(pMatch[2], 10);
            data.pressure = mantissa * Math.pow(10, exponent);
            data.pressureTimestamp = lineSec;
+          } catch (e) {
+              console.warn("Couldn’t Extract Pressure:", tMatch[1]);
+          }
          }
        }
        break;
@@ -499,7 +503,7 @@ try {
             try {
             data.vacuumBits = vMatch[1].split('').map(Number);
             // Example → "11010101"  → [1,1,0,1,0,1,0,1]
-            }catch(e){
+            } catch(e) {
               console.warn("Couldn’t extract VTRX values: ", vMatch[1]);
             }
           }

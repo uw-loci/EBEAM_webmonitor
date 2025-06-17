@@ -8,7 +8,7 @@ The url for the website is: [ebeam-webmonitor.onrender.com/](https://ebeam-webmo
 ## Logic for updating the Interlocks Section
 Please note the correspondance between each of the input/output saftey terminal data flags and the different indicators. We use the same mapping in the code, as per the following G9 Driver Schematic Diagram:
 
-![Annotated Schematic Diagram](<link>)
+![Annotated Schematic Diagram](schematic_diagram.svg)
 
 ## How to deploy changes:
 - Test code by running on replit

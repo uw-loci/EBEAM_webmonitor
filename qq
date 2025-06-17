@@ -1,0 +1,2528 @@
+[33mcommit 3cc886da9bc09dc2a082de22ef850ef399d274d1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Jun 17 17:48:07 2025 -0500
+
+    vacColors vars needs testing to see if it works
+
+[33mcommit fca6ce88792ff9fb370f83308a5d4d8ca989f8aa[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Jun 17 17:38:14 2025 -0500
+
+    change bits to colour
+
+[33mcommit 51ce7332a4a2f702c36149ceddc7e542af27bd26[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Jun 17 17:25:45 2025 -0500
+
+    extraction done for vtrx
+
+[33mcommit f7412b616bdba5ad574a5588ced104d9950bd1cb[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Jun 17 17:19:18 2025 -0500
+
+    try ctach for pressure
+
+[33mcommit 7adf5def728729e8194e6a1ed098185773ef0771[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Jun 17 17:16:55 2025 -0500
+
+    try catch for vtrx
+
+[33mcommit b856d54c6fff22db66e538a12adc2661032b5b41[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Jun 17 17:09:28 2025 -0500
+
+    added logic for getting vtrx extraction
+
+[33mcommit 4b47e854a51678c6708d4e361bcfc344772d9ad3[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Jun 17 16:58:54 2025 -0500
+
+    added vacuumBits var in data var
+
+[33mcommit 3de2ed313ca747ed9e6963095d27e9d5b863e04b[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 17 11:37:19 2025 -0500
+
+    Update README.md
+
+[33mcommit abd5620d55c928f74dc247965919eb79106b27b6[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 17 11:36:04 2025 -0500
+
+    Update README.md
+
+[33mcommit 53ee3753f3fa5a5c86e2d4c68b142753a2f9f0ac[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 17 11:34:56 2025 -0500
+
+    Update README.md
+
+[33mcommit f8a42cb34e3e9ab99239a0a5ff714e3830d5d4bc[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 17 11:33:58 2025 -0500
+
+    Add files via upload
+
+[33mcommit a355dced647d2bc5b7daaed7d4ab38d3ce92e0db[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 17 11:33:21 2025 -0500
+
+    Update README.md
+
+[33mcommit e105bc6a06e0e7ee185f645188c9d8b039c3a5f7[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Jun 16 17:54:04 2025 -0500
+
+    slight change with pressure names
+
+[33mcommit 93f1b3a3be5cf2152c05959fba38b2d892af7643[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Jun 16 15:04:06 2025 -0500
+
+    experiment to Dashboard, missed before
+
+[33mcommit f372fd9f5dd431bbf8076e0f2bf8e745f8a8c04d[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Jun 16 15:02:51 2025 -0500
+
+    todo: safeData
+
+[33mcommit 03761138aaf25ebb1e18e81439b8f037a784026c[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Jun 16 14:57:19 2025 -0500
+
+    maintaining data datstructure when when null.
+
+[33mcommit 21faaf94eb57c284545e6f278e49a5a876d2e8a6[m
+Merge: 0d22e46 e2e5770
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Jun 16 14:49:37 2025 -0500
+
+    bugfix/null pointer for pressure
+
+[33mcommit 0d22e46793bd4b31327d9e85cd585d41cdfea5ad[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Jun 16 14:33:52 2025 -0500
+
+    see if you want to work on this as a doubel check
+
+[33mcommit e2e5770925f5722e245278ef89a33665909fd3bb[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri Jun 13 18:34:30 2025 -0500
+
+    status of the interlocks show up; verify with schematic diagram to make sure logic is sound
+
+[33mcommit c655a6005f1860c639dfce1cc0e257998bc2468b[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Jun 13 18:06:25 2025 -0500
+
+    regex added
+
+[33mcommit 06de144bd19b2d41cc8daf48d3aaa86b42136b74[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Jun 13 18:04:14 2025 -0500
+
+    trying to extract safety logs directly instead of numbers
+
+[33mcommit 9683439108192c5e0c6d273e13a19bbc1d5677fb[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Jun 13 17:53:44 2025 -0500
+
+    added var for interlock extraction, assume red at start
+
+[33mcommit f52909817f6705eaef115e71e088367a0feb86d0[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Jun 13 17:31:17 2025 -0500
+
+    updated interlock naming to match the dashboard
+
+[33mcommit ab250daae8f5f56806bf4b055c7641b89835ec46[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Jun 13 17:05:42 2025 -0500
+
+    input data flags extraction complete
+
+[33mcommit 9f93689b1ee56f64d53dfd7e575dec749d5c1f20[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Wed Jun 11 17:28:05 2025 -0500
+
+    small comments at the top about the class
+
+[33mcommit fddbf82531a9813a619217e1a2dcdf61bf012c5f[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Jun 10 17:37:50 2025 -0500
+
+    dashboard is running
+
+[33mcommit 3f251c45131333e22c1449d00291b265eed8d0d0[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 10 13:07:02 2025 -0500
+
+    Update README.md
+
+[33mcommit 9e776b8fc7e65de715db991e9e80734a254a9c08[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 10 13:06:34 2025 -0500
+
+    Add files via upload
+
+[33mcommit 087d420f9e811a90e35a400c80a12fdbd85b0809[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 10 13:02:22 2025 -0500
+
+    Update README.md
+
+[33mcommit 70562f7c4a434db4e36b16bad94502720d6ca69b[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 10 13:01:20 2025 -0500
+
+    Add files via upload
+
+[33mcommit 21231bb23bee1c3b871dc07312c7c4396ed03b9a[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 10 12:19:13 2025 -0500
+
+    removed highlight on hover and pointer
+
+[33mcommit b6dd5c7a04c0190f16a2da73a6c64340fb63705f[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon Jun 9 14:16:43 2025 -0500
+
+    Add files via upload
+
+[33mcommit 5463e70fa3ccf868dc983e17634b993786b32644[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon Jun 9 13:09:59 2025 -0500
+
+    eliminated the circle moving when hovering over them
+
+[33mcommit 4543ff27b7021e37c98854ad771086d7e19685a7[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri Jun 6 14:00:31 2025 -0500
+
+    the dashboard refreshes every minute irrespective of whether the experiment is running or not
+
+[33mcommit 6a9c458447049e0ec09b2590754dbaced3465858[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri Jun 6 12:40:10 2025 -0500
+
+    updated the flowchart
+
+[33mcommit ccaddbedc2b5208ba832e6562c2b3c6e35703739[m
+Merge: a17bfb2 cb18bcb
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Jun 5 17:41:49 2025 -0500
+
+    removed dot bolding in CSS; was messing things up
+
+[33mcommit cb18bcb19fc6de86986e1464a531a7e64e7808b0[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 15:00:48 2025 -0500
+
+    removed log_data_extraction since we integrated the logic into server file
+
+[33mcommit 4133d837b7e07383150a0a7d347578470ef1fc5b[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 14:59:51 2025 -0500
+
+    removed unnecessary svg and drawio fles
+
+[33mcommit 3ccc9e8fefe1988b07ef560a1e228c2aad923c9c[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 14:57:06 2025 -0500
+
+    Update README.md
+
+[33mcommit 5fa75bc50a95b072d9f42a25d057b665c0f461c6[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 14:56:17 2025 -0500
+
+    Update README.md
+
+[33mcommit 23da33e8449f2df93cd78c5607ccef0a21343c63[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 14:55:49 2025 -0500
+
+    Add files via upload
+
+[33mcommit 86a544311b11fc19724ee1db57299c1557f9ee72[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 14:54:51 2025 -0500
+
+    Add files via upload
+
+[33mcommit 83c82cec4a9897ae4965c5d2b230805e3f54be83[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 14:54:01 2025 -0500
+
+    Add files via upload
+
+[33mcommit db2cc689f6d93c47b03d7ea97af8f1cb9adc2b8a[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 14:37:59 2025 -0500
+
+    Update README.md
+
+[33mcommit 819e831800bee9d7f4805d80e53981e949bf481b[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 14:36:28 2025 -0500
+
+    Add files via upload
+
+[33mcommit 2abeb03769d9a7f56ccab08ab6f52749df16fdb8[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 14:34:01 2025 -0500
+
+    Add files via upload
+
+[33mcommit 80a1c0cb3e95238d0a1c03aa6c04d3d86cfa9e2c[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 12:23:31 2025 -0500
+
+    function was not in scope before
+
+[33mcommit debf6bafe9e4ba53b869ee54bef35fb5b81fb8ef[m[33m ([m[1;31morigin/feature/integrate-data-extraction[m[33m, [m[1;32mfeature/integrate-data-extraction[m[33m)[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu Jun 5 12:16:29 2025 -0500
+
+    corrected corner case for updating pressure, must not show stale values
+
+[33mcommit a17bfb250f00dfb980618f8a3892f1284f94e310[m
+Merge: 70c5031 df0ff2d
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Wed Jun 4 18:11:44 2025 -0500
+
+    extraction complete but error 404
+
+[33mcommit df0ff2d72ab39c6f1cb05496be554ce304df8bd3[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Wed Jun 4 17:59:25 2025 -0500
+
+    changed the interval for 15 min from one hour
+
+[33mcommit 9454627840b63ef59de28b08180f72cb36788044[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Wed Jun 4 17:58:28 2025 -0500
+
+    changed the interval for 15 min from one hour
+
+[33mcommit 85b06dbeb30801e33c2e35f8f88a9364346e318a[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Wed Jun 4 17:57:50 2025 -0500
+
+    extraction migrated to index.js succesfully
+
+[33mcommit 70c5031b1e43a85162db3119cf33faba90948391[m
+Merge: a369649 5b72fcc
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Wed Jun 4 16:41:13 2025 -0500
+
+    first commit
+
+[33mcommit a369649e20e6b06c4d2b73fdf689708143baba42[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Wed Jun 4 16:33:32 2025 -0500
+
+    first commit
+
+[33mcommit 2709fdb14d0dff34f7b82d5848f981e2a17d4224[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed Jun 4 16:20:50 2025 -0500
+
+    changed the loop
+
+[33mcommit 5ea6967d6fda1f252ed4d93df016620eadfb6e3c[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed Jun 4 16:14:02 2025 -0500
+
+    need to get the pressure and temperature fields to populate the correct values
+
+[33mcommit 7bec90328ac21201d3cbdc4b93c40aedce40e777[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed Jun 4 15:51:36 2025 -0500
+
+    logs correctly update within the log box every minute, just need to make the temperatures and pressure readings show up
+
+[33mcommit c253764cf7978c25321715721b57dbba756a5283[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed Jun 4 14:58:30 2025 -0500
+
+    created a new branch, still working on integrating data extraction with server
+
+[33mcommit 5b72fcc89a9b183c5842db6cc092cd745f66042d[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed Jun 4 13:54:34 2025 -0500
+
+    cleaned up unused libraries and variables
+
+[33mcommit 5f65fcff1756159add101d66863b352f3590c27e[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 3 17:52:02 2025 -0500
+
+    increased it to a minute
+
+[33mcommit 67022634bac056ab8af144ed4c7956364fd8abb7[m
+Merge: 6b4f939 ad3a914
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Jun 3 15:00:45 2025 -0500
+
+    Merge branch 'main' of https://github.com/uw-loci/EBEAM_webmonitor
+
+[33mcommit 6b4f939d9f66e5cf2cdc81f8df3a89b5253a3ba2[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Jun 3 15:00:38 2025 -0500
+
+    first commit
+
+[33mcommit ad3a9145087576bdfcb9689c0943ed105ae90822[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 3 13:29:38 2025 -0500
+
+    changed thresholds
+
+[33mcommit 2f76042d6ee1ae50cc0f09e331ba6a0b26e509e1[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 3 13:13:43 2025 -0500
+
+    refresh and fetch updates in file every second
+
+[33mcommit 76c357eb3bbdd59542446742c45a8ff89148091b[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 3 12:52:59 2025 -0500
+
+    revert changes, interferes with the auto-refresh logic
+
+[33mcommit d9da5b11b878c48b1943d0d7decdfafaeb3666a3[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue Jun 3 12:38:25 2025 -0500
+
+    waiting for file updates to populate data members before listening on port to avoid false null vals
+
+[33mcommit a6c61ed2b9210f939bdba1a5889983f5d8e08df5[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Sun Jun 1 23:04:32 2025 -0500
+
+    not able to read null temperatures
+
+[33mcommit 71ca851db6a74fe9e4e9478479b5ff823086a893[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Sun Jun 1 23:01:07 2025 -0500
+
+    not able to read null temperatures
+
+[33mcommit bf1f25d8a08c1de7ba447a84271e7f8d80eb3420[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Sun Jun 1 22:55:43 2025 -0500
+
+    data must exist to be able to read differenceTimestamp
+
+[33mcommit d3be2767181475d21294b3d5570763e960f3f423[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 30 15:02:19 2025 -0500
+
+    shows logs within the last 12 hours
+
+[33mcommit 6269acc3b2bdfb164f63abb5aa8535cecd7189b5[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 30 14:41:06 2025 -0500
+
+    numbering the log lines to check if the total number of lines dynamically update - regex fails to catch patterns in this case
+
+[33mcommit 53849e85decf4a3794abec4e2bfbbc68a35d074a[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 30 14:38:29 2025 -0500
+
+    dynamically updating the max number of lines logged per minute within the last 12 hours
+
+[33mcommit d592fbf4309577286045b08fe589c9bbe2f6210c[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 30 14:13:36 2025 -0500
+
+    made a few changes
+
+[33mcommit d4e7515cce695e9192c0bc6c6f14b07e4a82ef9a[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 30 13:57:35 2025 -0500
+
+    dynamically updating the number of lines that are logged every minute for better memory efficiency; this is to update the total number of log lines to load into the log box
+
+[33mcommit bf6f7a4a0b2c917e9c5f362d754d933ef2e1e6ef[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 30 13:32:12 2025 -0500
+
+    change the number of lines that are getting logged every minute
+
+[33mcommit 52868d7da6c8dbf5fa90687ccab1d33967e0f299[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 30 13:26:20 2025 -0500
+
+    change number of lines
+
+[33mcommit 45cfaf4e3dd23a00d04b44cfc3cac98bf5e66827[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 30 13:08:39 2025 -0500
+
+    validated - removed numbers from the front of log lines to avoid mismatches with regex
+
+[33mcommit d7e6cf4a73b982c48ff665133958623d2fccb046[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 30 12:57:50 2025 -0500
+
+    limiting the reversed text file to have 4320 lines only to tacle heap overflow; added numbers infront of each line to verify
+
+[33mcommit d44edd189f58513cc74ec6ccabf3bd2a000a76bd[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 29 16:28:39 2025 -0500
+
+    debugging auto-refresh
+
+[33mcommit 60a2cf136a467ecfa2204495918086e1a3a90119[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 29 16:19:19 2025 -0500
+
+    reverted changes because auto-refresh stopped working
+
+[33mcommit 73be66a4fce612187af8e1a6f4adc3c38e47f8f0[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 29 15:37:52 2025 -0500
+
+    show indicators in 2 columns similar to what it would look like on a 992 px wide device
+
+[33mcommit bb1b5499a66d016ed4089e34dd04ab7438170c2e[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 29 15:27:37 2025 -0500
+
+    the root route occassionally does not get data resulting black readings on the dashboard, awaiting for respense from extractData route in such cases
+
+[33mcommit 59ba40556627f20bf85b68019f09ae7e107fe2c4[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 29 14:03:31 2025 -0500
+
+    reformatting pressure readings
+
+[33mcommit 46c2e7d001b1a1306b2b796715deef245a5c763a[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 29 13:32:07 2025 -0500
+
+    reverted changes for fixing heap overflow, using correct formatting for pressure readings
+
+[33mcommit 28d50c72643154721e5fd1c98d1b7eb3e0d561be[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 29 12:58:55 2025 -0500
+
+    debugged issue
+
+[33mcommit d00eb64a9d0fb2356e7f1a1c9d8404e6de01e812[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 29 12:40:10 2025 -0500
+
+    should work
+
+[33mcommit 5f6ca3e9182568299c09cd9d9066fb58bb30a9fd[m
+Author: Brandon Walker <bwalker4@wisc.edu>
+Date:   Thu May 29 00:28:00 2025 -0500
+
+    refert commits back to cef8632
+
+[33mcommit f94f03f678101be66f4265139ef7d00df1640c8a[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed May 28 23:14:28 2025 -0500
+
+    added file path
+
+[33mcommit e7aba114b4b302750c6edd06cf29c84e946c8e29[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed May 28 22:55:13 2025 -0500
+
+    added file path
+
+[33mcommit 7fa6275426b872bfd28508a21806187808a5e630[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed May 28 22:34:56 2025 -0500
+
+    stop tracking raw_logfile.txt
+
+[33mcommit b862b52258ca1d199c2baf5c80be0ea3ecf78303[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed May 28 22:32:53 2025 -0500
+
+    writing into a local file instead of a list for better memory efficiency
+
+[33mcommit cef863241bb30bfe7d11817444013efeab5781a5[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue May 27 15:44:21 2025 -0500
+
+    debugged the issue, should work
+
+[33mcommit 4765495b8a95894a2a309eccea7d5ed81fcad979[m
+Merge: 296457b 0cd2cc7
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue May 27 00:52:28 2025 -0500
+
+    first commit
+
+[33mcommit 296457bf5aeeac550a50c2c9db464b13e68881b3[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue May 27 00:51:50 2025 -0500
+
+    first commit
+
+[33mcommit 0cd2cc725b11d48a943e9af4091f76c7a3422769[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 26 15:39:32 2025 -0500
+
+    yet to work on pressure
+
+[33mcommit 5d253301ff0fce57cd2811a9586790f616933b99[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 26 14:23:05 2025 -0500
+
+    using American Standard Time
+
+[33mcommit a76538fa2cece07a96f37a7074b229b6badf7162[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 26 14:03:48 2025 -0500
+
+    just log pressure directly for now
+
+[33mcommit 3747c796e01820f936f9c6d11a2698efaa3e224c[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 26 13:40:53 2025 -0500
+
+    increased Pressure Threshold
+
+[33mcommit d53b1d251b4c9af856af2ed5375f537f0c80c445[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 26 13:23:54 2025 -0500
+
+    fixed error
+
+[33mcommit 5e5cdd4517451138557e2a6f835b033693a6328e[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 26 13:19:13 2025 -0500
+
+    made a few changes
+
+[33mcommit b49ee2faea8c82a34d6423bb1276f6ac9140cc7b[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 26 13:13:05 2025 -0500
+
+    brought slight modifications in logic
+
+[33mcommit ad144fb66666d7b373b5ed31ab3a54e3139877ea[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 26 13:11:49 2025 -0500
+
+    added a function to get current time in seconds
+
+[33mcommit 61a12fff0fd13284dfefe6b703090b6dc4667927[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 26 12:51:45 2025 -0500
+
+    added a function to get current time in seconds
+
+[33mcommit 531bf1fb97b6339a55be28e34b7381359b817520[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 26 12:41:52 2025 -0500
+
+    changed logic for blanking out pressure readings upon disconnecting the VTRX while experiment runs
+
+[33mcommit 71e4a1edb3576ecad06e489b189e1edc2bca0206[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Sat May 24 15:34:29 2025 -0500
+
+    Update README.md
+
+[33mcommit 60a28649a14a5875e30be7481dcc2ae4c75ab3b0[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Sat May 24 14:59:15 2025 -0500
+
+    added logic for pressure blanking out upon disconnecting the VTRX while the experiment is running
+
+[33mcommit 8a4cfad302312549801e731e8803779f4e198b52[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 14:50:40 2025 -0500
+
+    reverted changes for blanking out pressure when VTRX is diconnected
+
+[33mcommit f19f2522199e6cb39d4567c676552418be8c3a10[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 14:27:34 2025 -0500
+
+    handle case when experiment is running with the PMON disconnected
+
+[33mcommit 84efe97d2892d790f0131e5af535391919f5fbea[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 14:14:40 2025 -0500
+
+    pressure should blank out once I disconnect VTRX while th experiment is running within 2 minutes of disconnecting it
+
+[33mcommit 00b3a69c232619933b58bc9deb23eee9c6fc0300[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 13:24:36 2025 -0500
+
+    flush out temperature and pressure readings with - once experiment stops running
+
+[33mcommit 46dcccbf321e0bfd028cbec132f6afdd3944e120[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 13:19:45 2025 -0500
+
+    temperature and pressure readings should blank out after I disconnect the PMON and VTRX
+
+[33mcommit f8705665fa60018ad78dcae0f2fa0f2755c1f783[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 13:09:49 2025 -0500
+
+    reverted changes for temperature and pressure to show
+
+[33mcommit 2a7326161c404299097e3e2ce4a4db8ed40b704f[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 13:07:10 2025 -0500
+
+    reverted changes for temperature and pressure to show
+
+[33mcommit 7be99054cb6c5bf2d950a81b1ebad25914f8d58c[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 13:05:00 2025 -0500
+
+    still working on it
+
+[33mcommit aefb0087d394ff33f68b547334a3d70048e53317[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 12:39:28 2025 -0500
+
+    debugging
+
+[33mcommit bcf7cbff8d476af45563a8615013d49c8bbb6157[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 12:31:59 2025 -0500
+
+    debugging
+
+[33mcommit 4487a8e31deae5029e4123971c0f12ab6dcd73a1[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 12:25:38 2025 -0500
+
+    reverted changes since temperatures won't set
+
+[33mcommit 7dcf80b0ae33085dbece0d529f4301a0469aaffe[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 12:13:18 2025 -0500
+
+    correction
+
+[33mcommit e7a1812baf733665096e895a6b9ef9c626b8e0e7[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 12:11:56 2025 -0500
+
+    correction
+
+[33mcommit cdf8ec6b93516148a0734be3fa3a2abb3613b054[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 23 11:26:05 2025 -0500
+
+    VTRX should work
+
+[33mcommit d4296f1bc433e95afad68a099beaabef336d7e56[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 22:13:47 2025 -0500
+
+    dashboard works fine
+
+[33mcommit 76dea5a4cbc044ae625a88372c6322e024c42703[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 22:07:52 2025 -0500
+
+    works fine now
+
+[33mcommit 621f598fdc1361682a571cd52c8d99e733b8d7d7[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 22:03:28 2025 -0500
+
+    better error handling for temperature and pressure
+
+[33mcommit c5f8920e38c1de6e2143f5eb9ec58d6253dc3cd2[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 21:51:08 2025 -0500
+
+    debugging
+
+[33mcommit f5e644624704e3a70e5b8767c6f383b10b5d4e20[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 16:51:54 2025 -0500
+
+    accidentally deleted toggle logic
+
+[33mcommit be38f6878313917039c4bcb294ff9e982aa1f439[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 16:26:31 2025 -0500
+
+    temperatures should work fine now
+
+[33mcommit 1e769a440b6860463128505b4025b00adb0b17b9[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 16:19:18 2025 -0500
+
+    set the temperatures back to -- after inactivity
+
+[33mcommit 3f1be60c2efcbe595a33007a1e04bff0198e4b68[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 15:47:37 2025 -0500
+
+    grey out all the interlocks and vacuum indiactors
+
+[33mcommit ea0a67197e8dd60ddeeff9609ef5aad8b6ab2848[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 15:44:00 2025 -0500
+
+    grey out all the interlocks and vacuum indiactors
+
+[33mcommit 1b41d84968ac79a3a31bba24d45bdafd810d6e3e[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 15:36:27 2025 -0500
+
+    fixed logic for pressure readings, should set to -- if its been over a minute since it was last set
+
+[33mcommit 6796fecd229338fb889e8156b04bb89963f4b623[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 13:55:34 2025 -0500
+
+    implemented logic for processsing if logs are within the last 60 seconds
+
+[33mcommit bf178abd7a53703176d121fdf558df2ac7fc3b1c[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 13:54:26 2025 -0500
+
+    implemented logic for processsing if logs are within the last 60 seconds
+
+[33mcommit a9c9686382ff0c07b4f12c50f4311b21429dba35[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 13:47:19 2025 -0500
+
+    replaced general refresh logic  with polling for dynamic loading of the we dashboard
+
+[33mcommit b6226cd8e161610804fcfd139cb4c964fcebe2fe[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 22 12:57:56 2025 -0500
+
+    schedule for updates every minute if the file has changes and the experiment is running
+
+[33mcommit 2f5926dc226f3f8caf892413bfad6a3520e90d24[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed May 21 15:06:14 2025 -0500
+
+    corrected the experiment status box
+
+[33mcommit 2acfb9a5577d388a2dddebef6322723ad554bd77[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed May 21 15:01:41 2025 -0500
+
+    corrected the experiment status box
+
+[33mcommit 9a8d6e0f9cba2cb9e37e1768accaf14d23e84e0b[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Wed May 21 14:55:44 2025 -0500
+
+    show 'experiment is running' message.
+
+[33mcommit 5badd81c1a84d756a7c9bd96ea6aea7c89476d3f[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue May 20 14:22:51 2025 -0500
+
+    uniform shade of green in vacuum indiactors and interlocks section
+
+[33mcommit a16375b8082ee6547b6576d0bdc51e0e996b414b[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue May 20 14:22:38 2025 -0500
+
+    uniform shade of green in vacuum indiactors and interlocks section
+
+[33mcommit 7d926ded72dab74e24fe4246d1ab31c615363c20[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue May 20 14:08:39 2025 -0500
+
+    temperature section correctly shows dashes in place of DISCONNECTED; added unit of pressure infront of readings
+
+[33mcommit a8d0f737a6728605b90d15e5aed70d707203dd5e[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue May 20 13:59:54 2025 -0500
+
+    don't show the temperature unit if we are disconnected
+
+[33mcommit ebfa229019868a311def7c171d231a21808c23bc[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue May 20 13:51:08 2025 -0500
+
+    adjusted temperature readings to show dashes if temperature readings show disconnected
+
+[33mcommit 31ac4f738fbd607b2b3179d5c254c6734610ee24[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue May 20 13:43:21 2025 -0500
+
+    updated pressure section
+
+[33mcommit 32253721ee46618bbbf37e910387ae03036973a2[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue May 20 13:38:19 2025 -0500
+
+    get the pressure readings to show within the vacuum indicators section
+
+[33mcommit b94ffec360c9dc9091218408cebecc07a11369b6[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue May 20 11:59:18 2025 -0500
+
+    placed the pressure text box on the top
+
+[33mcommit 0677f3c8b5689be20da0ac7cf1ea0e98d8036dc0[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Tue May 20 11:54:00 2025 -0500
+
+    align pressure section to the left and match the color of the pressure with that of the interlocks section
+
+[33mcommit 5e8f2a3e8bdae86da9668ae13350bb3cf28db728[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 21:07:34 2025 -0500
+
+    added a pressure section
+
+[33mcommit 9829f2e13f99ffcadb75cd81c1de9aae0657d72b[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 21:02:25 2025 -0500
+
+    pressure container
+
+[33mcommit f9d03cbb2ef327418a0c66a8c265c385357ab8ea[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 20:41:48 2025 -0500
+
+    testing
+
+[33mcommit ddec69c0b988ea34e0fbbe7e950fe50f75014cba[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 20:33:01 2025 -0500
+
+    set the color of pressure to be the same as the subtitles for uniformity
+
+[33mcommit 829471e6557910f3510fbd1e656ba8f08da24d64[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 20:31:39 2025 -0500
+
+    made a few changes to pressure
+
+[33mcommit 62c8ab97ff7d909b3b1732f5ef418db11cf914a5[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 20:22:11 2025 -0500
+
+    corrections in pressure
+
+[33mcommit 459c1040b7eddc3310966d7037624586ffcf6d80[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 20:20:58 2025 -0500
+
+    corrections in pressure
+
+[33mcommit f334c2d8b09c8745d9bf01ff26613d7c203985d5[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 20:15:02 2025 -0500
+
+    pressure
+
+[33mcommit 272742891b7f90d97278ccfc06e13b9cb454086e[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 20:04:44 2025 -0500
+
+    show pressure on the top of the dashboard
+
+[33mcommit 28820778c41a47a736779ebf502cd06a5c0dfcd4[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 19:55:26 2025 -0500
+
+    added a pressure box on the top
+
+[33mcommit f9c27660aa99ae0c4d836f8f44784eef46bd2f5d[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 17:05:59 2025 -0500
+
+    remove rounding
+
+[33mcommit 6ed652bde0a60097330c73dbbbb9d83964929984[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 17:01:23 2025 -0500
+
+    Environmental subsystem must have text boxes
+
+[33mcommit 3118aaf905016e71dbed05d6ba4cd9ee707b181f[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 16:54:21 2025 -0500
+
+    Environmental subsystem must have text boxes
+
+[33mcommit a5e50545816119a9cb77048dec532b8a44437567[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 16:47:36 2025 -0500
+
+    fixed temperature display, currently using data from sample logs
+
+[33mcommit b2ee077cd8ed3d1fb27eaa3409c5b40080c42175[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 16:29:10 2025 -0500
+
+    removed the api logic
+
+[33mcommit 1e282d9ddfa33fbf03f5507abfcd9b0ff296158c[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 16:28:24 2025 -0500
+
+    removed the api logic
+
+[33mcommit 420523b31867dda9bb30f4e28b94b998821b2339[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 16:27:18 2025 -0500
+
+    removed the api logic
+
+[33mcommit b6c3c3204274db7464a5416fd4b466125eb409e7[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 15:49:10 2025 -0500
+
+    temperatures should hopefully show up
+
+[33mcommit 588b982987dfd05edaf19ee70058c6f8590d948e[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 15:43:43 2025 -0500
+
+    temperatures should hopefully show up
+
+[33mcommit 9860b8a250f093f0151ae549b9137044f7ea4f38[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 15:32:31 2025 -0500
+
+    checking if updates are running
+
+[33mcommit 2380ef380dd1c7b7198e9d0e59aa70ede857b0cc[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 15:28:18 2025 -0500
+
+    checking if updates are running
+
+[33mcommit a8ecc39018d0e71392eeaca9de57f7415ec93e65[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 15:24:56 2025 -0500
+
+    checking if updates are running
+
+[33mcommit 59906dca4527c4cfb8ffa6c9bed3da54fb0cec4b[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 15:17:17 2025 -0500
+
+    checking if the program works with sample_logs.txt
+
+[33mcommit ee2cb700c743a4a3325e6ac84068cfdb6a5986a8[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Mon May 19 12:59:37 2025 -0500
+
+    testing
+
+[33mcommit a0f8925c3026774cf3bcf053bf07efcb9de706a0[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 14:03:51 2025 -0500
+
+    fixing fonts
+
+[33mcommit 27a9f0105de6b05293adc37c3a750034abf2f902[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 14:02:21 2025 -0500
+
+    fixing fonts
+
+[33mcommit 845771d7cbd691963b0b5b5ba4b5ded770eb1f83[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 13:56:38 2025 -0500
+
+    fixing fonts
+
+[33mcommit 567a88491327c3b3e9b4f354feca1dbf2501efd8[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 13:52:49 2025 -0500
+
+    fixed system logs - displays first 20 lines now
+
+[33mcommit c54925ab512efe9ab6f06c29b271de0c4a28b479[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 13:38:54 2025 -0500
+
+    fixed system logs - displays first 20 lines now
+
+[33mcommit 0c095bbaa8610d71262ba9fa13d59d1493bface1[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 13:37:48 2025 -0500
+
+    debugging
+
+[33mcommit 0fa3829fdeeddb158e678b5698ca9e95d5f69cfd[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 13:32:47 2025 -0500
+
+    changed temp to previewContent
+
+[33mcommit 061008c379dbb43769733f694ad5b16628c300b0[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 13:31:13 2025 -0500
+
+    push the button to the right
+
+[33mcommit 2b663d118d307f81f0bde54821dfeee38a9e6600[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 12:48:15 2025 -0500
+
+    push the button to the right
+
+[33mcommit 546c3bc5a9c647ac4057c9b88e4c346006adb1d4[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 12:44:09 2025 -0500
+
+    push the button to the right
+
+[33mcommit d3a9047b273feca51d20078aef9e54e82acfdae1[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 12:29:57 2025 -0500
+
+    push the button to the right
+
+[33mcommit 02de876bad5522bbee202e24396bfb6233404ebc[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 12:13:57 2025 -0500
+
+    push the button to the right
+
+[33mcommit f5c1f48adcbeb683bb732d684f3f3ffc81ea7817[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 12:07:07 2025 -0500
+
+    push the button to the right
+
+[33mcommit 365f1088de3839beeb8a8e1e36627773ecbbaf05[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 12:02:00 2025 -0500
+
+    push the button to the right
+
+[33mcommit c01cf4e34db7fba4168192d940f7637d5aa8b1ea[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 11:56:29 2025 -0500
+
+    push the button to the right
+
+[33mcommit 8c4409bc34e4793bcb6ebb63a7973b6a4125c1ab[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 11:52:27 2025 -0500
+
+    push the button to the right
+
+[33mcommit 9985024e800340811480eddc09a15e8b61f9042d[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 11:46:43 2025 -0500
+
+    make the log box within the container more prominent
+
+[33mcommit bb07a583c445c628b96019f884e391fc9ddaf7be[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 11:45:12 2025 -0500
+
+    toggle button
+
+[33mcommit 3ece9a3925285e8658d71ccc0bb9c7c1798f71a5[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 11:35:20 2025 -0500
+
+    log viewer's container should be the same as the environmental subsystem
+
+[33mcommit 88ff8e5ae7a76fb0a13d8a62f83455ce8b39fe10[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Fri May 16 11:31:20 2025 -0500
+
+    log viewer's container should be the same as the environmental subsystem
+
+[33mcommit f42c30bcb7c273685484439be8df6b3e61b66816[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 14:25:09 2025 -0500
+
+    interchanged width and height dimensions for gauge circle and gauge cover
+
+[33mcommit 82a1b20ef1333f75716f7e9b07e76d4ca7ccdb41[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 14:22:32 2025 -0500
+
+    commented out the background color for the log box for a neater look
+
+[33mcommit 0cb917f506812512df84b71cca05e2cd05c5bf3a[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 14:19:31 2025 -0500
+
+    interchanged width and height dimensions for gauge circle and gauge cover
+
+[33mcommit dd4c8f2a802d0793d5f39132e4b54a0916def789[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 14:14:42 2025 -0500
+
+    interchanged width and height dimensions for gauge circle and gauge cover
+
+[33mcommit 47627653194379dcb6c6cf2d9ee41aea62c55186[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 14:06:49 2025 -0500
+
+    interchanged width and height dimensions for gauge circle and gauge cover
+
+[33mcommit c42da8ad1e282b84bffc85603e10e3f0c97167ba[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 14:00:36 2025 -0500
+
+    corrected gauge circle and cover
+
+[33mcommit 44e5cba9ae5a5f7b17321a1089d877883a36444c[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 13:48:09 2025 -0500
+
+    trying to make it resemble the kubernetes dashboard
+
+[33mcommit bd82bf14ad4efe4bb267197651dd17c7c6141383[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 13:42:39 2025 -0500
+
+    trying to make it resemble the kubernetes dashboard
+
+[33mcommit 0bc6a1a6244da9cdba37ba438187a3a9aa04d68e[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 13:35:34 2025 -0500
+
+    trying to make it resemble the kubernetes dashboard
+
+[33mcommit 4e53a22e3735f9484cb80fc6416fc9ef6fb0a42f[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 13:29:47 2025 -0500
+
+    trying to make it resemble the kubernetes dashboard
+
+[33mcommit f808daf9268d4df4e52f79a335d248b1f9802c20[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 13:20:50 2025 -0500
+
+    trying to make it resemble the kubernetes dashboard
+
+[33mcommit 2f79340245accce998e00bf7c945b7b8fbb3954d[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 13:15:48 2025 -0500
+
+    trying to make it resemble the kubernetes dashboard
+
+[33mcommit 762893c67e8feca5245a0de4e626503791e83be0[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 13:14:02 2025 -0500
+
+    trying to make it resemble the kubernetes dashboard
+
+[33mcommit 5c706fcb68673261ad7d397ec1c4a23d8545e5cf[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 13:12:26 2025 -0500
+
+    removed text shadow, adjusted fontweights and psuhed it to the side as per sample dashboard
+
+[33mcommit e05dc1400b1d9c04b05d1038287b1282b1080587[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 13:08:02 2025 -0500
+
+    removed text shadow, adjusted fontweights and psuhed it to the side as per sample dashboard
+
+[33mcommit 28f767fd96d195fbb3987251741d8c5ea020f78b[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 12:53:14 2025 -0500
+
+    darkened the background to help foreground texts pop up
+
+[33mcommit b9004f9bf0e21a44378d7a49995ab9aa8b66ccec[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 12:48:00 2025 -0500
+
+    darkened the background to help foreground texts pop up
+
+[33mcommit e163757ca7269f57ccb1d46e60e573f469b3c17f[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 12:13:47 2025 -0500
+
+    made an unnecessary change to see if render updates automatically
+
+[33mcommit fa211e6cd794e97a4498dce9c17cc029828191e7[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 12:10:29 2025 -0500
+
+    commenting out animation
+
+[33mcommit 3521e07ff4c34381c7a000fd70fda639351d9756[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 12:07:51 2025 -0500
+
+    commenting out animation
+
+[33mcommit 651342e3e6f5b0e78f8ba806d9e97ca2e992bf52[m
+Author: Arundhati Singh <arundhatisingh171003@gmail.com>
+Date:   Thu May 15 12:06:32 2025 -0500
+
+    checking if updates pushed to the repository are automatically rendered on the website
+
+[33mcommit bcff8cea55f6c4035f6fde4d4e50a5375619dd1c[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu May 1 17:58:26 2025 -0500
+
+    asdf
+
+[33mcommit a05076db7ef13bda9d359a8c4709d49d896cbcec[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu May 1 17:54:39 2025 -0500
+
+    fixed file
+
+[33mcommit 6f0e5583e33469629440cab0a36695cf56f7a842[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu May 1 16:37:15 2025 -0500
+
+    remove the sections in CSS that is not in use anymore
+
+[33mcommit 2ae8a3440072ca7bffa7917475d9090cfb5ccecd[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu May 1 16:35:23 2025 -0500
+
+    changing the envirnmental display section
+
+[33mcommit b736c116cdce64344a67b6e9f509a5644009b53f[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu May 1 16:23:39 2025 -0500
+
+    tried changing timestamp check again
+
+[33mcommit c8440feac91bfc601d5fc6b90f0e32a3158db76d[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu May 1 11:38:21 2025 -0500
+
+    tried reinstalling package-lock.json
+
+[33mcommit 2a231d7407bd09ce87285f26436a8eb65709b822[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu May 1 11:30:42 2025 -0500
+
+    trying to fix 502 error by reverting changes
+
+[33mcommit 7e213c43ad29be8bbc520bee631e599168be7cd2[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu May 1 11:29:04 2025 -0500
+
+    Revert "commented out code for now for display testing"
+    
+    This reverts commit 473ac3ad813497683e0ef97e221b40d1fb22e7db.
+
+[33mcommit 7ebf71c588bbc9350f3c4f1fe29056fb28ad6077[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu May 1 11:28:07 2025 -0500
+
+    Revert "commented out safety flags untill extraction is done"
+    
+    This reverts commit ff14ee7b75dbe47bff2152da13ecfcdbada733e7.
+
+[33mcommit 498e5569b483b562f17c09a52b4d84c47aa2bdcc[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Apr 30 12:07:31 2025 -0500
+
+    reverted changes 2
+
+[33mcommit 172bd85bbd0deca2049abba34821b6c4b88eb32b[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Apr 30 10:43:49 2025 -0500
+
+    reverted changes
+
+[33mcommit e73d2eb4c8233ce6aa6edc7a18ca52a7f0352519[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Apr 30 10:40:02 2025 -0500
+
+    more timestamp testing 5
+
+[33mcommit e5bc744837c5858b645cdc11b34e284d7a926d92[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Apr 30 10:21:17 2025 -0500
+
+    more timestamp testing 4
+
+[33mcommit c0e569d144c0272cb7e86e83527a4103fbb778c3[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Apr 30 10:14:58 2025 -0500
+
+    more timestamp testing 3
+
+[33mcommit 837611fff5e01d8582b190d80045a2456241e3cf[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Apr 30 10:09:50 2025 -0500
+
+    more timestamp testing 2
+
+[33mcommit 9902b5da06a48fa0b4c37b8a467928d1900237c7[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Apr 30 09:42:23 2025 -0500
+
+    more timestamp testing
+
+[33mcommit b9114598daf2a5eb2e72ab7d02346aca90bc0e92[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Apr 30 09:35:50 2025 -0500
+
+    testing timestamp
+
+[33mcommit cd495e3ad0c56090b2daf164dc6d380a6a6bdf7e[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Apr 30 09:30:11 2025 -0500
+
+    changed timestamp interval check
+
+[33mcommit ff14ee7b75dbe47bff2152da13ecfcdbada733e7[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Apr 29 13:14:13 2025 -0500
+
+    commented out safety flags untill extraction is done
+
+[33mcommit 473ac3ad813497683e0ef97e221b40d1fb22e7db[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 29 11:27:46 2025 -0500
+
+    commented out code for now for display testing
+
+[33mcommit 56e9fa4c1233277b6cb93859625b493b7b4d4af3[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 29 11:21:27 2025 -0500
+
+    changed interval check logic
+
+[33mcommit 9ed1df0e61c7331ab107e66cafca520f5ee1b704[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 29 11:13:22 2025 -0500
+
+    commented out code for testing
+
+[33mcommit 6b0429ca041c72d91b00491c31687c7b53d90263[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 29 11:12:05 2025 -0500
+
+    added minor changes and still testing
+
+[33mcommit d9d2ca0d26862d585094d62001b066138a290e8b[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 29 11:08:17 2025 -0500
+
+    commented out server.js code to stop any possible errors
+
+[33mcommit 840792c7e1fe3cd8377e06beef5872f89496066a[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 29 11:05:28 2025 -0500
+
+    fixed minor error
+
+[33mcommit 5ead412295252da17733e161d55e22fdf3d094c9[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 29 10:59:23 2025 -0500
+
+    fixed early log_data_extraction stop checks
+
+[33mcommit 86291ce1f90453032ea179d38ae22d0a30cf43ba[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 29 10:48:49 2025 -0500
+
+    added testing code
+
+[33mcommit 8e675c3841e3d1eed91f882c490350b75d6bfbbf[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 29 10:31:57 2025 -0500
+
+    fixed log_data_extraction
+
+[33mcommit 2b17ffc2d8833845e9e1341f34a143ed3f47a9d8[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 29 10:02:05 2025 -0500
+
+    troubleshooting log_data_extraction by removing timestamp check fully
+
+[33mcommit 32fa75c6269cd7bfba77e8f93d43dd3eb323981e[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 29 08:29:29 2025 -0500
+
+    commented out interval check logic in log_data_extraction for testing
+
+[33mcommit 214028b2f044ece1be85c5d37e634f3e06569f0e[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Apr 28 08:55:38 2025 -0500
+
+    minor syntax change
+
+[33mcommit 821d85e11dfa8d9a398fdfe9d3597ea38146667e[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Apr 28 08:48:55 2025 -0500
+
+    added condition to log_data_extraction to check if currentData object has been filled
+
+[33mcommit 54536ca094c450ff6cb2fe69d36c5bb2a89b644e[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Apr 25 13:48:36 2025 -0500
+
+    replacing preview instead of the whole thing
+
+[33mcommit 5e75920a8499b9dec302e6d0330f7e8ce559ad55[m
+Merge: b4e5840 ac70b9f
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Apr 25 13:12:28 2025 -0500
+
+    Merge branch 'main' of https://github.com/uw-loci/EBEAM_webmonitor
+
+[33mcommit b4e58407669d4e6d3f81ffa02a2ae181f7f7341f[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Apr 25 13:11:37 2025 -0500
+
+    dontest matter
+
+[33mcommit ac70b9f58be2c54c193ecf92b09bbea71d1bdf43[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Fri Apr 25 10:09:27 2025 -0500
+
+    converted LOG_DATA_EXTRACTION_KEY to an env variable
+
+[33mcommit aba3b3ae7f58bee91352b5473432815dce92e457[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Fri Apr 25 09:08:06 2025 -0500
+
+    created folder for local testing and local testing file for log data extraction
+
+[33mcommit 5e367a60f124417a69dd3a001121c0be046d4edc[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 14:18:30 2025 -0500
+
+    right url
+
+[33mcommit 0f781e0d90b996b3d830fe9fd94be21a68f1c781[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 14:11:37 2025 -0500
+
+    using 3000
+
+[33mcommit 29b99bcba2c7047ef9ad068fb81d59e829646c31[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 14:07:50 2025 -0500
+
+    using the right url
+
+[33mcommit 99907cb66e2199ce4bc494616a8b3d8cdd01c6ca[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 13:47:20 2025 -0500
+
+    printing the data.data in a string. for now
+
+[33mcommit 4d91905c16ddc23ffd21ab73488c4a822c49b732[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 13:32:05 2025 -0500
+
+    with the api call
+
+[33mcommit f80a3e499f5af9a98c25dfc1ad4f9f9906a9b8bd[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Apr 24 13:29:15 2025 -0500
+
+    corrected path to log file for extraction
+
+[33mcommit 72dc8c80afd00a360b89972836e1e5653427e49d[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 13:28:56 2025 -0500
+
+    readin within if condition
+
+[33mcommit 738367a2ff483305f92b2b13161d79796f6b3f60[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 13:22:48 2025 -0500
+
+    without the api call
+
+[33mcommit 8f182b481389f442832d6635ee8aa987fc1df84c[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Apr 24 13:09:52 2025 -0500
+
+    changed log file name to extract to correct one
+
+[33mcommit e5c6a62e6fbcebb92f24abff39f2f46af686bb2e[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 13:07:25 2025 -0500
+
+    one last change
+
+[33mcommit 86d9086349be9287fe68fad941860ef26ff78fd2[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 12:34:44 2025 -0500
+
+    trying just reading
+
+[33mcommit 79738a6a8bf702600e1d6856716bf0a8a8b84bf3[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 12:22:02 2025 -0500
+
+    able to read the reversed.txt now
+
+[33mcommit 04c5ffdc40ae64f997631f60ac7576db56f1911b[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 12:09:28 2025 -0500
+
+    accessing within try and catch  block
+
+[33mcommit 5f3e57a079dc3be4479983438f883f2ab4ecc41e[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 12:04:02 2025 -0500
+
+    accessing the data working.
+
+[33mcommit ef64d78b3ca816ab611318042b8efc967a45f7f0[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 11:59:51 2025 -0500
+
+    there is no type
+
+[33mcommit ad1d1cc8fa7fd26b948bc9b4daf4e21bef07a12b[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 11:53:23 2025 -0500
+
+    begudding
+
+[33mcommit 5852f166aad139673117df010277c4833b880bff[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 11:43:27 2025 -0500
+
+    trying data var
+
+[33mcommit 8aa2f932bb6582fcb68be330a954878cc6169406[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 11:32:27 2025 -0500
+
+    removed lock and important comments added
+
+[33mcommit d2cafd31ecc4a04322028667ade3534f5532f63f[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 04:26:50 2025 -0500
+
+    still is not working.
+
+[33mcommit cbed63bae76bf1c5070ff24cd4acc5ec51bdf002[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 04:10:17 2025 -0500
+
+    getting back the tmep file system.
+
+[33mcommit 00a79483ed471ea997b079cce26c065e0b83a851[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 04:00:39 2025 -0500
+
+    bug fixed: locking the file was the issue.
+
+[33mcommit 375fed67af65d3c926f8f6ba4612b65293d0521d[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 03:49:36 2025 -0500
+
+    there is no reversed.txt
+
+[33mcommit 0df9be51378d34e51a7e54bc82fa373f72c2d30d[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 03:42:56 2025 -0500
+
+    data is still null
+
+[33mcommit b356553658a81c87d6718794863463406c248cea[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 03:39:39 2025 -0500
+
+    error msg to figure our no data available.
+
+[33mcommit 4b4f92bf0d14b88e43c648e21446f0e51f21411d[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 03:17:12 2025 -0500
+
+    extraction end point used; data loading
+
+[33mcommit 6483ba58f21003f99a3888cab678d0b5f4181706[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 24 02:30:08 2025 -0500
+
+    write to temp file complete
+
+[33mcommit 6d6275e8d1bb5f1fb7c6ad33fe3431d317b8e314[m[33m ([m[1;32mfeature/write_temp_file[m[33m)[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 22 11:16:12 2025 -0500
+
+    made another change to adhere to log data extraction file name change
+
+[33mcommit 694914cda6a29cf42f4c186117ce6966e699f3c8[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 22 09:20:56 2025 -0500
+
+    changed file name
+
+[33mcommit a3b0bfe533608c7373662bd9f0f3eafe84268f92[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Apr 21 02:55:46 2025 -0500
+
+    LOG_DATA_EXTRACTION_SECRET_KEY is not defined; fix this
+
+[33mcommit 5c5c5661aa2b954beaa3ad9eb99a6c0b58b46bdc[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Fri Apr 18 09:34:03 2025 -0500
+
+    moved sample_logs.txt to a new file
+
+[33mcommit 4f07c15f2dfa16d3540ba3b30623a005a884c3d2[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Apr 17 12:21:15 2025 -0500
+
+    added logic to not reload page if no change has been made
+
+[33mcommit 353845dedfe336a1684687a0c0aa7d4efe206e4e[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 17 11:32:44 2025 -0500
+
+    added comments
+
+[33mcommit 69718b9016b20c9e7508bddc45d9afc8483221db[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Apr 17 10:37:14 2025 -0500
+
+    finished api working version
+
+[33mcommit 92bea8fd21b45a57b3dcfd51f98353fc6077db51[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Wed Apr 16 20:24:36 2025 -0500
+
+    misplacement of app.use(); now works for local as well.
+
+[33mcommit 5e029bfeaefdf723a0e7f0278cc81a8c7eb4edcb[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 15 09:33:30 2025 -0500
+
+    added in progress log extraction feature
+
+[33mcommit 8c9f4f16a2861e10b30a9795842779512e277744[m[33m ([m[1;31morigin/feature/log_data_extraction[m[33m)[m
+Merge: 3dab25a 7ff3020
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 15 09:29:38 2025 -0500
+
+    Merge branch 'main' into feature/log_data_extraction
+
+[33mcommit 3dab25a88e02e8ce3ab5904d40b5a8393f598790[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 15 09:27:49 2025 -0500
+
+    progress
+
+[33mcommit 7ff3020671135cea75709e1caf077b88c402d99f[m[33m ([m[1;31morigin/feature/better-log-display[m[33m, [m[1;32mfeature/better-log-display[m[33m)[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Apr 14 18:33:45 2025 -0500
+
+    no data is showing in the website
+
+[33mcommit 52a974062a6f6f8840fafdced59ed64b81b38f6d[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Apr 14 13:13:58 2025 -0500
+
+    tried extraction assumed structure for end point but not tested
+
+[33mcommit c5feb675c37a552afebd50c6e9eb3116ff5c8722[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Apr 10 12:03:52 2025 -0500
+
+    progress
+
+[33mcommit 9324732f91c087d8db1221bd64d521e78175ba6e[m
+Merge: 8b75b39 5fc98b4
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Apr 10 11:51:56 2025 -0500
+
+    Merge branch 'main' into feature/log_data_extraction
+
+[33mcommit 8b75b3986973359ae4c80865771a4447cf6366af[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Apr 10 11:50:35 2025 -0500
+
+    commited progress
+
+[33mcommit 5fc98b40869a7453796fcc85ae18416b5904489c[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 10 11:13:49 2025 -0500
+
+    added but commented the code for extraction api; needs fixing
+
+[33mcommit 8a9c7808268741316fda2abbdf720506194ab6af[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 10 11:08:28 2025 -0500
+
+    added comments to add the extraction api
+
+[33mcommit bdde6581eb9982d377502e17b9773896d315926f[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 10 03:10:49 2025 -0500
+
+    added temp file to handle race conditions
+
+[33mcommit bc7367452d02740cebdaac1d3f207f32b12926ff[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Apr 3 11:14:55 2025 -0500
+
+    added in actual vaccum indicators
+
+[33mcommit eee63767f7dc0c31e628baa546c3fe0d85eb44c8[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Wed Apr 2 17:40:58 2025 -0500
+
+    changed name to vacuum-indicators
+
+[33mcommit 86ff5b21d166f8a1ba8104d75dc2cb2b67c02b79[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Wed Apr 2 17:27:48 2025 -0500
+
+    vacuum indicators added
+
+[33mcommit ab71f5f28976b0287a4ad70e31dc1ea84c892ba0[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Apr 1 14:22:27 2025 -0500
+
+    added the commented lines if we need them
+
+[33mcommit 1b496355871237f0d1e1896c922c0a530aa1ed04[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Apr 1 14:20:14 2025 -0500
+
+    trying first layout for PMON
+
+[33mcommit 76b95f26b2b25b0cefebe5b1af789b0c92ba19cb[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Apr 1 13:46:20 2025 -0500
+
+    info on colours added
+
+[33mcommit 82c0d371425165256f8916238b1bedf179e00d39[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Apr 1 13:12:47 2025 -0500
+
+    commented out the cards for now
+
+[33mcommit 7de8216be66f49a03e3206f59ca096ecc64199ed[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Apr 1 12:58:32 2025 -0500
+
+    wrapped and added effects for interlock
+
+[33mcommit 42df6a1b5e8223ed8a25a6817b36fe4042c9e89f[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Apr 1 12:36:37 2025 -0500
+
+    change loc for interlocks
+
+[33mcommit 0dea168816693b1f7b242d99bd2f8b5e0d74cf07[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Apr 1 12:35:18 2025 -0500
+
+    added the status bar for interlocks;
+
+[33mcommit b77b89ef2d0ee3109c7557af6c9845762df268fc[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Apr 1 12:05:35 2025 -0500
+
+    added some sections in
+
+[33mcommit 2089a3706974da2e84914c3f63cf3de16c3b9bfe[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Apr 1 11:29:54 2025 -0500
+
+    extraction works for pressure, safety output flags, and pmon temps but inefficient
+
+[33mcommit da45a4b6798220d7d4f0b952774e8b345869b37a[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Mar 19 10:08:15 2025 -0500
+
+    troubleshooting experimentRunning styling 2
+
+[33mcommit 03e56b4f107bd55211c5f2ca9497bf17f19006a9[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Mar 19 10:02:12 2025 -0500
+
+    troubleshooting experimentRunning styling 1
+
+[33mcommit 4ee12a880201af026f3b97e263df664ba6c57cff[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 18 14:05:22 2025 -0500
+
+    absolute position instead of fixed
+
+[33mcommit f4280df1be3bcd8da961ea6be8628b244f1fc510[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 18 14:04:26 2025 -0500
+
+    different position for experiment msg
+
+[33mcommit b3f4ab9c51accf6584d7056c074c7ea6c3300df8[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 18 13:39:54 2025 -0500
+
+    neon flicker added
+
+[33mcommit 2b294f1b0300f3a99213a5139856d260dc2af0a4[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 18 12:56:56 2025 -0500
+
+    final change for experiment is running
+
+[33mcommit 528c1df8dc780e9bda886890049230184da64fc7[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 18 12:47:24 2025 -0500
+
+    better logic for bug fix
+
+[33mcommit 38b470019e0aaa3746badebf604ee6f123596f98[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 18 12:38:17 2025 -0500
+
+    made sure the first fetch happens
+
+[33mcommit 971101231e964cfdc37684601a3b042ed8ae0aef[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Mar 18 09:44:25 2025 -0500
+
+    troubleshooting load button 20
+
+[33mcommit dfc2ab91690d19903c9c713affba02ea505400d9[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Mar 18 09:39:39 2025 -0500
+
+    troubleshooting load button 19
+
+[33mcommit eaf02db52cb25aa4e9d3ca9b9148521135d53a9a[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Mar 18 09:24:11 2025 -0500
+
+    troubleshooting load button 18
+
+[33mcommit 3e7ad586a93b81cd25c71f57b8c9b1a71bd88078[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Mar 17 19:34:15 2025 -0500
+
+    printing dates to check
+
+[33mcommit 53c4860bf44b9cdffdc8bba03733630144e63bd4[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Mar 17 19:12:26 2025 -0500
+
+    compute a fresh status in the GET route
+
+[33mcommit a05ff441cffd0564b936aff705d504b547a945d6[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Mar 17 10:42:15 2025 -0500
+
+    troubleshooting load button 17
+
+[33mcommit 66cc63800dea00f08cc70a10bb152445c1efbe44[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Mar 17 10:31:35 2025 -0500
+
+    troubleshooting load button 16
+
+[33mcommit c00a10d12b6165b21bdc5df0f2ede8b71ee2e240[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Mar 13 13:01:21 2025 -0500
+
+    troubleshooting load button 15
+
+[33mcommit fad0c7b2fd890bcdbea0f7ab98d0128f103f09c2[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Mar 13 12:57:53 2025 -0500
+
+    troubleshooting load button 14
+
+[33mcommit 773b483697e3cde8b67ec7620d01833374f05137[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Mar 13 12:45:34 2025 -0500
+
+    troubleshooting load button 13
+
+[33mcommit a8835e56d592309e4aa43698b5b6b21c5dac5204[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Mar 13 12:28:43 2025 -0500
+
+    troubleshooting load button 12
+
+[33mcommit edf328db19232c692052890df5a2a2e06d4948ad[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Mar 13 12:25:54 2025 -0500
+
+    troubleshooting load button 11
+
+[33mcommit bfb500e1fa222e7dac5a465566ffcf843f7d8018[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Mar 13 12:17:55 2025 -0500
+
+    troubleshooting load button 10
+
+[33mcommit fabe5d95dad68096ff04bb778d48b0bde4ab3465[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Mar 13 12:10:15 2025 -0500
+
+    troubleshooting load button 9
+
+[33mcommit 4b3761b496948bbc7252852c019da688dd5071e0[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Mar 13 12:07:12 2025 -0500
+
+    troubleshooting load button 8
+
+[33mcommit 731e3a9c713d152581f52f8066d31335569386b6[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Mar 13 12:00:27 2025 -0500
+
+    troubleshooting load button 6
+
+[33mcommit 614e1bd965a11a9ffbfcd3fa070014548b02c1fa[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Mar 13 11:52:55 2025 -0500
+
+    troubleshooting load button 6
+
+[33mcommit c53c564e6fb6f5045def20b0b68579b077644b28[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 11 15:11:55 2025 -0500
+
+    finally commented for now: decide on when to release the lock gracefully
+
+[33mcommit 9ee76239d46b617b9ac016f801a41798d68e616e[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 11 15:00:37 2025 -0500
+
+    not overwriting the lock var
+
+[33mcommit a9358fb78824356a6917477c73b5eeb21d82b4d9[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 11 14:58:12 2025 -0500
+
+    handled possible error
+
+[33mcommit d10016ecb997cbb98e774aeaa7e53da10cc158b3[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 11 14:55:38 2025 -0500
+
+    fs.createWriteStream() implemented
+
+[33mcommit 22a71948749d4080df271778497dcdeefe8afd0c[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Mar 11 04:55:27 2025 -0500
+
+    troubleshooting load button 5
+
+[33mcommit b652638b0400da74134c808171e219753bc185b6[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Mar 11 04:48:42 2025 -0500
+
+    troubleshooting load button 4
+
+[33mcommit 56c2978164953b83538aa921b872936b93644991[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Mar 11 04:39:47 2025 -0500
+
+    troubleshooting load button 3
+
+[33mcommit 82e5ce79ae7fac0702d044f4b3a50e51245f7671[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Mar 11 04:33:21 2025 -0500
+
+    troubleshooting load button 2
+
+[33mcommit 428438592139a9f3cb258cfe296fc791e57357e0[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Mar 11 03:22:30 2025 -0500
+
+    troubleshooting load button 1
+
+[33mcommit c9eb999055c86c6a1f1ae7328cad8cfba12b3e3c[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Mar 10 11:54:07 2025 -0500
+
+    lock redeclaring undone
+
+[33mcommit 6a96cdc21d233f6a6732c8841f6425da7c94f1a7[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Mar 10 11:36:11 2025 -0500
+
+    lock bug fix complete: ensuring the file exists before locking it
+
+[33mcommit 93901bfb86dea3c9e11858e70b832adb07da444a[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Mar 10 10:50:18 2025 -0500
+
+    reverted changes due to issues
+
+[33mcommit 53948bbbfcd96266e232c278a628cdcda52cf51a[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Mar 10 10:42:30 2025 -0500
+
+    fixing load button
+
+[33mcommit a8e2e00f95d421dd8eb13608f876964a33f1e559[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Mar 10 10:01:53 2025 -0500
+
+    fixed experimentRunning check
+
+[33mcommit 1dec9510c423e9c5f72fad1dd14d74f6a477113c[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Mar 7 13:50:31 2025 -0600
+
+    update
+
+[33mcommit a4f85ed5131a423c196c96c8c432e09940c0f0b0[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Mar 7 13:15:24 2025 -0600
+
+    updated package.json
+
+[33mcommit 5ce2a29e1abd7f581336a98cb54dcd6a9ab2e2ee[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Fri Mar 7 06:36:55 2025 -0600
+
+    troubleshooting experimentRunning 6
+
+[33mcommit f1629d291e1c9eb906c53ab7d0069530098e4f05[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Fri Mar 7 06:30:55 2025 -0600
+
+    troubleshooting experimentRunning 5
+
+[33mcommit 55adc11b39939b13d3a47f087febfb79d932a252[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Fri Mar 7 06:27:30 2025 -0600
+
+    troubleshooting experimentRunning 4
+
+[33mcommit 18bdb10cc62deed752f4720e089528fb1986e040[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Fri Mar 7 06:19:51 2025 -0600
+
+    troubleshooting experimentRunning 3
+
+[33mcommit 141e3be858b587dd891231b4b048b7a56fda2379[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Fri Mar 7 06:11:32 2025 -0600
+
+    troubleshooting experimentRunning 2
+
+[33mcommit 6ca5d720a021ab51757188fab86ed257c629df82[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Fri Mar 7 06:05:48 2025 -0600
+
+    troubleshooting experimentRunning
+
+[33mcommit 8072ed93eb9cb594d1cdb32969d5217cb8f324a5[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Fri Mar 7 04:55:34 2025 -0600
+
+    fixed the 15 minute experiment check
+
+[33mcommit 20b3cee95f213a1a98dd6931b8ba36b664446f81[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Mar 6 12:32:34 2025 -0600
+
+    added write-lock
+
+[33mcommit d379e9c16e9e62c1bfbedb74dd851987c169f30f[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 4 14:27:44 2025 -0600
+
+    date format updated
+
+[33mcommit fc0a27a58cd16c95257c99174aa449bdc7393967[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 4 14:25:36 2025 -0600
+
+    changed lastModifiedTime to cst
+
+[33mcommit 42de48391e91153b03aa5ed5c582c6ba2b98cd64[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 4 13:46:28 2025 -0600
+
+    tittle change to E-beam Web Monitor
+
+[33mcommit 2ee7e1cfeba1c2a335ddc10040fabbef4ce4e115[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 4 13:30:16 2025 -0600
+
+    changed the dashboard end point to home.
+
+[33mcommit 1ef998849633fe2b29e7cacfaaa8bf48687d753c[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Mar 4 11:57:25 2025 -0600
+
+    title
+
+[33mcommit fb890cbdf1298391f62f14e58cda5d1f451e4361[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Mar 3 13:29:54 2025 -0600
+
+    update
+
+[33mcommit af233daaafa91ff45c8d4a7938c5fcb769e68d06[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Mar 3 13:24:48 2025 -0600
+
+    better tittle
+
+[33mcommit e578f86c6fc6a42e702b45b4faf96cdf407205f8[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Mar 3 13:08:13 2025 -0600
+
+    tittle change
+
+[33mcommit bf66ee3ac41890f6f9517bda84da0d42ee3e6962[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Mar 3 13:00:20 2025 -0600
+
+    better background contrast and effects
+
+[33mcommit 0cfa262579f9729dbfa6f1ea60d8ef66243fa046[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 28 14:28:16 2025 -0600
+
+    small adgustments
+
+[33mcommit 4a4023b0ef2074203f6f07dd977a319c1b7f4e66[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 28 14:03:09 2025 -0600
+
+    changed patterna nd placement of the cards
+
+[33mcommit 1fbb3fe92297780aa4ae51e83cdc262f8248dc98[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 28 14:00:16 2025 -0600
+
+    wrong placemenet and
+     background for cards
+
+[33mcommit d7ebce889f7618b257edcaea646e30ab60e13a36[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 28 13:50:43 2025 -0600
+
+    added cards
+
+[33mcommit 5b83dee1561fcae788cb9e76659c31592cab2f97[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 28 13:36:57 2025 -0600
+
+    expanded the borders
+
+[33mcommit 4695a53757dbbca5ee84e9032181a4951c03b076[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 28 13:35:05 2025 -0600
+
+    glass effect to the cards
+
+[33mcommit 17ed0bce2ff19fec4f61d326bacc2578a07e4f93[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 28 12:55:25 2025 -0600
+
+    just checking the dashboard end point
+
+[33mcommit d8bfc15ebbca3759b0f2d1ed206657e96e1c992c[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 28 12:13:57 2025 -0600
+
+    different colour
+
+[33mcommit 25e50921b0523533d4efd087efc569d40bb426ce[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 28 12:08:31 2025 -0600
+
+    added background colour and some padding
+
+[33mcommit ee217858a049fbe7ea81bc46020f1167abd8727e[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 28 11:59:32 2025 -0600
+
+    dashboard end point working but upgrade the frontend
+
+[33mcommit 1bb7b7a2c9ee5331103df320320dd3a6a99542bf[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Feb 24 12:24:48 2025 -0600
+
+    update package-lock
+
+[33mcommit c2a5f1b40760b6247f6e17e592b28ba278ffcd47[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 21 13:17:18 2025 -0600
+
+    made sure the time zones are the same
+
+[33mcommit 341138bbf3013a721a2ebad42d10c2c11089eb4d[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Feb 20 18:54:30 2025 -0600
+
+    Updated the package dependencies
+
+[33mcommit 40367a45ec6a931bce9419a811a75d3107db8c26[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Feb 19 09:56:19 2025 -0600
+
+    uncommented some necessary code
+
+[33mcommit f25fa142949199db392847f471beaf2389af09ee[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Feb 19 09:50:59 2025 -0600
+
+    added logic for when experiment is not running. main aspect of the new logic is commented out for now.
+
+[33mcommit fa97cf506592d298847de4f6affd78a2f83c235b[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Feb 18 11:53:31 2025 -0600
+
+    added dashboard end point
+
+[33mcommit 4fe9a28908c5b17d4b0fadf0e0331843873525fc[m
+Author: Pratyush Shanbhag <49264659+Pratyush-Shanbhag@users.noreply.github.com>
+Date:   Tue Feb 18 07:29:26 2025 -0800
+
+    Update README.md with processing and hosting information.
+
+[33mcommit 9fd939099b7d1f9cdd9eeb14028ced29b242956d[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Feb 17 12:17:12 2025 -0600
+
+    added streaming logic
+
+[33mcommit 2831d372e513e55617e717a0e738d7c222cd3f7d[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Feb 17 10:00:53 2025 -0600
+
+    merged changes
+
+[33mcommit 94c74f081798b1dbcd0edb58740e99cf71825829[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Feb 13 13:07:47 2025 -0600
+
+    code clean
+
+[33mcommit f755ea50de08e75f242eddb9d64e62a5d179c2f5[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Feb 13 13:00:42 2025 -0600
+
+    updated gitignore
+
+[33mcommit f136216d6105c5947f44c8d98541eaa0749468fe[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Feb 13 10:09:36 2025 -0600
+
+    deleted unnecessary log_file.txt
+
+[33mcommit 2b704ec766d85465e3355cd78023cc1ff7e2d907[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Thu Feb 13 10:08:38 2025 -0600
+
+    deleted extra files
+
+[33mcommit b99e47c5268d31a7a29f08e1ad72655defcc45da[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Feb 12 13:57:24 2025 -0600
+
+    fixed last updated time
+
+[33mcommit 066e429a6d2e61ebe39cff5c96f554a974409234[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Feb 12 10:41:24 2025 -0600
+
+    added log file name variable
+
+[33mcommit 422a708e08e3c8bb83334751c0f1c2cca7bed30a[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Feb 12 10:30:36 2025 -0600
+
+    fixed log file metadata variable issue
+
+[33mcommit d40c7caa79ca16e6de1dd8f37299221034c18126[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Feb 12 10:26:53 2025 -0600
+
+    commented out some lines
+
+[33mcommit 8899c86c9baf5cafa9b21ba0f085b96e141af4b0[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Wed Feb 12 10:26:26 2025 -0600
+
+    added periodic fetch functionality
+
+[33mcommit dc088da2ca4162b87d8778e8c23344f8cc9b7f66[m[33m ([m[1;31morigin/feature/reversed-log-on-server[m[33m, [m[1;32mfeature/reversed-log-on-server[m[33m)[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Feb 11 15:19:17 2025 -0600
+
+    tested and works as expected locally
+
+[33mcommit 22d77449242d6dec39ded2b83ea7a196848328fb[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Feb 11 14:27:36 2025 -0600
+
+    errors and server restart handled
+
+[33mcommit 4fbb547eb522cf18aec80fabe362203522c4f876[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Tue Feb 11 14:20:55 2025 -0600
+
+    defaulting the file on server.
+
+[33mcommit 012380b7844a2eabd489289ebf82e73ca93bfb0c[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Tue Feb 11 09:37:41 2025 -0600
+
+    added functionality for page to reload every 60 seconds
+
+[33mcommit 3b965b774e1963c375080b002b1c67a34f47cfc6[m
+Merge: 531b158 7fe7339
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Mon Feb 10 17:11:43 2025 -0600
+
+    Merge Conflicts resolved
+
+[33mcommit 7fe7339172888c45789f632ea6b0cc16cc982672[m[33m ([m[1;31morigin/feature/api-change-secure[m[33m, [m[1;32mfeature/api-change-secure[m[33m)[m
+Author: Anurax1321 <chinnaboina@wisc.edu>
+Date:   Mon Feb 10 16:45:25 2025 -0600
+
+    Gitignore updated
+
+[33mcommit 531b158e3dfbdb0d47ed6ee052b390e10d66968e[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Feb 10 10:06:34 2025 -0600
+
+    reversed changes
+
+[33mcommit 0ac772b8f0beb18c66dd910e50d77722e4666609[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Feb 10 09:47:44 2025 -0600
+
+    modified wrong file in last commit
+
+[33mcommit 7fe281d8e0fe4c45d94e9ec7a0460c87b46fa718[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Feb 10 09:46:06 2025 -0600
+
+    added periodic_log_file_updater.mjs changes to index.js for testing
+
+[33mcommit aa87985666381d104462b5ad179eb62eac3b7ad1[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Mon Feb 10 09:20:08 2025 -0600
+
+    added periodic log file update feature
+
+[33mcommit 7de342375494d6eaf3be439dc1c38a4f88b018d9[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 7 12:24:16 2025 -0600
+
+    Error handling the Key Access
+
+[33mcommit d9087e887c53e7e7a7160e5e0ff225f90448e03e[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Fri Feb 7 12:19:02 2025 -0600
+
+    updated gitignore and package.json
+
+[33mcommit f8da807331844b293c44a7cb25f666b89874156d[m
+Author: Pratyush-Shanbhag <pratyushshanbhag10@gmail.com>
+Date:   Fri Feb 7 10:22:57 2025 -0600
+
+    added create_local_log.mjs
+
+[33mcommit 9ad89b3450ed17f70bf2e5bc0cb61f4b1d45a8b4[m
+Author: Pratyush Shanbhag <49264659+Pratyush-Shanbhag@users.noreply.github.com>
+Date:   Fri Feb 7 08:19:34 2025 -0800
+
+    Create new file from Google Drive
+
+[33mcommit f71364a6ebf7d7ebbd4a4cf5216447aecc90433c[m
+Author: Pratyush Shanbhag <49264659+Pratyush-Shanbhag@users.noreply.github.com>
+Date:   Fri Feb 7 08:10:58 2025 -0800
+
+    Delete file.txt
+
+[33mcommit 253b787004e323c9913f9e42a9d7cb1b6ec52218[m
+Author: Pratyush Shanbhag <49264659+Pratyush-Shanbhag@users.noreply.github.com>
+Date:   Fri Feb 7 08:10:02 2025 -0800
+
+    Create new file from Google Drive
+
+[33mcommit 00016856f7c23a7865d2f60ab098717a70d16e80[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Wed Feb 5 15:24:10 2025 -0600
+
+    Using the keys from .env,meant for local dev
+
+[33mcommit b9980a25221c6582be8225dbbea29d66243d954e[m
+Author: Anurax1321 <chinnaboina@wisc.edu>
+Date:   Tue Feb 4 17:10:30 2025 -0600
+
+    Updated .gitignore to exlude .env file
+
+[33mcommit f93d21ef0c1f29ff695c803e0d24352faa296fdf[m[33m ([m[1;32mfeature/run[m[33m)[m
+Author: Anurax1321 <jyothiranurag@gmail.com>
+Date:   Thu Jan 30 19:00:56 2025 -0600
+
+    Updated the Google API Key
+
+[33mcommit 7ce2bf014688abea2946ac9151f11bb621ebf3e9[m[33m ([m[1;31morigin/feature/most-recent-log[m[33m)[m
+Author: Anurax1321 <chinnaboina@wisc.edu>
+Date:   Tue Jan 28 12:51:32 2025 -0600
+
+    Implemented Google API
+
+[33mcommit a50068b1392f9ca7c4fd6e861cc0e858fe076799[m
+Author: root <root@Anurag>
+Date:   Tue Jan 28 12:20:10 2025 -0600
+
+    tried scraping; Didn't work
+
+[33mcommit 9983fddb85543734a6b54cbc85a63439219de8c6[m
+Author: Brandon Walker <bwalker4@wisc.edu>
+Date:   Thu Jan 9 17:25:30 2025 -0600
+
+    add deployment to readme
+
+[33mcommit bc018db84c296a34388a5e1f3356f1ccbf5bcdff[m
+Author: Brandon Walker <bwalker4@wisc.edu>
+Date:   Thu Jan 9 16:52:42 2025 -0600
+
+    adjust webpage title and check auto deploy
+
+[33mcommit ce953f435b2f52a8a0f06ff93aa465e2833fe348[m
+Author: Brandon Walker <bwalker4@wisc.edu>
+Date:   Thu Jan 9 16:42:15 2025 -0600
+
+    add render.yaml file
+
+[33mcommit 60cb391f4fc910caab297e4a0fed3dd1426bfb4a[m
+Author: Brandon Walker <bwalker4@wisc.edu>
+Date:   Thu Jan 9 16:34:16 2025 -0600
+
+    add index.js and package.json
+
+[33mcommit 338be26b55d781bdae0a8b1fefd424c41eb8ae85[m
+Author: Brandon Walker <bwalker4@wisc.edu>
+Date:   Thu Jan 9 16:16:14 2025 -0600
+
+    add gitignore
+
+[33mcommit 4d0cba0bc0e6f0a486d2a4b6239e0b0518b266a2[m
+Author: Brandon Walker <bwalker4@wisc.edu>
+Date:   Thu Jan 9 15:54:06 2025 -0600
+
+    adds example.txt
+
+[33mcommit da21c1a86b726f518b9b25a1e4a643f6cb5f8795[m
+Author: bwalkerMIR <38508457+bwalkerMIR@users.noreply.github.com>
+Date:   Thu Jan 9 15:48:04 2025 -0600
+
+    Initial commit

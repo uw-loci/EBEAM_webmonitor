@@ -1106,35 +1106,35 @@ try {
           <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
           <div class="vacuum-indicators-container">
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle bg-secondary""></div>
+              <div class="vacuum-indicators-circle" style="background-color:${vacColors[0]}"></div>
               <div>Pumps Power ON</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle bg-secondary""></div>
+              <div class="vacuum-indicators-circle" style="background-color:${vacColors[1]}"></div>
               <div>Turbo Rotor ON</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle bg-secondary"></div>
+              <div class="vacuum-indicators-circle" style="background-color:${vacColors[2]}"></div>
               <div>Turbo Vent Open</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle bg-secondary"></div>
+              <div class="vacuum-indicators-circle" style="background-color:${vacColors[3]}"></div>
               <div>972b Power On</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle bg-secondary"></div>
+              <div class="vacuum-indicators-circle" style="background-color:${vacColors[4]}"></div>
               <div>Turbo Gate Closed</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle bg-secondary"></div>
+              <div class="vacuum-indicators-circle" style="background-color:${vacColors[5]}"></div>
               <div>Turbo Gate Open</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle bg-secondary"></div>
+              <div class="vacuum-indicators-circle" style="background-color:${vacColors[6]}"></div>
               <div>Argon Gate Open</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle bg-secondary"></div>
+              <div class="vacuum-indicators-circle" style="background-color:${vacColors[7]}"></div>
               <div>Argon Gate Closed</div>
             </div>
           </div>

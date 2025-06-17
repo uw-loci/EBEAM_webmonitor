@@ -128,6 +128,11 @@ function getHvoltOn(inputFlags) {
  return inputFlags[12] ? "green" : "red";
 }
 
+function varBitToColour(bits, index) {
+  if (!Array.isArray(bits) || bits.length < 8) return "grey";   // Default
+  return bits[index] ? "green" : "red";                         // 1 --> green, 0 --> red
+}
+
 
 function timeToSeconds(time) {
  const hours = (time[0] - '0') * 10 + (time[1] - '0');
@@ -698,6 +703,19 @@ try {
   let estopExtColor = getEStopExternal(data.safetyInputDataFlags);
   let allInterlocksColor = getAllInterlocksStatus(data.safetyOutputDataFlags);
   let G9OutputColor = getG9Output(data.safetyOutputDataFlags);
+
+  let vacColors = (bits => [
+  varBitToColour(bits, 0),
+  varBitToColour(bits, 1),
+  varBitToColour(bits, 2),
+  varBitToColour(bits, 3),
+  varBitToColour(bits, 4),
+  varBitToColour(bits, 5),
+  varBitToColour(bits, 6),
+  varBitToColour(bits, 7),
+    ])(data.vacuumBits);
+
+
 
 
   //  keep your HTML generation as-is below this

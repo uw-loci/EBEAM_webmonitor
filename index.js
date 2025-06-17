@@ -486,7 +486,7 @@ try {
                .replace(/(\d+):/g, '"$1":'); // fix numeric keys
              data.temperatures = JSON.parse(tempsStr);
            } catch (e) {
-             console.warn("Couldn’t JSON.parse temps:", tMatch[1]);
+             console.warn("Couldn’t JSON.parse temps: ", tMatch[1]);
            }
          }
        }
@@ -496,8 +496,12 @@ try {
         if (data.vacuumBits === null) {              // only take the freshest
           const vMatch = line.match(VAC_BITS_REGEX);
           if (vMatch) {
+            try {
             data.vacuumBits = vMatch[1].split('').map(Number);
             // Example → "11010101"  → [1,1,0,1,0,1,0,1]
+            }catch(e){
+              console.warn("Couldn’t extract VTRX values: ", vMatch[1]);
+            }
           }
         }
         break;

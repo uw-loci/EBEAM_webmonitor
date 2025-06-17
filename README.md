@@ -6,7 +6,7 @@ Website for remote monitoring of ebeam experiment
 The url for the website is: [ebeam-webmonitor.onrender.com/](https://ebeam-webmonitor.onrender.com/)
 
 ## Logic for Updating the Interlocks Section
-Please note the correspondence between each of the input and output Safety Terminal Data Flags and the respective indicators. The same mapping is used in the code, as illustrated in the following G9 Driver Schematic Diagram:
+Please note the correspondence between each of the input and output Safety Terminal Data Flags (bit numbers) and their respective indicators. This same mapping is followed in the code, and is illustrated in the G9 Driver Schematic Diagram below (annotated in blue).
 
 ![Annotated Schematic Diagram](schematic_diagram.svg)
 

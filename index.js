@@ -509,7 +509,6 @@ try {
           }
         }
         break;
-
    }
 
 
@@ -519,7 +518,9 @@ try {
      data.pressureTimestamp !== null &&
      data.safetyOutputDataFlags !== null &&
      data.safetyInputDataFlags !== null &&
-     data.temperatures !== null
+     data.temperatures !== null &&
+     data.vacuumBits !== null
+
    ) {
      console.log(" All data fields found within 1 hour. Exiting early.");
      break;
@@ -605,7 +606,8 @@ res.json({
   pressureTimestamp: data.pressureTimestamp,
   safetyOutputDataFlags: data.safetyOutputDataFlags,
   safetyInputDataFlags: data.safetyInputDataFlags,
-  temperatures: data.temperatures
+  temperatures: data.temperatures,
+  vacuumBits: data.vacuumBits
 });
 });
 

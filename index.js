@@ -1,4 +1,34 @@
-//index.js
+///////////////////////////////////////////////////////////////////////////////
+//  index.js - E-beam Log Monitor Server
+//
+//  Description:
+//  -------------
+//  Express.js server to monitor log files from Google Drive in real-time,
+//  reverse their contents, extract structured experimental data (pressure,
+//  interlocks, temperature, etc.), and serve it via API endpoints and a
+//  futuristic web dashboard (with Glassmorphism styling).
+//
+//  Responsibilities:
+//  -------------
+//  - Polls Google Drive for the latest log file
+//  - Extracts and parses log entries (pressure, flags, temps, etc.)
+//  - Infers interlock statuses and vacuum system state
+//  - Serves data via JSON and a responsive HTML frontend
+//  - Automatically refreshes UI and supports raw file viewing
+//
+//  Author: Brandon, Pratyush, Arundhati, Anurag
+//
+//  TODO:
+//  -----
+//  [ ] Abstract and reuse the `data` object structure via helper
+//  [ ] Add error boundary UI on frontend
+//  [ ] Move HTML template into separate EJS/Pug/React file later
+//  [ ] Add caching & retry strategy for failed fetches
+//
+///////////////////////////////////////////////////////////////////////////////
+
+
+// Load environment variables
 const express = require('express');
 const { google } = require('googleapis');
 const fs = require('fs');
@@ -6,35 +36,30 @@ const path = require('path');
 const https = require('https');
 const axios = require('axios');
 const app = express();
-
-
-// Load environment variables
 require('dotenv').config();
 
-
+// Credentials
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const PORT = process.env.PORT || 3000;
+// check credentials are in var and assume they are ture.
+if (!FOLDER_ID || !API_KEY) {
+  console.error( "Missing FOLDER_ID or API_KEY in environment variables. Exiting...");
+  process.exit(1);
+}
 
-
+// File Paths
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
-// Temp_File paths for local storage
-// const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt');
-
-
-// 15 minutes in milliseconds
-const INACTIVE_THRESHOLD = 5 * 60 * 1000;
-
-
-
+// const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt'); // Temp_File paths for local storage
 
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });
 
+// Global var to store extracted data
+// Inactivity threshold for deciding if the experiment is "stale" (15 min in ms)
+const INACTIVE_THRESHOLD = 15 * 60 * 1000;
 
-
-
-// variable to store the data extracted
+// variable Structure to store ALL the data extracted 
 let data = {
 pressure: null,
 pressureTimestamp: null,
@@ -44,8 +69,6 @@ temperatures: null,
 vacuumBits: null
 };
 
-
-// TODO: see where this var should be used properly covering all the edge cases.
 // Assume All Interlocks Start Red
 const interlockStates = {
  "Door": "red",
@@ -61,7 +84,10 @@ const interlockStates = {
  "HVolt ON": "red",
 };
 
+// Quick helper function to help with data to colour while integration
+// 1 --> green, 0 --> red, Default --> grey.
 
+// Interlocks
 function getDoorStatus(inputFlags) {
  if (!inputFlags || inputFlags.length < 13) return "grey";
  return inputFlags[4] && inputFlags[5] ? "green" : "red";
@@ -128,12 +154,13 @@ function getHvoltOn(inputFlags) {
  return inputFlags[12] ? "green" : "red";
 }
 
+// Vacuume Indicators
 function varBitToColour(bits, index) {
   if (!Array.isArray(bits) || bits.length < 8) return "grey";   // Default
   return bits[index] ? "green" : "red";                         // 1 --> green, 0 --> red
 }
 
-
+// Other helper functions
 function timeToSeconds(time) {
  const hours = (time[0] - '0') * 10 + (time[1] - '0');
  const minutes = (time[3] - '0') * 10 + (time[4] - '0');
@@ -349,7 +376,7 @@ try {
 
 
  // First check if the experiment is active
- if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) {
+ if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { // 15 minutes in milliseconds
    // experiment is inactive and we are outside the 15 min. window
    experimentRunning = false; // experiment is not running
    data = {

@@ -177,34 +177,42 @@ function secondsSinceMidnightChicago() {
 
 
 /**
-* Fetch the most recent file from Google Drive.
-*/
+ * Fetch the single most-recent plain-text log file in the Drive folder.
+ *
+ * Steps:
+ * 1) Drive API list call:
+ *      - Folder constraint:  `'${FOLDER_ID}' in parents`
+ *      - File type filter:   `mimeType='text/plain'`
+ * 2) Sort descending by `modifiedTime` so index 0 is newest.
+ * 3) Return that file’s `{ id, name, modifiedTime }`.
+ *
+ * On any error (API or empty list) we log it and return `null`
+ * so the caller can decide whether to retry or mark the experiment inactive.
+ *
+ * @returns {Promise<{id: string, name: string, modifiedTime: string}|null>}
+ */
 async function getMostRecentFile() {
-try {
- const res = await drive.files.list({
-   q: `'${FOLDER_ID}' in parents and mimeType='text/plain'`,
-   orderBy: 'modifiedTime desc',
-   pageSize: 1,
-   fields: 'files(id, name, modifiedTime)',
- });
+  try {
+    const res = await drive.files.list({
+      q: `'${FOLDER_ID}' in parents and mimeType='text/plain'`, // filter by folder & .txt
+      orderBy: 'modifiedTime desc',                             // newest first
+      pageSize: 1,                                              // only need one file
+      fields: 'files(id, name, modifiedTime)',                  // minimal field set
+    });
 
+    const files = res.data.files;
+    if (!files || files.length === 0) {
+      throw new Error('No files found in the folder.');
+    }
 
-
-
- const files = res.data.files;
- if (!files || files.length === 0) {
-   throw new Error('No files found in the folder.');
- }
-
-
-
-
- return files[0]; // Returns the most recent file (ID, name, modifiedTime)
-} catch (err) {
- console.error(`Google Drive API Error: ${err.message}`);
- return null;
+    // Return newest file metadata (id, name, modifiedTime)
+    return files[0];
+  } catch (err) {
+    console.error(`Google Drive API Error: ${err.message}`);
+    return null;
+  }
 }
-}
+
 
 
 

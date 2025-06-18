@@ -38,7 +38,7 @@ const axios = require('axios');
 const app = express();
 require('dotenv').config();
 
-// Credentials
+// Credentials; find them in env file (ASK Brandon about it or any of the authors)
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const PORT = process.env.PORT || 3000;
@@ -55,7 +55,9 @@ const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });
 
-// Global var to store extracted data
+//// Global variables
+let lastModifiedTime = null;
+let experimentRunning = false;
 // Inactivity threshold for deciding if the experiment is "stale" (15 min in ms)
 const INACTIVE_THRESHOLD = 15 * 60 * 1000;
 
@@ -214,86 +216,82 @@ async function getMostRecentFile() {
 }
 
 
-
-
-
-let lastModifiedTime = null;
-let experimentRunning = false;
-
-
-
-
 /**
-* Fetches file contents from Google Drive using streaming
-* @param {string} fileId - The Google Drive file ID
-* @returns {Promise<string[]>} Array of lines from the file
-*/
+ * Stream-downloads a text file from Google Drive and returns its lines.
+ *
+ * Why streaming?
+ * ---  Avoids loading large logs entirely into memory.
+ *
+ * Retry policy:
+ * ---  Up to three attempts (2 second back-off) on any network/HTTP error.
+ *
+ * @param  {string} fileId  Google Drive file ID to fetch
+ * @returns {Promise<string[]>}  All lines in the file (preserves order)
+ */
 async function fetchFileContents(fileId) {
-let retries = 3;
-while (retries > 0) {
- try {
-   const response = await new Promise((resolve, reject) => {
-     https.get(
-       `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`,
-       {
-         headers: {
-           'Accept': 'text/plain'
-         }
-       },
-       (res) => {
-         if (res.statusCode !== 200) {
-           reject(new Error(`Google API Failed: ${res.statusCode}`));
-           return;
-         }
-         resolve(res);
-       }
-     ).on('error', reject);
-   });
+  let retries = 3;
 
+  while (retries > 0) {
+    try {
+      // -------------------------------------------------------------
+      // 1) Download the file as a stream via HTTPS (public Drive API)
+      // -------------------------------------------------------------
+      const response = await new Promise((resolve, reject) => {
+        https
+          .get(
+            `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`,
+            { headers: { Accept: 'text/plain' } },
+            res => {
+              if (res.statusCode !== 200) {
+                reject(new Error(`Google API Failed: ${res.statusCode}`));
+                return;
+              }
+              resolve(res);     // pass the readable stream forward
+            }
+          )
+          .on('error', reject); // network-level error
+      });
 
+      // -------------------------------------------------------------
+      // 2) Read the stream chunk-by-chunk and split into lines
+      //    (handles cases where a line breaks across chunks)
+      // -------------------------------------------------------------
+      const lines = [];
+      let currentLine = '';
 
+      await new Promise((resolve, reject) => {
+        response.on('data', chunk => {
+          const chunkStr   = chunk.toString();
+          const chunkLines = (currentLine + chunkStr).split('\n');
+          currentLine = chunkLines.pop();   // last part may be incomplete
+          lines.push(...chunkLines);
+        });
 
-   // Process the stream line by line
-   const lines = [];
-   let currentLine = '';
+        response.on('end', () => {
+          if (currentLine) lines.push(currentLine); // push final partial
+          resolve();
+        });
 
+        response.on('error', reject); // stream error
+      });
 
+      return lines; // success – return the collected lines
 
+    } catch (err) {
+      console.log(`Retry ${4 - retries}: ${err.message}`);
+      retries--;
 
-   await new Promise((resolve, reject) => {
-     response.on('data', chunk => {
-       const chunkStr = chunk.toString();
-       const chunkLines = (currentLine + chunkStr).split('\n');
-       currentLine = chunkLines.pop();
-       lines.push(...chunkLines);
-     });
+      if (retries === 0) {
+        // Out of retries – bubble the error up
+        throw err;
+      }
 
-
-
-
-
-
-     response.on('end', () => {
-       if (currentLine) lines.push(currentLine);
-       resolve();
-     });
-
-
-     response.on('error', reject);
-   });
-
-
-
-
-   return lines;
- } catch (err) {
-   console.log(`Retry ${4 - retries}: ${err.message}`);
-   retries--;
-   if (retries === 0) throw err;
-   await new Promise(res => setTimeout(res, 2000));
- }
+      // Simple back-off (2 sec) before the next attempt
+      await new Promise(res => setTimeout(res, 2000));
+    }
+  }
 }
-}
+
 
 
 

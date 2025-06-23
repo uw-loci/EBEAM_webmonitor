@@ -663,7 +663,7 @@ try {
     "6": "DISCONNECTED"
   };
   const temp = JSON.stringify(data);
-  console.log('XX', experimentRunning);
+  console.log('experimentRunning: ', experimentRunning);
   // console.log('YY', data);
   // console.log('ZZ', pressure);
   // console.log('AA', temperatures);

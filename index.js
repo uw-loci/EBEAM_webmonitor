@@ -545,7 +545,7 @@ try {
        logFileName = mostRecentFile.name;
        experimentRunning = true;
 
-       console.log("DEBUG (X): ", data);
+      //  console.log("DEBUG (X): ", data);
        resolve(true);
      } catch (err) {
        console.error('Rename failed:', err);
@@ -664,9 +664,9 @@ try {
   };
   const temp = JSON.stringify(data);
   console.log('XX', experimentRunning);
-  console.log('YY', data);
-  console.log('ZZ', pressure);
-  console.log('AA', temperatures);
+  // console.log('YY', data);
+  // console.log('ZZ', pressure);
+  // console.log('AA', temperatures);
 
 
   let vacuumPowerColor = getVacuumPower(data.safetyInputDataFlags);

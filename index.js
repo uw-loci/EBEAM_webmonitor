@@ -293,6 +293,158 @@ async function fetchFileContents(fileId) {
 }
 
 
+async function extractData(lines){
+  try{
+     // Extracting the data fields
+    const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
+    const LOG_TYPE_REGEX = /^\[\d{2}:\d{2}:\d{2}\]\s*-\s*DEBUG:\s*(.+?):/;
+    const PRESSURE_REGEX = /DEBUG:\s*GUI updated with pressure:\s*([\d.]+)[eE]([+-]?\d+)\s*mbar/;
+    const OUTPUT_FLAGS_REGEX = /DEBUG:\s*Safety Output Terminal Data Flags:\s*(\[[^\]]+\])/;
+    const INPUT_FLAGS_REGEX = /DEBUG:\s*Safety Input Terminal Data Flags:\s*(\[[^\]]+\])/;
+    const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
+    // TODO: have one for intelrocks extraction --- ex: "INFO: Interlock"
+    const VAC_BITS_REGEX = /DEBUG:\s*VTRX States:\s*([01]{8})/; //only accept eight of these bits from the logger. Change if need be
+
+
+
+    const nowSec = secondsSinceMidnightChicago();
+    const cutoffAge = 900; // 15 minutes = 15 * 60 seconds
+
+
+
+
+    // Fresh values every scan — old/stale ones get reset if not found
+    data = {
+      pressure: null,
+      pressureTimestamp: null,
+      safetyOutputDataFlags: null,
+      safetyInputDataFlags: null,
+      temperatures: null,
+      vacuumBits: null
+    };
+
+
+    for (const line of lines) {
+      const tsMatch = line.match(TIMESTAMP_REGEX);
+      if (!tsMatch) continue;
+
+
+      const tsStr = tsMatch[1];
+      const lineSec = timeToSeconds(tsStr);
+      let diff = nowSec - lineSec;
+      if (diff < 0) diff += 24 * 3600; // wrap around midnight
+
+
+      if (diff > cutoffAge) continue; // skip stale data (> 15 min old)
+
+
+      const typeMatch = line.match(LOG_TYPE_REGEX);
+      if (!typeMatch) continue;
+
+
+      const logType = typeMatch[1].trim();
+
+
+      switch (logType) {
+        case "GUI updated with pressure":
+          if (data.pressure === null) {
+            const pMatch = line.match(PRESSURE_REGEX);
+            if (pMatch) {
+              try {
+              const mantissa = parseFloat(pMatch[1]);
+              const exponent = parseInt(pMatch[2], 10);
+              data.pressure = mantissa * Math.pow(10, exponent);
+              data.pressureTimestamp = lineSec;
+              } catch (e) {
+                  console.warn("Couldn’t Extract Pressure:", pMatch);
+              }
+            }
+          }
+          break;
+
+
+        case "Safety Output Terminal Data Flags":
+          if (data.safetyOutputDataFlags === null) {
+            const fMatch = line.match(OUTPUT_FLAGS_REGEX);
+            if (fMatch) {
+              try {
+                data.safetyOutputDataFlags = JSON.parse(fMatch[1]);
+              } catch (e) {
+                console.warn("Couldn’t JSON.parse safety flags:", fMatch[1]);
+              }
+            }
+          }
+          break;
+
+
+        case "Safety Input Terminal Data Flags":
+          if (data.safetyInputDataFlags === null) {
+            const fMatch = line.match(INPUT_FLAGS_REGEX);
+            if (fMatch) {
+              try {
+                data.safetyInputDataFlags = JSON.parse(fMatch[1]);
+              } catch (e) {
+                console.warn("Couldn’t JSON.parse safety flags:", fMatch[1]);
+              }
+            }
+          }
+          break;
+
+
+        case "PMON temps":
+          if (data.temperatures === null) {
+            const tMatch = line.match(TEMPS_REGEX);
+            if (tMatch) {
+              try {
+                let tempsStr = tMatch[1]
+                  .replace(/'/g, '"')
+                  .replace(/(\d+):/g, '"$1":'); // fix numeric keys
+                data.temperatures = JSON.parse(tempsStr);
+              } catch (e) {
+                console.warn("Couldn’t JSON.parse temps: ", tMatch[1]);
+              }
+            }
+          }
+          break;
+
+          case "VTRX States":
+            if (data.vacuumBits === null) {              // only take the freshest
+              const vMatch = line.match(VAC_BITS_REGEX);
+              if (vMatch) {
+                try {
+                data.vacuumBits = vMatch[1].split('').map(Number);
+                // Example → "11010101"  → [1,1,0,1,0,1,0,1]
+                } catch(e) {
+                  console.warn("Couldn’t extract VTRX values: ", vMatch[1]);
+                }
+              }
+            }
+            break;
+      }
+
+
+      // Early stop if all fresh values found
+      if (
+        data.pressure !== null &&
+        data.pressureTimestamp !== null &&
+        data.safetyOutputDataFlags !== null &&
+        data.safetyInputDataFlags !== null &&
+        data.temperatures !== null &&
+        data.vacuumBits !== null
+
+      ) {
+        console.log(" All data fields found within 1 hour. Exiting early.");
+        break;
+      }
+    }
+    return true
+  }catch(e){
+    console.log("Error: ", e);
+    return false
+  }
+}
+
+
 /**
 * Fetches and updates the log file if there's a new version
 // * @returns {Promise<boolean>} True if file was updated, false otherwise
@@ -349,159 +501,19 @@ try {
 
 
   // fetch file
- console.log("Fetching new file...");
- let lines = await fetchFileContents(mostRecentFile.id);
- lines.reverse();
+  console.log("Fetching new file...");
+  let lines = await fetchFileContents(mostRecentFile.id);
+  lines.reverse();
 
+  // extract the data
+  const extractionFlag = await extractData(lines);
+  if (extractionFlag) {
+    console.log("Extraction complete succesfuly --> Data: ", data);
+  }
 
- // Extracting the data fields
- const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
- const LOG_TYPE_REGEX = /^\[\d{2}:\d{2}:\d{2}\]\s*-\s*DEBUG:\s*(.+?):/;
- const PRESSURE_REGEX = /DEBUG:\s*GUI updated with pressure:\s*([\d.]+)[eE]([+-]?\d+)\s*mbar/;
- const OUTPUT_FLAGS_REGEX = /DEBUG:\s*Safety Output Terminal Data Flags:\s*(\[[^\]]+\])/;
- const INPUT_FLAGS_REGEX = /DEBUG:\s*Safety Input Terminal Data Flags:\s*(\[[^\]]+\])/;
- const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
- // TODO: have one for intelrocks extraction --- ex: "INFO: Interlock"
- const VAC_BITS_REGEX = /DEBUG:\s*VTRX States:\s*([01]{8})/; //only accept eight of these bits from the logger. Change if need be
-
-
-
- const nowSec = secondsSinceMidnightChicago();
- const cutoffAge = 900; // 15 minutes = 15 * 60 seconds
-
-
-
-
- // Fresh values every scan — old/stale ones get reset if not found
- data = {
-   pressure: null,
-   pressureTimestamp: null,
-   safetyOutputDataFlags: null,
-   safetyInputDataFlags: null,
-   temperatures: null,
-   vacuumBits: null
- };
-
-
- for (const line of lines) {
-   const tsMatch = line.match(TIMESTAMP_REGEX);
-   if (!tsMatch) continue;
-
-
-   const tsStr = tsMatch[1];
-   const lineSec = timeToSeconds(tsStr);
-   let diff = nowSec - lineSec;
-   if (diff < 0) diff += 24 * 3600; // wrap around midnight
-
-
-   if (diff > cutoffAge) continue; // skip stale data (> 15 min old)
-
-
-   const typeMatch = line.match(LOG_TYPE_REGEX);
-   if (!typeMatch) continue;
-
-
-   const logType = typeMatch[1].trim();
-
-
-   switch (logType) {
-     case "GUI updated with pressure":
-       if (data.pressure === null) {
-         const pMatch = line.match(PRESSURE_REGEX);
-         if (pMatch) {
-          try {
-           const mantissa = parseFloat(pMatch[1]);
-           const exponent = parseInt(pMatch[2], 10);
-           data.pressure = mantissa * Math.pow(10, exponent);
-           data.pressureTimestamp = lineSec;
-          } catch (e) {
-              console.warn("Couldn’t Extract Pressure:", pMatch);
-          }
-         }
-       }
-       break;
-
-
-     case "Safety Output Terminal Data Flags":
-       if (data.safetyOutputDataFlags === null) {
-         const fMatch = line.match(OUTPUT_FLAGS_REGEX);
-         if (fMatch) {
-           try {
-             data.safetyOutputDataFlags = JSON.parse(fMatch[1]);
-           } catch (e) {
-             console.warn("Couldn’t JSON.parse safety flags:", fMatch[1]);
-           }
-         }
-       }
-       break;
-
-
-     case "Safety Input Terminal Data Flags":
-       if (data.safetyInputDataFlags === null) {
-         const fMatch = line.match(INPUT_FLAGS_REGEX);
-         if (fMatch) {
-           try {
-             data.safetyInputDataFlags = JSON.parse(fMatch[1]);
-           } catch (e) {
-             console.warn("Couldn’t JSON.parse safety flags:", fMatch[1]);
-           }
-         }
-       }
-       break;
-
-
-     case "PMON temps":
-       if (data.temperatures === null) {
-         const tMatch = line.match(TEMPS_REGEX);
-         if (tMatch) {
-           try {
-             let tempsStr = tMatch[1]
-               .replace(/'/g, '"')
-               .replace(/(\d+):/g, '"$1":'); // fix numeric keys
-             data.temperatures = JSON.parse(tempsStr);
-           } catch (e) {
-             console.warn("Couldn’t JSON.parse temps: ", tMatch[1]);
-           }
-         }
-       }
-       break;
-
-      case "VTRX States":
-        if (data.vacuumBits === null) {              // only take the freshest
-          const vMatch = line.match(VAC_BITS_REGEX);
-          if (vMatch) {
-            try {
-            data.vacuumBits = vMatch[1].split('').map(Number);
-            // Example → "11010101"  → [1,1,0,1,0,1,0,1]
-            } catch(e) {
-              console.warn("Couldn’t extract VTRX values: ", vMatch[1]);
-            }
-          }
-        }
-        break;
-   }
-
-
-   // Early stop if all fresh values found
-   if (
-     data.pressure !== null &&
-     data.pressureTimestamp !== null &&
-     data.safetyOutputDataFlags !== null &&
-     data.safetyInputDataFlags !== null &&
-     data.temperatures !== null &&
-     data.vacuumBits !== null
-
-   ) {
-     console.log(" All data fields found within 1 hour. Exiting early.");
-     break;
-   }
- }
-
-
-   ////////// extraction complete  ///////////
-
- const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
- let hasError = false;
+  // write to the file
+  const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
+  let hasError = false;
 
 
  await new Promise((resolve, reject) => {

@@ -305,13 +305,8 @@ async function extractData(lines){
     // TODO: have one for intelrocks extraction --- ex: "INFO: Interlock"
     const VAC_BITS_REGEX = /DEBUG:\s*VTRX States:\s*([01]{8})/; //only accept eight of these bits from the logger. Change if need be
 
-
-
     const nowSec = secondsSinceMidnightChicago();
     const cutoffAge = 900; // 15 minutes = 15 * 60 seconds
-
-
-
 
     // Fresh values every scan — old/stale ones get reset if not found
     data = {
@@ -437,12 +432,54 @@ async function extractData(lines){
         break;
       }
     }
-    return true
+    return true;
   }catch(e){
     console.log("Error: ", e);
-    return false
+    throw new Error("extraction failed: pattern not found: ", e);
   }
 }
+
+
+function writeToFile(lines) {
+  return new Promise((resolve, reject) => {
+    const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
+    let i = 0;
+
+    function writeNext() {
+      let ok = true;
+      while (i < lines.length && ok) {
+        ok = writeStream.write(lines[i] + '\n');
+        i++;
+      }
+      if (i < lines.length) {
+        writeStream.once('drain', writeNext);
+      } else {
+        writeStream.end();
+      }
+    }
+
+    writeStream.on('finish', async () => {
+    //  try {
+       // fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
+       console.log('Reversed log updated successfully.');
+
+        // console.log("DEBUG (X): ", data);
+  //    } catch (err) {
+  //      console.error('Rename failed:', err);
+  //       return false;
+  //    }
+      resolve(true);
+    });
+
+    writeStream.on('error', (err) => {
+      console.error("Write error:", err);
+      reject(err);
+    });
+
+    writeNext();
+  });
+}
+
 
 
 /**
@@ -505,80 +542,53 @@ try {
   let lines = await fetchFileContents(mostRecentFile.id);
   lines.reverse();
 
-  // extract the data
-  const extractionFlag = await extractData(lines);
-  if (extractionFlag) {
-    console.log("Extraction complete succesfuly --> Data: ", data);
+  // Step 2: run extract and write in parallel
+  const extractPromise = extractData(lines);
+  const writePromise = writeToFile(lines);
+
+  const [extractionResult, writeResult] = await Promise.allSettled([
+    extractPromise,
+    writePromise
+  ]);
+
+  if (extractionResult.status === 'fulfilled') {
+    console.log("Extraction complete:", data);
+  } else {
+    console.error("Extraction failed:", extractionResult.reason);
   }
 
-  // write to the file
-  const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
-  let hasError = false;
+  if (writeResult.status === 'fulfilled') {
+    console.log("File write complete.");
+    lastModifiedTime = mostRecentFile.modifiedTime;
+    logFileName = mostRecentFile.name;
+    experimentRunning = true;
+  } else {
+    console.error("File write failed:", writeResult.reason);
+    // lastModifiedTime = mostRecentFile.modifiedTime;
+    // logFileName = mostRecentFile.name;
+    // experimentRunning = false;
+  }
 
 
- await new Promise((resolve, reject) => {
-   let i = 0;
-   function writeNext() {
-     if (hasError) return;
+  } catch (err) {
+    console.error(`Error processing file: ${err.message}`);
+    experimentRunning = false;
+    data = {
+        pressure: null,
+        pressureTimestamp: null,
+        safetyOutputDataFlags: null,
+        safetyInputDataFlags: null,
+        temperatures: null, 
+        vacuumBits: null
+      }; // better than assinghing to just Null.; try to maintain the structure.
 
-
-     let ok = true;
-     while (i < lines.length && ok) {
-       ok = writeStream.write(lines[i] + '\n');
-       i++;
-     }
-     if (i < lines.length) {
-       writeStream.once('drain', writeNext);
-     } else {
-       writeStream.end();
-     }
-   }
-
-
-   writeNext();
-
-   writeStream.on('finish', async () => {
-     try {
-       // fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
-       console.log('Reversed log updated successfully.');
-       lastModifiedTime = mostRecentFile.modifiedTime;
-       logFileName = mostRecentFile.name;
-       experimentRunning = true;
-
-      //  console.log("DEBUG (X): ", data);
-       resolve(true);
-     } catch (err) {
-       console.error('Rename failed:', err);
-       reject(false);
-     }
-   });
-
-   writeStream.on('error', async (err) => {
-     console.error('Error writing file:', err);
-     hasError = true;
-     reject(false);
-   });
- });
-
-} catch (err) {
- console.error(`Error processing file: ${err.message}`);
- experimentRunning = false;
- data = {
-    pressure: null,
-    pressureTimestamp: null,
-    safetyOutputDataFlags: null,
-    safetyInputDataFlags: null,
-    temperatures: null, 
-    vacuumBits: null
-  }; // better than assinghing to just Null.; try to maintain the structure.
-
- console.log("Could not extract the log data");
- return false;
-} finally {
- if (release) {
-   await release(); // always release lock
- }
-}
+    console.log("Could not extract the log data");
+    return false;
+  } finally {
+    if (release) {
+      await release(); // always release lock
+    }
+  }
 }
 
 

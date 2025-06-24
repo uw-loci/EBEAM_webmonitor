@@ -440,46 +440,72 @@ async function extractData(lines){
 }
 
 
+/**
+ * Asynchronously writes an array of log lines to a local file in reverse order.
+ * This function is designed to run in parallel with the extractData() process.
+ * 
+ * Key Features:
+ * - Uses a writable stream to efficiently write each line to REVERSED_FILE_PATH.
+ * - Handles backpressure using the 'drain' event when the internal buffer is full.
+ * - Resolves the Promise once the entire file is written.
+ * - Rejects if a write error occurs.
+ * 
+ * Assumptions:
+ * - 'lines' is an array of strings that have already been reversed.
+ * - The write operation is independent of data extraction, allowing concurrency.
+ * 
+ * Returns:
+ * - Promise that resolves with true on successful write.
+ * - Rejects with error on failure.
+ */
 function writeToFile(lines) {
   return new Promise((resolve, reject) => {
+    // Create a writable stream to the reversed log file, overwrite mode ('w')
     const writeStream = fs.createWriteStream(REVERSED_FILE_PATH, { flags: 'w' });
     let i = 0;
 
+    // Function to write lines to the stream in chunks
     function writeNext() {
       let ok = true;
+      // Write lines until the buffer is full or all lines are written
       while (i < lines.length && ok) {
-        ok = writeStream.write(lines[i] + '\n');
+        ok = writeStream.write(lines[i] + '\n'); // append newline after each line
         i++;
       }
+      // If buffer is full, wait for 'drain' event to resume
       if (i < lines.length) {
         writeStream.once('drain', writeNext);
       } else {
-        writeStream.end();
+        writeStream.end(); // Close the stream once writing is done
       }
     }
 
+
+    // When all data has been flushed and the stream ends
     writeStream.on('finish', async () => {
+    // Optional rename logic was here, currently commented out
     //  try {
        // fs.renameSync(REVERSED_TEMP_FILE_PATH, REVERSED_FILE_PATH); // atomic replace
-       console.log('Reversed log updated successfully.');
+      console.log('Reversed log updated successfully.');
 
         // console.log("DEBUG (X): ", data);
   //    } catch (err) {
   //      console.error('Rename failed:', err);
   //       return false;
   //    }
-      resolve(true);
+      resolve(true); // Resolve the promise to signal success
     });
 
+    // Handle any write errors
     writeStream.on('error', (err) => {
       console.error("Write error:", err);
-      reject(err);
+      reject(err); // Reject the promise on failure
     });
 
+    // Kick off the initial write cycle
     writeNext();
   });
 }
-
 
 
 /**

@@ -524,113 +524,120 @@ function writeToFile(lines) {
 
 
 /**
-* Fetches and updates the log file if there's a new version
-// * @returns {Promise<boolean>} True if file was updated, false otherwise
-*/
+ * Checks for a new log file in Google Drive, processes it, and updates the local reversed.txt file.
+ * 
+ * Steps:
+ * 1. Fetch metadata of the most recent file in the Google Drive folder.
+ * 2. If the file is stale (>15 min), mark experiment as inactive and skip.
+ * 3. If the file is new, fetch its contents and reverse the log lines.
+ * 4. Run data extraction and file writing in parallel using Promise.allSettled().
+ * 5. On success, update in-memory state and mark experiment as running.
+ * 
+ * Returns:
+ * - false: if no update was needed or fetch failed
+ * - true: implicitly if successful (not used but possible)
+ */
 async function fetchAndUpdateFile() {
-let release;
+  let release; // used if you implement lock control (e.g. mutex/fmutex)
 
+  try {
+    // Step 1: Get the most recent file from Drive
+    const mostRecentFile = await getMostRecentFile();
+    if (!mostRecentFile) {
+      experimentRunning = false; // No file available → experiment not running
+      return false;
+    }
 
-try {
- const mostRecentFile = await getMostRecentFile();
- if (!mostRecentFile) {
-   experimentRunning = false;
-   return false;
- }
+    const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime(); // Convert string timestamp to ms
+    const currentTime = Date.now(); // Get current time in ms
 
+    // Step 2: Check experiment activity status
+    if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { // More than 15 minutes old?
+      experimentRunning = false;
 
- const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime();
- const currentTime = Date.now();
-
-
- // First check if the experiment is active
- if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { // 15 minutes in milliseconds
-   // experiment is inactive and we are outside the 15 min. window
-   experimentRunning = false; // experiment is not running
-   data = {
-     pressure: null,
-     pressureTimestamp: null,
-     safetyOutputDataFlags: null,
-     safetyInputDataFlags: null,
-     temperatures: null, 
-     vacuumBits: null
-   }; 
-
-
-
-
-   if (!fs.existsSync(REVERSED_FILE_PATH)) {
-     // We don't have a local file, just log and pass
-     console.log("Experiment not running but passing through");
-   } else {
-     // No update needed if file is old and exists
-     console.log("Experiment not running - no updates in 15 minutes");
-     return false;
-   }
- }
-
-
- //The experiment is running
- if (lastModifiedTime === mostRecentFile.modifiedTime) {
-   console.log("No new updates. Using cached data.");
-   experimentRunning = true;
-   return false;
- }
-
-
-  // fetch file
-  console.log("Fetching new file...");
-  let lines = await fetchFileContents(mostRecentFile.id);
-  lines.reverse();
-
-  // Step 2: run extract and write in parallel
-  const extractPromise = extractData(lines);
-  const writePromise = writeToFile(lines);
-
-  const [extractionResult, writeResult] = await Promise.allSettled([
-    extractPromise,
-    writePromise
-  ]);
-
-  if (extractionResult.status === 'fulfilled') {
-    console.log("Extraction complete:", data);
-  } else {
-    console.error("Extraction failed:", extractionResult.reason);
-  }
-
-  if (writeResult.status === 'fulfilled') {
-    console.log("File write complete.");
-    lastModifiedTime = mostRecentFile.modifiedTime;
-    logFileName = mostRecentFile.name;
-    experimentRunning = true;
-  } else {
-    console.error("File write failed:", writeResult.reason);
-    // lastModifiedTime = mostRecentFile.modifiedTime;
-    // logFileName = mostRecentFile.name;
-    // experimentRunning = false;
-  }
-
-
-  } catch (err) {
-    console.error(`Error processing file: ${err.message}`);
-    experimentRunning = false;
-    data = {
+      // Reset data to nulls — consistent fallback structure
+      data = {
         pressure: null,
         pressureTimestamp: null,
         safetyOutputDataFlags: null,
         safetyInputDataFlags: null,
         temperatures: null, 
         vacuumBits: null
-      }; // better than assinghing to just Null.; try to maintain the structure.
+      };
+
+      // If we don't even have a reversed file, just log and continue
+      if (!fs.existsSync(REVERSED_FILE_PATH)) {
+        console.log("Experiment not running but passing through");
+      } else {
+        console.log("Experiment not running - no updates in 15 minutes");
+        return false;
+      }
+    }
+
+    // Step 3: No change detected — skip processing
+    if (lastModifiedTime === mostRecentFile.modifiedTime) {
+      console.log("No new updates. Using cached data.");
+      experimentRunning = true;
+      return false;
+    }
+
+    // Step 4: File has changed → proceed to fetch contents
+    console.log("Fetching new file...");
+    let lines = await fetchFileContents(mostRecentFile.id); // Fetch raw log lines
+    lines.reverse(); // Reverse the lines so newest entries are first
+
+    // Step 5: Run extraction and file write in parallel
+    const extractPromise = extractData(lines); // Parse data from logs
+    const writePromise = writeToFile(lines);   // Save reversed lines to local file
+
+    const [extractionResult, writeResult] = await Promise.allSettled([
+      extractPromise,
+      writePromise
+    ]);
+
+    // Step 6: Handle extraction result
+    if (extractionResult.status === 'fulfilled') {
+      console.log("Extraction complete:", data);
+    } else {
+      console.error("Extraction failed:", extractionResult.reason);
+    }
+
+    // Step 7: Handle write result
+    if (writeResult.status === 'fulfilled') {
+      console.log("File write complete.");
+      lastModifiedTime = mostRecentFile.modifiedTime; // Update in-memory cache
+      logFileName = mostRecentFile.name;
+      experimentRunning = true;
+    } else {
+      console.error("File write failed:", writeResult.reason);
+      // You could reset experimentRunning = false here if desired
+    }
+
+  } catch (err) {
+    // Catch-all error handling for the fetch/extract/write process
+    console.error(`Error processing file: ${err.message}`);
+    experimentRunning = false; // not sure if this should be here but doesn't hurt much
+
+    // Reset data to safe empty state
+    data = {
+      pressure: null,
+      pressureTimestamp: null,
+      safetyOutputDataFlags: null,
+      safetyInputDataFlags: null,
+      temperatures: null, 
+      vacuumBits: null
+    };
 
     console.log("Could not extract the log data");
     return false;
   } finally {
+    // Always release lock/mutex if used
     if (release) {
-      await release(); // always release lock
+      await release();
     }
   }
 }
+
 
 
 app.get('/data', (req, res) => {

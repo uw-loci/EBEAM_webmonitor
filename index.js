@@ -639,20 +639,40 @@ async function fetchAndUpdateFile() {
 }
 
 
-
+/**
+ * GET /data
+ * 
+ * API endpoint that returns the latest extracted experimental values
+ * in JSON format. This data is used by the frontend dashboard to display:
+ * - Pressure and its timestamp
+ * - Safety Output/Input Terminal Flags
+ * - PMON temperature readings
+ * - Vacuum interlock bits (VTRX states)
+ * 
+ * The values come from the shared `data` object in memory, which gets 
+ * updated every minute by `fetchAndUpdateFile()`.
+ */
 app.get('/data', (req, res) => {
-res.json({
-  pressure: data.pressure,
-  pressureTimestamp: data.pressureTimestamp,
-  safetyOutputDataFlags: data.safetyOutputDataFlags,
-  safetyInputDataFlags: data.safetyInputDataFlags,
-  temperatures: data.temperatures,
-  vacuumBits: data.vacuumBits
-});
+  res.json({
+    pressure: data.pressure,                         // Most recent pressure value
+    pressureTimestamp: data.pressureTimestamp,       // Timestamp associated with pressure reading
+    safetyOutputDataFlags: data.safetyOutputDataFlags, // Output flags as parsed from logger
+    safetyInputDataFlags: data.safetyInputDataFlags,   // Input flags from logger
+    temperatures: data.temperatures,                   // Object of PMON temperature readings
+    vacuumBits: data.vacuumBits                        // 8-bit vacuum/interlock state array
+  });
 });
 
-fetchAndUpdateFile();
-setInterval(fetchAndUpdateFile, 60000);
+
+/**
+ * Startup routine
+ * 
+ * Immediately fetches and processes the latest available log file when the app starts,
+ * and sets up a repeating fetch every 60 seconds to keep data updated.
+ */
+fetchAndUpdateFile();               // Initial call to fetch and parse the latest file
+setInterval(fetchAndUpdateFile, 60000); // Repeats every 60 sec = 1 minute
+
 
 
 app.get('/', async (req, res) => {

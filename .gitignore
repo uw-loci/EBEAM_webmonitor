@@ -2,3 +2,4 @@
 node_modules
 reversed.txt
 tmp/
+extractData.js

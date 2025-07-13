@@ -195,7 +195,10 @@ async function getMostRecentFile() {
     const files = res.data.files;
     console.log("Latest files seen:", files.map(f => f.name));
 
-    let dataFile = null;
+
+    let dataFile = files[2];
+    console.log('dataFile', dataFile);
+
     let displayFile = null;
 
     if (!files || files.length === 0) {
@@ -538,7 +541,7 @@ async function fetchAndUpdateFile() {
     }
 
     // Step 3: No change detected — skip processing
-    if (lastModifiedTime === dataFile.timestamp) {
+    if (lastModifiedTime === dataFile.modifiedTime) {
       console.log("No new updates. Using cached data.");
       experimentRunning = true;
       return false;

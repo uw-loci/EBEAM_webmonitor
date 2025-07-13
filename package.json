@@ -1,6 +1,7 @@
 {
   "name": "ebeam-webmonitor",
   "version": "1.0.0",
+  "type": "commonjs", 
   "description": "A simple Node.js server that fetches a Google Drive file and displays reversed logs.",
   "main": "index.js",
   "scripts": {

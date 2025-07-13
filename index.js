@@ -188,11 +188,13 @@ async function getMostRecentFile() {
     const res = await drive.files.list({
       q: `'${FOLDER_ID}' in parents and mimeType='text/plain'`, // filter by folder & .txt
       orderBy: 'modifiedTime desc',                             // newest first
-      pageSize: 2,                                              // only need one file
+      pageSize: 5,                                              // only need one file
       fields: 'files(id, name, modifiedTime)',                  // minimal field set
     });
 
     const files = res.data.files;
+    console.log("Latest files seen:", files.map(f => f.name));
+
     let dataFile = null;
     let displayFile = null;
 

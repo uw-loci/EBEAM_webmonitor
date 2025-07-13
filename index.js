@@ -506,8 +506,8 @@ async function fetchAndUpdateFile() {
     }
 
     let fileModifiedTime = null;
-    if (displayFile && displayFile.modifiedTime) {
-      fileModifiedTime = new Date(displayFile.modifiedTime).getTime();
+    if (dataFile && dataFile.modifiedTime) {
+      fileModifiedTime = new Date(dataFile.modifiedTime).getTime();
     }
 
     

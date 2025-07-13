@@ -372,6 +372,11 @@ async function extractData(lines){
             }
             if (jsonData.status.vacuumBits !== null){
               data.vacuumBits = jsonData.status.vacuumBits;
+              if (typeof jsonData.status.vacuumBits === 'string') {
+               data.vacuumBits = jsonData.status.vacuumBits
+                  .split('')
+                  .map(bit => bit === '1');
+              }
             }
           }
           catch(e){

@@ -3,3 +3,4 @@ node_modules
 reversed.txt
 tmp/
 extractData.js
+debug_index.js

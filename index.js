@@ -50,7 +50,7 @@ if (!FOLDER_ID || !API_KEY) {
 
 // File Paths
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
-// const REVERSED_TEMP_FILE_PATH = path.join(__dirname, 'test.txt'); // Temp_File paths for local storage
+// const REVERSED_FILE_PATH = path.join(__dirname, 'sample_wm_logfile.txt');  // Temp_File paths for local storage
 
 // Initialize Google Drive API
 const drive = google.drive({ version: 'v3', auth: API_KEY });
@@ -162,21 +162,11 @@ function varBitToColour(bits, index) {
   return bits[index] ? "green" : "red";                         // 1 --> green, 0 --> red
 }
 
-// Other helper functions
-function timeToSeconds(time) {
- const hours = (time[0] - '0') * 10 + (time[1] - '0');
- const minutes = (time[3] - '0') * 10 + (time[4] - '0');
- const seconds = (time[6] - '0') * 10 + (time[7] - '0');
- return hours * 3600 + minutes * 60 + seconds;
-}
-
-
 function secondsSinceMidnightChicago() {
  const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
  const d = new Date(now);
  return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
 }
-
 
 /**
  * Fetch the single most-recent plain-text log file in the Drive folder.
@@ -198,23 +188,38 @@ async function getMostRecentFile() {
     const res = await drive.files.list({
       q: `'${FOLDER_ID}' in parents and mimeType='text/plain'`, // filter by folder & .txt
       orderBy: 'modifiedTime desc',                             // newest first
-      pageSize: 1,                                              // only need one file
+      pageSize: 2,                                              // only need one file
       fields: 'files(id, name, modifiedTime)',                  // minimal field set
     });
 
     const files = res.data.files;
+    let dataFile = null;
+    let displayFile = null;
+
     if (!files || files.length === 0) {
       throw new Error('No files found in the folder.');
     }
 
-    // Return newest file metadata (id, name, modifiedTime)
-    return files[0];
+    // can optimize this futher - temporary fix for now.
+    let data_file_metadata = null;
+    let display_file_metadata = null;
+
+    for (const file of files){
+      if (!data_file_metadata && file.name.startsWith('web')){
+        dataFile = file;
+      }
+      else if (!display_file_metadata && file.name.startsWith('log')){
+        displayFile = file;
+      }
+      if (dataFile && displayFile) break;
+    }
+    return {dataFile, displayFile}
+  
   } catch (err) {
     console.error(`Google Drive API Error: ${err.message}`);
-    return null;
+    return {dataFile: null, displayFile: null};
   }
 }
-
 
 /**
  * Stream-downloads a text file from Google Drive and returns its lines.
@@ -316,20 +321,6 @@ async function fetchFileContents(fileId) {
 
 async function extractData(lines){
   try{
-    // Define regexes to match different parts of the log format
-    const TIMESTAMP_REGEX = /^\[(\d{2}:\d{2}:\d{2})\]/;
-    const LOG_TYPE_REGEX = /^\[\d{2}:\d{2}:\d{2}\]\s*-\s*DEBUG:\s*(.+?):/;
-    const PRESSURE_REGEX = /DEBUG:\s*GUI updated with pressure:\s*([\d.]+)[eE]([+-]?\d+)\s*mbar/;
-    const OUTPUT_FLAGS_REGEX = /DEBUG:\s*Safety Output Terminal Data Flags:\s*(\[[^\]]+\])/;
-    const INPUT_FLAGS_REGEX = /DEBUG:\s*Safety Input Terminal Data Flags:\s*(\[[^\]]+\])/;
-    const TEMPS_REGEX = /DEBUG: PMON temps: (\{.*\})/;
-    const VAC_BITS_REGEX = /DEBUG:\s*VTRX States:\s*([01]{8})/; // only accepts 8-bit binary values
-
-    // Get current time in seconds since midnight (Chicago time)
-    const nowSec = secondsSinceMidnightChicago();
-    const cutoffAge = 900; // 15 minutes in seconds
-
-    // Reset data fields — if not found in this pass, they remain null
     data = {
       pressure: null,
       pressureTimestamp: null,
@@ -339,99 +330,58 @@ async function extractData(lines){
       vacuumBits: null
     };
 
-    // Loop through each line in the log file
+    let jsonBlock = '';
+    let bracesCount = 0;
+    let jsonStart = false;
+
+    // // Loop through each line in the log file
     for (const line of lines) {
-      const tsMatch = line.match(TIMESTAMP_REGEX);
-      if (!tsMatch) continue; // skip if no timestamp
-
-      const tsStr = tsMatch[1]; // Extract HH:MM:SS
-      const lineSec = timeToSeconds(tsStr); // Convert to seconds since midnight
-
-      let diff = nowSec - lineSec;
-      if (diff < 0) diff += 24 * 3600; // Handle wraparound past midnight
-
-      if (diff > cutoffAge) continue; // Skip if older than 15 minutes
-
-      const typeMatch = line.match(LOG_TYPE_REGEX);
-      if (!typeMatch) continue;
-
-      const logType = typeMatch[1].trim(); // Get event type from log line
-
-      switch (logType) {
-        case "GUI updated with pressure":
-          // Only update if pressure not already found
-          if (data.pressure === null) {
-            const pMatch = line.match(PRESSURE_REGEX);
-            if (pMatch) {
-              try {
-                const mantissa = parseFloat(pMatch[1]);
-                const exponent = parseInt(pMatch[2], 10);
-                data.pressure = mantissa * Math.pow(10, exponent); // scientific notation
-                data.pressureTimestamp = lineSec;
-              } catch (e) {
-                console.warn("Couldn’t Extract Pressure:", pMatch);
-              }
-            }
-          }
-          break;
-
-        case "Safety Output Terminal Data Flags":
-          if (data.safetyOutputDataFlags === null) {
-            const fMatch = line.match(OUTPUT_FLAGS_REGEX);
-            if (fMatch) {
-              try {
-                data.safetyOutputDataFlags = JSON.parse(fMatch[1]); // parse JSON array
-              } catch (e) {
-                console.warn("Couldn’t JSON.parse safety flags:", fMatch[1]);
-              }
-            }
-          }
-          break;
-
-        case "Safety Input Terminal Data Flags":
-          if (data.safetyInputDataFlags === null) {
-            const fMatch = line.match(INPUT_FLAGS_REGEX);
-            if (fMatch) {
-              try {
-                data.safetyInputDataFlags = JSON.parse(fMatch[1]); // parse JSON array
-              } catch (e) {
-                console.warn("Couldn’t JSON.parse safety flags:", fMatch[1]);
-              }
-            }
-          }
-          break;
-
-        case "PMON temps":
-          if (data.temperatures === null) {
-            const tMatch = line.match(TEMPS_REGEX);
-            if (tMatch) {
-              try {
-                let tempsStr = tMatch[1]
-                  .replace(/'/g, '"') // Replace single quotes with double quotes
-                  .replace(/(\d+):/g, '"$1":'); // Fix unquoted numeric keys
-                data.temperatures = JSON.parse(tempsStr);
-              } catch (e) {
-                console.warn("Couldn’t JSON.parse temps: ", tMatch[1]);
-              }
-            }
-          }
-          break;
-
-        case "VTRX States":
-          if (data.vacuumBits === null) {
-            const vMatch = line.match(VAC_BITS_REGEX);
-            if (vMatch) {
-              try {
-                // Convert string of bits (e.g. "11010101") to array of numbers [1,1,0,1,0,1,0,1]
-                data.vacuumBits = vMatch[1].split('').map(Number);
-              } catch(e) {
-                console.warn("Couldn’t extract VTRX values: ", vMatch[1]);
-              }
-            }
-          }
-          break;
+      if (!jsonStart && line.includes('{')){
+        jsonStart = true;
+        jsonBlock = '';
+        bracesCount++;
       }
+      if (jsonStart){
+        jsonBlock += line;
+        bracesCount += (line.match(/{/g) || []).length;
+        bracesCount -= (line.match(/}/g) || []).length;
+        if (bracesCount === 0){
+          jsonStart = false;
+        }
+        if (line.includes('}')){
+          jsonStart = false;
+          try{
+            const jsonData = JSON.parse(jsonBlock);
 
+            const nowSec = secondsSinceMidnightChicago();
+            let diff = nowSec - jsonData.timestamp;
+            if (diff < 0) diff += 24 * 3600;
+
+            if (jsonData.status.pressure != null && diff <= 15 * 60) {
+              data.pressure          = jsonData.status.pressure;
+              data.pressureTimestamp = jsonData.timestamp;
+            }
+            if (jsonData.status.safetyOutputDataFlags !== null){
+              data.safetyOutputDataFlags = jsonData.status.safetyOutputDataFlags;
+            }
+            if (jsonData.status.safetyInputDataFlags !== null){
+              data.safetyInputDataFlags = jsonData.status.safetyInputDataFlags;
+            }
+            if (jsonData.status.temperatures !== null){
+              data.temperatures = jsonData.status.temperatures;
+            }
+            if (jsonData.status.vacuumBits !== null){
+              data.vacuumBits = jsonData.status.vacuumBits;
+            }
+          }
+          catch(e){
+            console.log("Error parsing JSON: ", e);
+          }
+          jsonBlock = '';
+          bracesCount = 0;
+        }
+      }}
+    
       // If all fields are filled, stop early to save processing time
       if (
         data.pressure !== null &&
@@ -442,18 +392,14 @@ async function extractData(lines){
         data.vacuumBits !== null
       ) {
         console.log(" All data fields found within 1 hour. Exiting early.");
-        break;
       }
-    }
-
+    
     return true; // success
-  } catch(e) {
+  }catch(e) {
     console.log("Error: ", e);
     throw new Error("extraction failed: pattern not found: ", e); // rethrow with message
   }
 }
-
-
 
 /**
  * Asynchronously writes an array of log lines to a local file in reverse order.
@@ -542,13 +488,22 @@ async function fetchAndUpdateFile() {
 
   try {
     // Step 1: Get the most recent file from Drive
-    const mostRecentFile = await getMostRecentFile();
-    if (!mostRecentFile) {
-      experimentRunning = false; // No file available → experiment not running
-      return false;
+    const {dataFile, displayFile} = await getMostRecentFile();
+
+    if (!dataFile){
+      console.log("No data file found!")
     }
 
-    const fileModifiedTime = new Date(mostRecentFile.modifiedTime).getTime(); // Convert string timestamp to ms
+    if (!displayFile){
+      console.log("No display file found!")
+    }
+
+    let fileModifiedTime = null;
+    if (displayFile && displayFile.modifiedTime) {
+      fileModifiedTime = new Date(displayFile.modifiedTime).getTime();
+    }
+
+    
     const currentTime = Date.now(); // Get current time in ms
 
     // Step 2: Check experiment activity status
@@ -568,14 +523,15 @@ async function fetchAndUpdateFile() {
       // If we don't even have a reversed file, just log and continue
       if (!fs.existsSync(REVERSED_FILE_PATH)) {
         console.log("Experiment not running but passing through");
-      } else {
-        console.log("Experiment not running - no updates in 15 minutes");
-        return false;
       }
+      // } else {
+      //   console.log("Experiment not running - no updates in 15 minutes");
+      //   return false;
+      // }
     }
 
     // Step 3: No change detected — skip processing
-    if (lastModifiedTime === mostRecentFile.modifiedTime) {
+    if (lastModifiedTime === dataFile.modifiedTime) {
       console.log("No new updates. Using cached data.");
       experimentRunning = true;
       return false;
@@ -583,12 +539,14 @@ async function fetchAndUpdateFile() {
 
     // Step 4: File has changed → proceed to fetch contents
     console.log("Fetching new file...");
-    let lines = await fetchFileContents(mostRecentFile.id); // Fetch raw log lines
-    lines.reverse(); // Reverse the lines so newest entries are first
+    let displayLines = await fetchFileContents(displayFile.id); // Fetch raw log lines
+    let dataExtractionLines = await fetchFileContents(dataFile.id)
+    displayLines.reverse(); // Reverse the display lines so newest entries are first
+    dataExtractionLines.reverse() // Reverse the data extraction lines so new entries are first.
 
     // Step 5: Run extraction and file write in parallel
-    const extractPromise = extractData(lines); // Parse data from logs
-    const writePromise = writeToFile(lines);   // Save reversed lines to local file
+    const extractPromise = extractData(dataExtractionLines); // Parse data from logs
+    const writePromise = writeToFile(displayLines);   // Save reversed lines to local file
 
     const [extractionResult, writeResult] = await Promise.allSettled([
       extractPromise,
@@ -605,8 +563,8 @@ async function fetchAndUpdateFile() {
     // Step 7: Handle write result
     if (writeResult.status === 'fulfilled') {
       console.log("File write complete.");
-      lastModifiedTime = mostRecentFile.modifiedTime; // Update in-memory cache
-      logFileName = mostRecentFile.name;
+      lastModifiedTime = dataFile.modifiedTime; // Update in-memory cache
+      logFileName = dataFile.name;
       experimentRunning = true;
     } else {
       console.error("File write failed:", writeResult.reason);

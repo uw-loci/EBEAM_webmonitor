@@ -353,11 +353,11 @@ async function extractData(lines){
           try{
             const jsonData = JSON.parse(jsonBlock);
 
-            const nowSec = secondsSinceMidnightChicago();
-            let diff = nowSec - jsonData.timestamp;
-            if (diff < 0) diff += 24 * 3600;
+            // const nowSec = secondsSinceMidnightChicago();
+            // let diff = nowSec - jsonData.timestamp;
+            // if (diff < 0) diff += 24 * 3600;
 
-            if (jsonData.status.pressure != null && diff <= 15 * 60) {
+            if (jsonData.status.pressure != null) {
               data.pressure          = jsonData.status.pressure;
               data.pressureTimestamp = jsonData.timestamp;
             }
@@ -544,11 +544,22 @@ async function fetchAndUpdateFile() {
 
     // Step 4: File has changed → proceed to fetch contents
     console.log("Fetching new file...");
-    let displayLines = await fetchFileContents(displayFile.id); // Fetch raw log lines
-    let dataExtractionLines = await fetchFileContents(dataFile.id)
-    displayLines.reverse(); // Reverse the display lines so newest entries are first
-    dataExtractionLines.reverse() // Reverse the data extraction lines so new entries are first.
-
+    // let displayLines = 
+    let displayLines = null;
+    try {
+      displayLines = await fetchFileContents(displayFile.id);
+      displayLines.reverse();
+    } catch (e) {
+      console.error("Log file failed:", e);
+    }
+    let dataExtractionLines = null;
+    try {
+      dataExtractionLines = await fetchFileContents(dataFile.id);
+      dataExtractionLines.reverse();
+    } catch (e) {
+      console.error("WebMonitor file failed:", e);
+    }
+    
     // Step 5: Run extraction and file write in parallel
     const extractPromise = extractData(dataExtractionLines); // Parse data from logs
     const writePromise = writeToFile(displayLines);   // Save reversed lines to local file
@@ -689,10 +700,12 @@ try {
    if (diff < 0) diff += 24 * 3600;
 
 
-   if (diff <= 120) {
-     pressure = Number(data.pressure).toExponential(3);
-   }
+//    if (diff <= 120) {
+//      pressure = Number(data.pressure).toExponential(3);
+//    }
  }
+
+  pressure = Number(data.pressure).toExponential(3);
 
 
   const temperatures = (data && data.temperatures) || {

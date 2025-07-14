@@ -572,7 +572,7 @@ async function fetchAndUpdateFile() {
     
     // Step 5: Run extraction and file write in parallel
     const extractPromise = extractData(dataExtractionLines); // Parse data from logs
-    const writePromise = writeToFile(displayLines);   // Save reversed lines to local file
+    // const writePromise = writeToFile(displayLines);   // Save reversed lines to local file
 
     const [extractionResult, writeResult] = await Promise.allSettled([
       extractPromise,

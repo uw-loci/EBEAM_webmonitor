@@ -196,8 +196,8 @@ async function getMostRecentFile() {
     console.log("Latest files seen:", files.map(f => f.name));
 
 
-    let dataFile = files[1];
-    console.log('dataFile', dataFile);
+    // let dataFile = files[1];
+    // console.log('dataFile', dataFile);
 
     let displayFile = null;
 
@@ -206,14 +206,14 @@ async function getMostRecentFile() {
     }
 
     // can optimize this futher - temporary fix for now.
-    let data_file_metadata = null;
-    let display_file_metadata = null;
+    let dataFile = null;
 
     for (const file of files){
-      if (!data_file_metadata && file.name.startsWith('web')){
+      if (file.name.startsWith('webMonitor')){
         dataFile = file;
+        console.log(dataFile);
       }
-      else if (!display_file_metadata && file.name.startsWith('log')){
+      else if (file.name.startsWith('log_')){
         displayFile = file;
       }
       if (dataFile && displayFile) break;
@@ -340,7 +340,8 @@ async function extractData(lines){
     let jsonStart = false;
 
     // // Loop through each line in the log file
-    for (const line of lines){
+    for (let i = 0; i < lines.length; i++){
+      const line = lines[i]
       if (!jsonStart && line.includes('{')){
         jsonStart = true;
         jsonBlock = '';
@@ -354,6 +355,7 @@ async function extractData(lines){
           jsonStart = false;
         }
         if (line.includes('}')){
+          // console.log(line.temperatures)
           jsonStart = false;
           try{
             const jsonData = JSON.parse(jsonBlock);
@@ -405,6 +407,7 @@ async function extractData(lines){
         data.vacuumBits !== null
       ) {
         console.log(" All data fields found within 1 hour. Exiting early.");
+        return true;
       }
     
     return true; // success
@@ -562,7 +565,7 @@ async function fetchAndUpdateFile() {
     let dataExtractionLines = null;
     try {
       dataExtractionLines = await fetchFileContents(dataFile.id);
-      dataExtractionLines.reverse();
+      // dataExtractionLines.reverse();
     } catch (e) {
       console.error("WebMonitor file failed:", e);
     }

@@ -518,8 +518,10 @@ async function fetchAndUpdateFile() {
       fileModifiedTime = new Date(dataFile.modifiedTime).getTime();
     }
 
-    
     const currentTime = Date.now(); // Get current time in ms
+
+    console.log("XX", fileModifiedTime);
+    console.log("YY", currentTime);
 
     // Step 2: Check experiment activity status
     if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { // More than 15 minutes old?
@@ -565,7 +567,7 @@ async function fetchAndUpdateFile() {
     let dataExtractionLines = null;
     try {
       dataExtractionLines = await fetchFileContents(dataFile.id);
-      // dataExtractionLines.reverse();
+      dataExtractionLines.reverse();
     } catch (e) {
       console.error("WebMonitor file failed:", e);
     }
@@ -574,28 +576,29 @@ async function fetchAndUpdateFile() {
     const extractPromise = extractData(dataExtractionLines); // Parse data from logs
     // const writePromise = writeToFile(displayLines);   // Save reversed lines to local file
 
-    const [extractionResult, writeResult] = await Promise.allSettled([
+    const [extractionResult] = await Promise.allSettled([
       extractPromise,
-      writePromise
+      // writePromise
     ]);
 
     // Step 6: Handle extraction result
     if (extractionResult.status === 'fulfilled') {
       console.log("Extraction complete:", data);
+      experimentRunning = true;
     } else {
       console.error("Extraction failed:", extractionResult.reason);
     }
 
     // Step 7: Handle write result
-    if (writeResult.status === 'fulfilled') {
-      console.log("File write complete.");
-      lastModifiedTime = dataFile.modifiedTime; // Update in-memory cache
-      logFileName = dataFile.name;
-      experimentRunning = true;
-    } else {
-      console.error("File write failed:", writeResult.reason);
-      // You could reset experimentRunning = false here if desired
-    }
+    // if (writeResult.status === 'fulfilled') {
+    //   console.log("File write complete.");
+    //   lastModifiedTime = dataFile.modifiedTime; // Update in-memory cache
+    //   logFileName = dataFile.name;
+    //   experimentRunning = true;
+    // } else {
+    //   console.error("File write failed:", writeResult.reason);
+    //   // You could reset experimentRunning = false here if desired
+    // }
 
   } catch (err) {
     // Catch-all error handling for the fetch/extract/write process

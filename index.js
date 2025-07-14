@@ -589,6 +589,10 @@ async function fetchAndUpdateFile() {
       console.error("Extraction failed:", extractionResult.reason);
     }
 
+    if (dataFile && dataFile.modifiedTime) {
+      lastModifiedTime = new Date(dataFile.modifiedTime).getTime();
+    }
+
     // Step 7: Handle write result
     // if (writeResult.status === 'fulfilled') {
     //   console.log("File write complete.");

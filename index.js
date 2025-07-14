@@ -196,7 +196,7 @@ async function getMostRecentFile() {
     console.log("Latest files seen:", files.map(f => f.name));
 
 
-    let dataFile = files[2];
+    let dataFile = files[1];
     console.log('dataFile', dataFile);
 
     let displayFile = null;
@@ -340,7 +340,7 @@ async function extractData(lines){
     let jsonStart = false;
 
     // // Loop through each line in the log file
-      let line = lines[0]
+    for (const line of lines){
       if (!jsonStart && line.includes('{')){
         jsonStart = true;
         jsonBlock = '';
@@ -384,6 +384,7 @@ async function extractData(lines){
               }
             }
           }
+      
           
           catch(e){
             console.log("Error parsing JSON: ", e);
@@ -392,6 +393,7 @@ async function extractData(lines){
           bracesCount = 0;
         }
       }
+    }
     
       // If all fields are filled, stop early to save processing time
       if (
@@ -560,6 +562,7 @@ async function fetchAndUpdateFile() {
     let dataExtractionLines = null;
     try {
       dataExtractionLines = await fetchFileContents(dataFile.id);
+      dataExtractionLines.reverse();
     } catch (e) {
       console.error("WebMonitor file failed:", e);
     }

@@ -555,13 +555,13 @@ async function fetchAndUpdateFile() {
     // Step 4: File has changed → proceed to fetch contents
     console.log("Fetching new file...");
     // let displayLines = 
-    let displayLines = null;
-    try {
-      displayLines = await fetchFileContents(displayFile.id);
-      displayLines.reverse();
-    } catch (e) {
-      console.error("Log file failed:", e);
-    }
+    // let displayLines = null;
+    // try {
+    //   displayLines = await fetchFileContents(displayFile.id);
+    //   displayLines.reverse();
+    // } catch (e) {
+    //   console.error("Log file failed:", e);
+    // }
     let dataExtractionLines = null;
     try {
       dataExtractionLines = await fetchFileContents(dataFile.id);

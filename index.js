@@ -678,10 +678,10 @@ try {
   const previewContent = contentLines.slice(0, 20).join('\n');
   // console.log("Preview content (first 20 lines):\n", previewContent);
   const fileModified = lastModifiedTime
-    ? new Date(lastModifiedTime).toLocaleString("en-US")
+    ? new Date(lastModifiedTime).toLocaleString("en-US", {timeZone: "America/Chicago"})
     : "N/A";
   // console.log("fileModifiedTime", fileModified);
-  const currentTime = new Date().toLocaleString("en-US");
+  const currentTime = new Date().toLocaleString("en-US", {timeZone: "America/Chicago"});
   // Accessing each data field:
   // add logic for setting pressure to null if we have crossed the pressure threshold
   // let pressure = null;

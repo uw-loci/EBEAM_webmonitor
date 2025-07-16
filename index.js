@@ -36,6 +36,7 @@ const path = require('path');
 const https = require('https');
 const axios = require('axios');
 const app = express();
+app.use(express.static(path.join(__dirname, 'assets')));
 require('dotenv').config();
 
 // Credentials; find them in env file (ASK Brandon about it or any of the authors)
@@ -483,6 +484,52 @@ function writeToFile(lines) {
   });
 }
 
+async function fetchDisplayFileContents(){
+  let release; // used if you implement lock control (e.g. mutex/fmutex)
+
+  try {
+    // Step 1: Get the most recent file from Drive
+    const {dataFile, displayFile} = await getMostRecentFile();
+
+    if (!displayFile){
+      console.log("No display file found!")
+    }
+
+    // Step 4: File has changed → proceed to fetch contents
+    console.log("Fetching new display log file...");
+    let displayLines = null;
+    try {
+      displayLines = await fetchFileContents(displayFile.id);
+      displayLines.reverse();
+    } catch (e) {
+      console.error("Log file failed:", e);
+    }
+    
+    // Step 5: Run extraction and file write in parallel
+    const writePromise = writeToFile(displayLines);   // Save reversed lines to local file
+
+    const [writeResult] = await Promise.allSettled([
+      writePromise
+    ]);
+
+    // Step 7: Handle write result
+    if (writeResult.status === 'fulfilled') {
+      console.log("File write complete.");
+      lastModifiedTime = dataFile.modifiedTime; // Update in-memory cache
+      logFileName = dataFile.name;
+      experimentRunning = true;
+    } else {
+      console.error("File write failed:", writeResult.reason);
+      // You could reset experimentRunning = false here if desired
+    }
+
+  } catch (err) {
+    // Catch-all error handling for the fetch/extract/write process
+    console.error(`Error processing file: ${err.message}`);
+
+    return false;
+  }
+}
 
 /**
  * Checks for a new log file in Google Drive, processes it, and updates the local reversed.txt file.
@@ -507,10 +554,6 @@ async function fetchAndUpdateFile() {
 
     if (!dataFile){
       console.log("No data file found!")
-    }
-
-    if (!displayFile){
-      console.log("No display file found!")
     }
 
     let fileModifiedTime = null;
@@ -556,14 +599,6 @@ async function fetchAndUpdateFile() {
 
     // Step 4: File has changed → proceed to fetch contents
     console.log("Fetching new file...");
-    // let displayLines = 
-    // let displayLines = null;
-    // try {
-    //   displayLines = await fetchFileContents(displayFile.id);
-    //   displayLines.reverse();
-    // } catch (e) {
-    //   console.error("Log file failed:", e);
-    // }
     let dataExtractionLines = null;
     try {
       dataExtractionLines = await fetchFileContents(dataFile.id);
@@ -574,11 +609,8 @@ async function fetchAndUpdateFile() {
     
     // Step 5: Run extraction and file write in parallel
     const extractPromise = extractData(dataExtractionLines); // Parse data from logs
-    // const writePromise = writeToFile(displayLines);   // Save reversed lines to local file
-
     const [extractionResult] = await Promise.allSettled([
       extractPromise,
-      // writePromise
     ]);
 
     // Step 6: Handle extraction result
@@ -592,17 +624,6 @@ async function fetchAndUpdateFile() {
     if (dataFile && dataFile.modifiedTime) {
       lastModifiedTime = new Date(dataFile.modifiedTime).getTime();
     }
-
-    // Step 7: Handle write result
-    // if (writeResult.status === 'fulfilled') {
-    //   console.log("File write complete.");
-    //   lastModifiedTime = dataFile.modifiedTime; // Update in-memory cache
-    //   logFileName = dataFile.name;
-    //   experimentRunning = true;
-    // } else {
-    //   console.error("File write failed:", writeResult.reason);
-    //   // You could reset experimentRunning = false here if desired
-    // }
 
   } catch (err) {
     // Catch-all error handling for the fetch/extract/write process
@@ -652,6 +673,11 @@ app.get('/data', (req, res) => {
     temperatures: data.temperatures,                   // Object of PMON temperature readings
     vacuumBits: data.vacuumBits                        // 8-bit vacuum/interlock state array
   });
+});
+
+app.get('/refresh-display', async (req, res) => {
+  await fetchDisplayFileContents();
+  res.status(200).send('Refreshed display logs');
 });
 
 
@@ -850,6 +876,7 @@ try {
           text-align: left;
           opacity: 0.9;
           color: rgba(255, 255, 255, 0.8);
+          display: flex;
         }
         /* =========================
            INTERLOCKS SECTION
@@ -1002,7 +1029,7 @@ try {
           overflow-y: auto;
           font-size: 0.9em;
           border-radius: 9px;
-          margin-top: 2.75em;
+          margin-top: 0.65em;
           }
         .content-section {
           display: none;
@@ -1020,8 +1047,17 @@ try {
           transition: background-color 0.3s ease;
           float: right;
           margin-top: -3.5em;
-          margin-bottom: 10px;
+          margin-bottom: -10px;
         }
+        .btn-refresh {
+          width: 22px;
+          vertical-align: middle;
+          cursor: pointer;
+          border-radius: 1px;
+          transition: background-color 0.3s ease;
+          transform: translate(-529px, -47px);
+        }
+        
         /* =========================
            RESPONSIVE LAYOUT
         ========================== */
@@ -1223,6 +1259,7 @@ try {
           <div class="env-section">
             <h3 class="dashboard-subtitle env-title">System Logs</h3>
               <button id="toggleButton" class="btn-toggle">Show Full Log</button>
+              <img src="./refresh.png" id="refreshButton" class="btn-refresh" alt="Refresh" style="cursor: pointer; width: 22px; " />
                 <div id="previewContent" class="content-section active">
                   <pre>${previewContent}</pre>
                     <p class="text-center text-info mt-2">
@@ -1249,6 +1286,7 @@ try {
         const toggleButton = document.getElementById('toggleButton');
         const previewSection = document.getElementById('previewContent');
         const fullSection = document.getElementById('fullContent');
+        const refreshButton = document.getElementById('refreshButton');
         let showingFull = false;
      
         function toggleContent() {
@@ -1263,7 +1301,13 @@ try {
           }
           showingFull = !showingFull;
         }
+        
         toggleButton.onclick = toggleContent;
+        refreshButton.onclick = async() => {
+              await fetch('/refresh-display');
+              location.reload();
+          }
+
       </script>
     </body>
     </html>

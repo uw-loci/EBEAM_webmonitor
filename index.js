@@ -694,14 +694,6 @@ setInterval(fetchAndUpdateFile, 60000); // Repeats every 60 sec = 1 minute
 
 app.get('/', async (req, res) => {
 try {
-  let reversedContents = "No data available.";
-  if (fs.existsSync(REVERSED_FILE_PATH)) {
-    reversedContents = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
-  }else{
-    reversedContents = `No data available. no ${REVERSED_FILE_PATH} on the server.`;
-  }
-  const contentLines = reversedContents.split('\n');
-  const previewContent = contentLines.slice(0, 20).join('\n');
   // console.log("Preview content (first 20 lines):\n", previewContent);
   const fileModified = lastModifiedTime
     ? new Date(lastModifiedTime).toLocaleString("en-US", {timeZone: "America/Chicago"})
@@ -1049,7 +1041,7 @@ try {
           transition: background-color 0.3s ease;
           float: right;
           margin-top: -3.5em;
-          margin-bottom: -10px;
+          margin-bottom: 5px;
         }
         .btn-refresh {
           width: 22px;
@@ -1261,18 +1253,8 @@ try {
           <div class="env-section">
             <h3 class="dashboard-subtitle env-title">System Logs</h3>
               <button id="toggleButton" class="btn-toggle">Show Full Log</button>
-              <img src="./refresh.png" id="refreshButton" class="btn-refresh" alt="Refresh" style="cursor: pointer; width: 22px; " />
-                <div id="previewContent" class="content-section active">
-                  <pre>${previewContent}</pre>
-                    <p class="text-center text-info mt-2">
-                      Showing first 20 lines. Click the button above to see the full log.
-                    </p>
-                </div>
               <div id="fullContent" class="content-section">
-            <pre>${reversedContents}</pre>
-          <p class="text-center text-info mt-2">
-                Showing full log. Click the button above to see the preview.
-          </p>
+            <pre></pre>
         </div>
       </div>
       <!-- Auto-refresh & Toggle Script -->
@@ -1286,30 +1268,24 @@ try {
 
         // Toggle between preview/full log
         const toggleButton = document.getElementById('toggleButton');
-        const previewSection = document.getElementById('previewContent');
         const fullSection = document.getElementById('fullContent');
-        const refreshButton = document.getElementById('refreshButton');
+        const pre = fullSection.querySelector('pre')
         let showingFull = false;
      
-        function toggleContent() {
-          if (showingFull) {
-            previewSection.className = 'content-section active';
-            fullSection.className = 'content-section';
-            toggleButton.textContent = 'Show Full Log';
+        toggleButton.addEventListener('click', async () => {
+          if (!showingFull) {
+            await fetch('/refresh-display');
+            const rawResp = await fetch('/raw');
+            pre.textContent = await rawResp.text();
+
+            fullSection.classList.add('active');
+            toggleButton.textContent = 'Collapse Log View';
           } else {
-            previewSection.className = 'content-section';
-            fullSection.className = 'content-section active';
-            toggleButton.textContent = 'Show Preview';
+            fullSection.classList.remove('active');
+            toggleButton.textContent = 'Show Full Log';
           }
           showingFull = !showingFull;
-        }
-        
-        toggleButton.onclick = toggleContent;
-        refreshButton.onclick = async() => {
-              await fetch('/refresh-display');
-              location.reload();
-          }
-
+        })
       </script>
     </body>
     </html>

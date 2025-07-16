@@ -1035,7 +1035,7 @@ try {
           background-color: #00bcd4;
           color: white;
           border: none;
-          padding: 10px 20px;
+          padding: 5px 10px;
           font-size: 0.75em;
           border-radius: 5px;
           transition: background-color 0.3s ease;
@@ -1275,9 +1275,8 @@ try {
         toggleButton.addEventListener('click', async () => {
           if (!showingFull) {
             await fetch('/refresh-display');
-            const rawResp = await fetch('/raw');
-            pre.textContent = await rawResp.text();
-
+            const resp = await (await fetch('/raw')).text();
+            pre.textContent = resp;
             fullSection.classList.add('active');
             toggleButton.textContent = 'Collapse Log View';
           } else {

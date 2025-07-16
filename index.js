@@ -749,7 +749,9 @@ try {
 //    }
  }
 
-  pressure = Number(data.pressure).toExponential(3);
+  if (pressure !== null){
+    pressure = Number(data.pressure).toExponential(3);
+  }
 
 
   const temperatures = (data && data.temperatures) || {
@@ -1120,8 +1122,8 @@ try {
         <!-- Title & Subtitle -->
         <h2 class="dashboard-title">E-beam Web Monitor</h2>
         <p class="dashboard-subtitle">
-          <strong>File Last Modified:</strong> ${fileModified} |
-          <strong>Last Updated:</strong> ${currentTime}
+          <strong>Web Monitor Log Last Modified:</strong> ${fileModified} | 
+          <strong> Site Last Updated:</strong> ${currentTime}
         </p>
         <!-- Example Cards (Optional) -->
         <!--
@@ -1188,7 +1190,7 @@ try {
         </div>
         <!-- Vacuum Indicators Section -->
         <div class="vacuum-indicators">
-          <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators; ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
+          <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators: ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
           <div class="vacuum-indicators-container">
             <div class="vacuum-indicators-item">
               <div class="vacuum-indicators-circle" style="background-color:${vacColors[0]}"></div>

@@ -504,7 +504,7 @@ async function fetchDisplayFileContents(){
     try {
       displayLines = await fetchFileContents(displayFile.id);
       displayLines.reverse();
-      displayLines = displayLines.slice(0, 100);
+      displayLines = displayLines.slice(0, 100000);
     } catch (e) {
       console.error("Log file failed:", e);
     }

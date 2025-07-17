@@ -269,6 +269,7 @@ async function fetchFileContents(fileId) {
       // -------------------------------------------------------------
       const lines = [];
       let currentLine = '';
+      // const MAX_LINES = 100
 
       await new Promise((resolve, reject) => {
         response.on('data', chunk => {
@@ -279,7 +280,9 @@ async function fetchFileContents(fileId) {
         });
 
         response.on('end', () => {
-          if (currentLine) lines.push(currentLine); // push final partial
+          if (currentLine){
+            lines.push(currentLine);
+          }  // push final partial
           resolve();
         });
 
@@ -501,6 +504,7 @@ async function fetchDisplayFileContents(){
     try {
       displayLines = await fetchFileContents(displayFile.id);
       displayLines.reverse();
+      displayLines = displayLines.slice(0, 100);
     } catch (e) {
       console.error("Log file failed:", e);
     }
@@ -1306,7 +1310,7 @@ try {
   //   await new Promise((r) => setTimeout(r, 500));
   // }
   if (fs.existsSync(REVERSED_FILE_PATH)) {
-    const content = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
+    let content = await fs.promises.readFile(REVERSED_FILE_PATH, 'utf8');
     res.type('text/plain').send(content);
   } else {
     res.status(404).send("No file found.");

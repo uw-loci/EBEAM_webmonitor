@@ -1266,17 +1266,24 @@ try {
       <!-- Auto-refresh & Toggle Script -->
       <script>
 
+         let savedState = sessionStorage.getItem('showingFull');
+         let showingFull = savedState === 'true';
 
+        // Toggle between preview/full log
+         const toggleButton = document.getElementById('toggleButton');
+         const fullSection = document.getElementById('fullContent');
+         const pre = fullSection.querySelector('pre')
+
+         if (showingFull) {
+          fetch('/raw').then(resp => resp.text()).then(text => {
+          pre.textContent = text;
+          fullSection.classList.add('active');
+          toggleButton.textContent = 'Collapse Log View';
+          });
+        }
          setInterval(() => {
            location.reload();
          }, 60000);
-
-
-        // Toggle between preview/full log
-        const toggleButton = document.getElementById('toggleButton');
-        const fullSection = document.getElementById('fullContent');
-        const pre = fullSection.querySelector('pre')
-        let showingFull = false;
      
         toggleButton.addEventListener('click', async () => {
           if (!showingFull) {
@@ -1290,6 +1297,7 @@ try {
             toggleButton.textContent = 'Show Full Log';
           }
           showingFull = !showingFull;
+          sessionStorage.setItem('showingFull', showingFull);
         })
       </script>
     </body>

@@ -521,7 +521,7 @@ async function fetchDisplayFileContents(){
       console.log("File write complete.");
       lastModifiedTime = dataFile.modifiedTime; // Update in-memory cache
       logFileName = dataFile.name;
-      experimentRunning = true;
+      // experimentRunning = true;
     } else {
       console.error("File write failed:", writeResult.reason);
       // You could reset experimentRunning = false here if desired
@@ -583,6 +583,9 @@ async function fetchAndUpdateFile() {
         temperatures: null, 
         vacuumBits: null
       };
+    } else {
+      experimentRunning = true;
+    }
 
       // If we don't even have a reversed file, just log and continue
       if (!fs.existsSync(REVERSED_FILE_PATH)) {
@@ -592,12 +595,11 @@ async function fetchAndUpdateFile() {
       //   console.log("Experiment not running - no updates in 15 minutes");
       //   return false;
       // }
-    }
 
     // Step 3: No change detected — skip processing
     if (lastModifiedTime === dataFile.modifiedTime) {
       console.log("No new updates. Using cached data.");
-      experimentRunning = true;
+      // experimentRunning = true;
       return false;
     }
 
@@ -620,7 +622,7 @@ async function fetchAndUpdateFile() {
     // Step 6: Handle extraction result
     if (extractionResult.status === 'fulfilled') {
       console.log("Extraction complete:", data);
-      experimentRunning = true;
+      // experimentRunning = true;
     } else {
       console.error("Extraction failed:", extractionResult.reason);
     }

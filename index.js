@@ -767,17 +767,17 @@ try {
   // console.log('AA', temperatures);
 
 
-  let vacuumPowerColor = getVacuumPower(data.safetyInputDataFlags);
-  let vacuumPressureColor = getVacuumPressure(data.safetyInputDataFlags);
-  let waterColor = getWaterStatus(data.safetyInputDataFlags);
-  let doorColor = getDoorStatus(data.safetyInputDataFlags);
-  let oilHighColor = getOilHigh(data.safetyInputDataFlags);
-  let oilLowColor = getOilLow(data.safetyInputDataFlags);
-  let hvoltColor = getHvoltOn(data.safetyInputDataFlags);
-  let estopIntColor = getEStopInternal(data.safetyInputDataFlags);
-  let estopExtColor = getEStopExternal(data.safetyInputDataFlags);
-  let allInterlocksColor = getAllInterlocksStatus(data.safetyOutputDataFlags);
-  let G9OutputColor = getG9Output(data.safetyOutputDataFlags);
+  let vacuumPowerColor = experimentRunning? getVacuumPower(data.safetyInputDataFlags) : "grey";
+  let vacuumPressureColor = experimentRunning? getVacuumPressure(data.safetyInputDataFlags) : "grey";
+  let waterColor = experimentRunning? getWaterStatus(data.safetyInputDataFlags) : "grey";
+  let doorColor = experimentRunning? getDoorStatus(data.safetyInputDataFlags) : "grey";
+  let oilHighColor = experimentRunning? getOilHigh(data.safetyInputDataFlags) : "grey";
+  let oilLowColor = experimentRunning? getOilLow(data.safetyInputDataFlags) : "grey";
+  let hvoltColor = experimentRunning? getHvoltOn(data.safetyInputDataFlags) : "grey";
+  let estopIntColor = experimentRunning? getEStopInternal(data.safetyInputDataFlags) : "grey";
+  let estopExtColor = experimentRunning? getEStopExternal(data.safetyInputDataFlags) : "grey";
+  let allInterlocksColor = experimentRunning? getAllInterlocksStatus(data.safetyOutputDataFlags) : "grey";
+  let G9OutputColor = experimentRunning? getG9Output(data.safetyOutputDataFlags) : "grey";
 
   let vacColors = (bits => [
   varBitToColour(bits, 0),

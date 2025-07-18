@@ -780,14 +780,14 @@ try {
   let G9OutputColor = experimentRunning? getG9Output(data.safetyOutputDataFlags) : "grey";
 
   let vacColors = (bits => [
-  varBitToColour(bits, 0),
-  varBitToColour(bits, 1),
-  varBitToColour(bits, 2),
-  varBitToColour(bits, 3),
-  varBitToColour(bits, 4),
-  varBitToColour(bits, 5),
-  varBitToColour(bits, 6),
-  varBitToColour(bits, 7),
+    experimentRunning? varBitToColour(bits, 0) : "grey",
+    experimentRunning? varBitToColour(bits, 1) : "grey",
+    experimentRunning? varBitToColour(bits, 2) : "grey",
+    experimentRunning? varBitToColour(bits, 3) : "grey",
+    experimentRunning? varBitToColour(bits, 4) : "grey",
+    experimentRunning? varBitToColour(bits, 5) : "grey",
+    experimentRunning? varBitToColour(bits, 6) : "grey",
+    experimentRunning? varBitToColour(bits, 7) : "grey"
     ])(data.vacuumBits);
 
 

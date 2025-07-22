@@ -658,36 +658,6 @@ async function fetchAndUpdateFile() {
 
 
 /**
- * GET /data
- * 
- * API endpoint that returns the latest extracted experimental values
- * in JSON format. This data is used by the frontend dashboard to display:
- * - Pressure and its timestamp
- * - Safety Output/Input Terminal Flags
- * - PMON temperature readings
- * - Vacuum interlock bits (VTRX states)
- * 
- * The values come from the shared `data` object in memory, which gets 
- * updated every minute by `fetchAndUpdateFile()`.
- */
-app.get('/data', (req, res) => {
-  res.json({
-    pressure: data.pressure,                         // Most recent pressure value
-    pressureTimestamp: data.pressureTimestamp,       // Timestamp associated with pressure reading
-    safetyOutputDataFlags: data.safetyOutputDataFlags, // Output flags as parsed from logger
-    safetyInputDataFlags: data.safetyInputDataFlags,   // Input flags from logger
-    temperatures: data.temperatures,                   // Object of PMON temperature readings
-    vacuumBits: data.vacuumBits                        // 8-bit vacuum/interlock state array
-  });
-});
-
-app.get('/refresh-display', async (req, res) => {
-  await fetchDisplayFileContents();
-  res.status(200).send('Refreshed display logs');
-});
-
-
-/**
  * Startup routine
  * 
  * Immediately fetches and processes the latest available log file when the app starts,
@@ -790,8 +760,38 @@ try {
     experimentRunning? varBitToColour(bits, 7) : "grey"
     ])(data.vacuumBits);
 
+  
+  /**
+   * GET /data
+   * 
+   * API endpoint that returns the latest extracted experimental values
+   * in JSON format. This data is used by the frontend dashboard to display:
+   * - Pressure and its timestamp
+   * - Safety Output/Input Terminal Flags
+   * - PMON temperature readings
+   * - Vacuum interlock bits (VTRX states)
+   * 
+   * The values come from the shared `data` object in memory, which gets 
+   * updated every minute by `fetchAndUpdateFile()`.
+   */
+  app.get('/data', (req, res) => {
+    res.json({
+      pressure: data.pressure,                         // Most recent pressure value
+      pressureTimestamp: data.pressureTimestamp,       // Timestamp associated with pressure reading
+      safetyOutputDataFlags: data.safetyOutputDataFlags, // Output flags as parsed from logger
+      safetyInputDataFlags: data.safetyInputDataFlags,   // Input flags from logger
+      temperatures: data.temperatures,                   // Object of PMON temperature readings
+      vacuumBits: data.vacuumBits,                        // 8-bit vacuum/interlock state array
+      vacuumColors: vacColors,
+      sicColors: [vacuumPowerColor, vacuumPressureColor, waterColor, doorColor, oilHighColor, oilLowColor, hvoltColor, estopIntColor, estopExtColor, allInterlocksColor, 
+        G9OutputColor]
+    });
+  });
 
-
+  app.get('/refresh-display', async (req, res) => {
+    await fetchDisplayFileContents();
+    res.status(200).send('Refreshed display logs');
+  });
 
   //  keep your HTML generation as-is below this
   res.send(`
@@ -954,6 +954,36 @@ try {
         .gauge {
           text-align: center;
           color: #fff;
+        }
+        .ccs {
+          text-align: center;
+          color: #fff;
+        }
+        .ccs-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+        .ccs-reading {
+          font-size: 0.8rem;
+          font-weight: 500;
+          margin-bottom: 12px;
+          padding: 10px;
+          border-radius: 6px;
+          background-color:rgb(116, 118, 121);
+          border: 1px solid #ced4da;
+        }
+        .cathode-box {
+          flex: 1;
+          border: 1px solid #dee2e6;
+          margin-top: 5px;
+          margin-bottom: 12px;
+          border-radius: 7px;
+          padding: 20px;
+        }
+        .cathode-heading {
+           margin-bottom: 12px;
         }
         /* .gauge-circle {
           width: 40px;
@@ -1141,47 +1171,47 @@ try {
           <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
           <div class="interlocks-container">
             <div class="interlock-item">
-              <div class="circle" style="background-color:${doorColor}"></div>
+              <div id="sic-door" class="circle" style="background-color:${doorColor}"></div>
               <div>Door</div>
             </div>
             <div class="interlock-item">
-              <div class="circle" style="background-color:${waterColor}"></div>
+              <div id="sic-water" class="circle" style="background-color:${waterColor}"></div>
               <div>Water</div>
             </div>
             <div class="interlock-item">
-              <div class="circle" style="background-color:${vacuumPowerColor}"></div>
+              <div id="sic-vacuum-power" class="circle" style="background-color:${vacuumPowerColor}"></div>
               <div>Vacuum Power</div>
             </div>
             <div class="interlock-item">
-              <div class="circle" style="background-color:${vacuumPressureColor}"></div>
+              <div id="sic-vacuum-pressure" class="circle" style="background-color:${vacuumPressureColor}"></div>
               <div>Vacuum Pressure</div>
             </div>
             <div class="interlock-item">
-              <div class="circle" style="background-color:${oilLowColor}"></div>
+              <div id="sic-oil-low" class="circle" style="background-color:${oilLowColor}"></div>
               <div>Low Oil</div>
             </div>
             <div class="interlock-item">
-              <div class="circle" style="background-color:${oilHighColor}"></div>
+              <div id="sic-oil-high" class="circle" style="background-color:${oilHighColor}"></div>
               <div>High Oil</div>
             </div>
             <div class="interlock-item">
-              <div class="circle" style="background-color:${estopIntColor}"></div>
+              <div id="sic-estop" class="circle" style="background-color:${estopIntColor}"></div>
               <div>E-STOP Int</div>
             </div>
             <div class="interlock-item">
-              <div class="circle" style="background-color:${estopExtColor}"></div>
+              <div id="sic-estopExt" class="circle" style="background-color:${estopExtColor}"></div>
               <div>E-STOP Ext</div>
             </div>
             <div class="interlock-item">
-              <div class="circle" style="background-color:${allInterlocksColor}"></div>
+              <div id="all-interlocks" class="circle" style="background-color:${allInterlocksColor}"></div>
               <div>All Interlocks</div>
             </div>
             <div class="interlock-item">
-              <div class="circle" style="background-color:${G9OutputColor}"></div>
+              <div id="g9-output" class="circle" style="background-color:${G9OutputColor}"></div>
               <div>G9 Output</div>
             </div>
             <div class="interlock-item">
-              <div class="circle" style="background-color:${hvoltColor}"></div>
+              <div id="hvolt" class="circle" style="background-color:${hvoltColor}"></div>
               <div>HVolt ON</div>
             </div>
           </div>
@@ -1191,35 +1221,35 @@ try {
           <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators: ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
           <div class="vacuum-indicators-container">
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle" style="background-color:${vacColors[0]}"></div>
+              <div id = "vac-indicator-0" class="vacuum-indicators-circle" style="background-color:${vacColors[0]}"></div>
               <div>Pumps Power ON</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle" style="background-color:${vacColors[1]}"></div>
+              <div id = "vac-indicator-1" class="vacuum-indicators-circle" style="background-color:${vacColors[1]}"></div>
               <div>Turbo Rotor ON</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle" style="background-color:${vacColors[2]}"></div>
+              <div id = vac-indicator-2 class="vacuum-indicators-circle" style="background-color:${vacColors[2]}"></div>
               <div>Turbo Vent Open</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle" style="background-color:${vacColors[3]}"></div>
+              <div id = "vac-indicator-3" class="vacuum-indicators-circle" style="background-color:${vacColors[3]}"></div>
               <div>972b Power On</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle" style="background-color:${vacColors[4]}"></div>
+              <div id = "vac-indicator-4" class="vacuum-indicators-circle" style="background-color:${vacColors[4]}"></div>
               <div>Turbo Gate Closed</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle" style="background-color:${vacColors[5]}"></div>
+              <div id = "vac-indicator-5" class="vacuum-indicators-circle" style="background-color:${vacColors[5]}"></div>
               <div>Turbo Gate Open</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle" style="background-color:${vacColors[6]}"></div>
+              <div id = "vac-indicator-6" class="vacuum-indicators-circle" style="background-color:${vacColors[6]}"></div>
               <div>Argon Gate Open</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div class="vacuum-indicators-circle" style="background-color:${vacColors[7]}"></div>
+              <div id = "vac-indicator-7" class="vacuum-indicators-circle" style="background-color:${vacColors[7]}"></div>
               <div>Argon Gate Closed</div>
             </div>
           </div>
@@ -1255,6 +1285,27 @@ try {
             </div>
           </div>
         </div>
+        <!-- CCS Section -->
+        <div class="env-section">
+        <h3 class="dashboard-subtitle env-title">CCS</h3>
+        <div class="ccs-grid">
+            <div class="cathode-box">
+              <p class="cathode-heading">Cathode 1</p>
+              <div class="ccs-reading">Current: DUMMY°A</div>
+              <div class="ccs-reading">Voltage: DUMMY V</div>
+            </div>
+            <div class="cathode-box">
+              <p class="cathode-heading">Cathode 2</p>
+              <div class="ccs-reading">Current: DUMMY°A</div>
+              <div class="ccs-reading">Voltage: DUMMY V</div>
+            </div>
+            <div class="cathode-box">
+              <p class="cathode-heading">Cathode 3</p>
+              <div class="ccs-reading">Current: DUMMY°A</div>
+              <div class="ccs-reading">Voltage: DUMMY V</div>
+            </div>
+          </div>
+        </div>
         <!-- Log Viewer -->
           <div class="env-section">
             <h3 class="dashboard-subtitle env-title">System Logs</h3>
@@ -1281,9 +1332,17 @@ try {
           toggleButton.textContent = 'Collapse Log View';
           });
         }
-         setInterval(() => {
-           location.reload();
-         }, 60000);
+        
+        setInterval(async() => {
+          try {
+          const res = await fetch('/data');
+          const data = await res.json();
+          console.log(data);
+            }
+          catch {
+          console.error('Failed to load the dashboard!')
+            }
+          }, 60000)
      
         toggleButton.addEventListener('click', async () => {
           if (!showingFull) {

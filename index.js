@@ -825,7 +825,13 @@ try {
       vacuumBits: data.vacuumBits,                        // 8-bit vacuum/interlock state array
       vacuumColors: vacColors,
       sicColors: [vacuumPowerColor, vacuumPressureColor, waterColor, doorColor, oilHighColor, oilLowColor, hvoltColor, estopIntColor, estopExtColor, allInterlocksColor, 
-        G9OutputColor]
+        G9OutputColor],
+      heaterCurrent_A: data.heaterCurrent_A,
+      heaterCurrent_B: data.heaterCurrent_B,
+      heaterCurrent_C: data.heaterCurrent_C,
+      heaterVoltage_A: data.heaterVoltage_A,
+      heaterVoltage_B: data.heaterVoltage_B,
+      heaterVoltage_C: data.heaterVoltage_C
     });
   });
 
@@ -1332,19 +1338,32 @@ try {
         <div class="ccs-grid">
             <div class="cathode-box">
               <p class="cathode-heading">Cathode 1</p>
-              <div class="ccs-reading">Current: DUMMY°A</div>
-              <div class="ccs-reading">Voltage: DUMMY V</div>
-            </div>
-            <div class="cathode-box">
-              <p class="cathode-heading">Cathode 2</p>
-              <div class="ccs-reading">Current: DUMMY°A</div>
-              <div class="ccs-reading">Voltage: DUMMY V</div>
-            </div>
-            <div class="cathode-box">
-              <p class="cathode-heading">Cathode 3</p>
-              <div class="ccs-reading">Current: DUMMY°A</div>
-              <div class="ccs-reading">Voltage: DUMMY V</div>
-            </div>
+              <div class="ccs-reading">Current: ${data.heaterCurrent_A != null 
+                ? data.heaterCurrent_A.toFixed(2) + ' A' 
+                : '--'}</div>
+              <div class="ccs-reading">Voltage: ${data.heaterVoltage_A != null 
+                ? data.heaterVoltage_A.toFixed(2) + ' V' 
+                : '--'}</div>
+              </div>
+              <div class="cathode-box">
+                <p class="cathode-heading">Cathode 2</p>
+                <div class="ccs-reading">Current: ${data.heaterCurrent_B != null 
+                  ? data.heaterCurrent_B.toFixed(2) + ' A' 
+                  : '--'}</div>
+                <div class="ccs-reading">Voltage: ${data.heaterVoltage_B != null 
+                  ? data.heaterVoltage_A.toFixed(2) + ' V' 
+                  : '--'}</div>
+              </div>
+              <div class="cathode-box">
+                <p class="cathode-heading">Cathode 3</p>
+                <div class="ccs-reading">Current: ${data.heaterCurrent_C != null 
+                  ? data.heaterCurrent_C.toFixed(2) + ' A' 
+                  : '--'}</div>
+                <div class="ccs-reading">Voltage: ${data.heaterVoltage_C != null 
+                  ? data.heaterVoltage_C.toFixed(2) + ' V' 
+                  : '--'}
+                  </div>
+              </div>
           </div>
         </div>
         <!-- Log Viewer -->

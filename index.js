@@ -1338,28 +1338,28 @@ try {
         <div class="ccs-grid">
             <div class="cathode-box">
               <p class="cathode-heading">Cathode 1</p>
-              <div class="ccs-reading">Current: ${data.heaterCurrent_A != null 
+              <div class="ccs-reading">Current: ${data.heaterCurrent_A != null && experimentRunning
                 ? data.heaterCurrent_A.toFixed(2) + ' A' 
                 : '--'}</div>
-              <div class="ccs-reading">Voltage: ${data.heaterVoltage_A != null 
+              <div class="ccs-reading">Voltage: ${data.heaterVoltage_A != null && experimentRunning
                 ? data.heaterVoltage_A.toFixed(2) + ' V' 
                 : '--'}</div>
               </div>
               <div class="cathode-box">
                 <p class="cathode-heading">Cathode 2</p>
-                <div class="ccs-reading">Current: ${data.heaterCurrent_B != null 
+                <div class="ccs-reading">Current: ${data.heaterCurrent_B != null && experimentRunning
                   ? data.heaterCurrent_B.toFixed(2) + ' A' 
                   : '--'}</div>
-                <div class="ccs-reading">Voltage: ${data.heaterVoltage_B != null 
+                <div class="ccs-reading">Voltage: ${data.heaterVoltage_B != null && experimentRunning
                   ? data.heaterVoltage_A.toFixed(2) + ' V' 
                   : '--'}</div>
               </div>
               <div class="cathode-box">
                 <p class="cathode-heading">Cathode 3</p>
-                <div class="ccs-reading">Current: ${data.heaterCurrent_C != null 
+                <div class="ccs-reading">Current: ${data.heaterCurrent_C != null && experimentRunning
                   ? data.heaterCurrent_C.toFixed(2) + ' A' 
                   : '--'}</div>
-                <div class="ccs-reading">Voltage: ${data.heaterVoltage_C != null 
+                <div class="ccs-reading">Voltage: ${data.heaterVoltage_C != null && experimentRunning
                   ? data.heaterVoltage_C.toFixed(2) + ' V' 
                   : '--'}
                   </div>

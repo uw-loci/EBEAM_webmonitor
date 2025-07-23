@@ -389,8 +389,31 @@ async function extractData(lines){
                   .map(bit => bit === '1');
               }
             }
+
+            if (jsonData.status["Cathode A - Heater Current: "] !== null) {
+              data.heaterCurrent_A = jsonData.status["Cathode A - Heater Current: "];
+            }
+
+            if (jsonData.status["Cathode B - Heater Current: "] !== null) {
+              data.heaterCurrent_B = jsonData.status["Cathode B - Heater Current: "];
+            }
+
+            if (jsonData.status["Cathode C - Heater Current: "] !== null) {
+              data.heaterCurrent_C = jsonData.status["Cathode C - Heater Current: "];
+            }
+
+            if (jsonData.status["Cathode A - Heater Voltage: "] !== null) {
+              data.heaterVoltage_A = jsonData.status["Cathode A - Heater Voltage: "];
+            }
+
+            if (jsonData.status["Cathode B - Heater Voltage: "] !== null) {
+              data.heaterVoltage_B = jsonData.status["Cathode B - Heater Voltage: "];
+            }
+
+            if (jsonData.status["Cathode C - Heater Voltage: "] !== null) {
+              data.heaterVoltage_C = jsonData.status["Cathode C - Heater Voltage: "];
+            }
           }
-      
           
           catch(e){
             console.log("Error parsing JSON: ", e);
@@ -581,7 +604,13 @@ async function fetchAndUpdateFile() {
         safetyOutputDataFlags: null,
         safetyInputDataFlags: null,
         temperatures: null, 
-        vacuumBits: null
+        vacuumBits: null,
+        heaterCurrent_A: null,
+        heaterCurrent_B: null,
+        heaterCurrent_C: null,
+        heaterVoltage_A: null,
+        heaterVoltage_B: null,
+        heaterVoltage_C: null
       };
     } else {
       experimentRunning = true;
@@ -643,7 +672,13 @@ async function fetchAndUpdateFile() {
       safetyOutputDataFlags: null,
       safetyInputDataFlags: null,
       temperatures: null, 
-      vacuumBits: null
+      vacuumBits: null,
+      heaterCurrent_A: null,
+      heaterCurrent_B: null,
+      heaterCurrent_C: null,
+      heaterVoltage_A: null,
+      heaterVoltage_B: null,
+      heaterVoltage_C: null
     };
 
     console.log("Could not extract the log data");
@@ -692,7 +727,13 @@ try {
   safetyOutputDataFlags: null,
   safetyInputDataFlags: null,
   temperatures: null, 
-  vacuumBits: null
+  vacuumBits: null,
+  heaterCurrent_A: null,
+  heaterCurrent_B: null,
+  heaterCurrent_C: null,
+  heaterVoltage_A: null,
+  heaterVoltage_B: null,
+  heaterVoltage_C: null
   };
   // todo: use this safedata in place of data var after this point for better "data" null pointer handling.
 

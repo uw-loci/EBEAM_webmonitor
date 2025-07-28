@@ -610,7 +610,9 @@ async function fetchAndUpdateFile() {
         heaterCurrent_C: null,
         heaterVoltage_A: null,
         heaterVoltage_B: null,
-        heaterVoltage_C: null
+        heaterVoltage_C: null,
+        fileModifiedTime: null,
+        logLastModified: null
       };
     } else {
       experimentRunning = true;
@@ -678,7 +680,9 @@ async function fetchAndUpdateFile() {
       heaterCurrent_C: null,
       heaterVoltage_A: null,
       heaterVoltage_B: null,
-      heaterVoltage_C: null
+      heaterVoltage_C: null,
+      fileModifiedTime: null,
+      logLastModified: null
     };
 
     console.log("Could not extract the log data");
@@ -733,7 +737,9 @@ try {
   heaterCurrent_C: null,
   heaterVoltage_A: null,
   heaterVoltage_B: null,
-  heaterVoltage_C: null
+  heaterVoltage_C: null,
+  fileModifiedTime: null,
+  logLastModified: null
   };
   // todo: use this safedata in place of data var after this point for better "data" null pointer handling.
 
@@ -831,7 +837,8 @@ try {
       heaterCurrent_C: data.heaterCurrent_C,
       heaterVoltage_A: data.heaterVoltage_A,
       heaterVoltage_B: data.heaterVoltage_B,
-      heaterVoltage_C: data.heaterVoltage_C
+      heaterVoltage_C: data.heaterVoltage_C,
+      siteLastUpdated: new Date().toISOString()
     });
   });
 
@@ -1197,8 +1204,8 @@ try {
         <!-- Title & Subtitle -->
         <h2 class="dashboard-title">E-beam Web Monitor</h2>
         <p class="dashboard-subtitle">
-          <strong>Web Monitor Log Last Modified:</strong> ${fileModified} | 
-          <strong> Site Last Updated:</strong> ${currentTime}
+          <strong id="log-last-modified">Web Monitor Log Last Modified:</strong> ${fileModified} | 
+          <strong>Site Last Updated:</strong> <span id="site-last-updated">${currentTime}</span>
         </p>
         <!-- Example Cards (Optional) -->
         <!--
@@ -1265,7 +1272,7 @@ try {
         </div>
         <!-- Vacuum Indicators Section -->
         <div class="vacuum-indicators">
-          <h3 class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators: ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
+          <h3 id="pressureReadings" class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators: ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
           <div class="vacuum-indicators-container">
             <div class="vacuum-indicators-item">
               <div id = "vac-indicator-0" class="vacuum-indicators-circle" style="background-color:${vacColors[0]}"></div>
@@ -1338,28 +1345,28 @@ try {
         <div class="ccs-grid">
             <div class="cathode-box">
               <p class="cathode-heading">Cathode 1</p>
-              <div class="ccs-reading">Current: ${data.heaterCurrent_A != null && experimentRunning
+              <div id="heaterCurrentA" class="ccs-reading">Current: ${data.heaterCurrent_A != null && experimentRunning
                 ? data.heaterCurrent_A.toFixed(2) + ' A' 
                 : '--'}</div>
-              <div class="ccs-reading">Voltage: ${data.heaterVoltage_A != null && experimentRunning
+              <div id="heaterVoltageA" class="ccs-reading">Voltage: ${data.heaterVoltage_A != null && experimentRunning
                 ? data.heaterVoltage_A.toFixed(2) + ' V' 
                 : '--'}</div>
               </div>
               <div class="cathode-box">
                 <p class="cathode-heading">Cathode 2</p>
-                <div class="ccs-reading">Current: ${data.heaterCurrent_B != null && experimentRunning
+                <div id="heaterCurrentB" class="ccs-reading">Current: ${data.heaterCurrent_B != null && experimentRunning
                   ? data.heaterCurrent_B.toFixed(2) + ' A' 
                   : '--'}</div>
-                <div class="ccs-reading">Voltage: ${data.heaterVoltage_B != null && experimentRunning
+                <div id="heaterVoltageB" class="ccs-reading">Voltage: ${data.heaterVoltage_B != null && experimentRunning
                   ? data.heaterVoltage_A.toFixed(2) + ' V' 
                   : '--'}</div>
               </div>
               <div class="cathode-box">
                 <p class="cathode-heading">Cathode 3</p>
-                <div class="ccs-reading">Current: ${data.heaterCurrent_C != null && experimentRunning
+                <div id="heaterCurrentC" class="ccs-reading">Current: ${data.heaterCurrent_C != null && experimentRunning
                   ? data.heaterCurrent_C.toFixed(2) + ' A' 
                   : '--'}</div>
-                <div class="ccs-reading">Voltage: ${data.heaterVoltage_C != null && experimentRunning
+                <div id="heaterVoltageC" class="ccs-reading">Voltage: ${data.heaterVoltage_C != null && experimentRunning
                   ? data.heaterVoltage_C.toFixed(2) + ' V' 
                   : '--'}
                   </div>
@@ -1397,8 +1404,62 @@ try {
           try {
           const res = await fetch('/data');
           const data = await res.json();
-          console.log(data);
-            }
+
+          const interlockIds = ['sic-door', 'sic-water', 'sic-vacuum-power', 'sic-vacuum-pressure', 'sic-oil-low', 'sic-oil-high', 'sic-estop', 'sic-estopExt', 'all-interlocks', 'g9-output', 'hvolt'];
+          const vacuumIds = ['vac-indicator-0', 'vac-indicator-1', 'vac-indicator-2', 'vac-indicator-3', 'vac-indicator-4', 'vac-indicator-5', 'vac-indicator-6', 'vac-indicator-7'];
+
+          interlockIds.forEach((id, i) => {
+            const elem = document.getElementById(id);
+            if (elem) elem.style.backgroundColor = data.sicColors[i];
+          });
+
+          vacuumIds.forEach((id, i) => {
+            const elem = document.getElementById(id);
+            if (elem) elem.style.backgroundColor = data.vacuumColors[i];
+          });
+
+          const pressureReadings = document.getElementById('pressureReadings');
+
+          const heaterCurrentA = document.getElementById('heaterCurrentA');
+          const heaterCurrentB = document.getElementById('heaterCurrentB');
+          const heaterCurrentC = document.getElementById('heaterCurrentC');
+
+          const heaterVoltageA = document.getElementById('heaterVoltageA');
+          const heaterVoltageB = document.getElementById('heaterVoltageB');
+          const heaterVoltageC = document.getElementById('heaterVoltageC');
+          const siteLastUpdated = document.getElementById('site-last-updated');
+
+          const sensor1 = document.getElementById('sensor-1');
+          const sensor2 = document.getElementById('sensor-2');
+          const sensor3 = document.getElementById('sensor-3');
+          const sensor4 = document.getElementById('sensor-4');
+          const sensor5 = document.getElementById('sensor-5');
+          const sensor6 = document.getElementById('sensor-6');
+
+          heaterCurrentA.textContent = data.heaterCurrent_A;
+          heaterCurrentB.textContent = data.heaterCurrent_B;
+          heaterCurrentC.textContent = data.heaterCurrent_C;
+
+          heaterVoltageA.textContent = data.heaterVoltage_A;
+          heaterVoltageB.textContent = data.heaterVoltage_B;
+          heaterVoltageC.textContent = data.heaterVoltage_C;
+          const dateObj = new Date(data.siteLastUpdated);
+          const clean_string = dateObj.toLocaleString("en-US", {
+            hour12: false,
+            timeZone: "America/Chicago"
+          });
+          siteLastUpdated.textContent = clean_string;
+
+          pressureReadings.textContent = data.pressure;
+          sensor1.textContent = data.temperatures[0];
+          sensor2.textContent = data.temperatures[1];
+          sensor3.textContent = data.temperatures[2];
+          sensor4.textContent = data.temperatures[3];
+          sensor5.textContent = data.temperatures[4];
+          sensor6.textContent = data.temperatures[5];
+
+          console.log(sensor1.textContent);
+          }
           catch {
           console.error('Failed to load the dashboard!')
             }

@@ -1436,13 +1436,13 @@ try {
           const sensor5 = document.getElementById('sensor-5');
           const sensor6 = document.getElementById('sensor-6');
 
-          heaterCurrentA.textContent = data.heaterCurrent_A;
-          heaterCurrentB.textContent = data.heaterCurrent_B;
-          heaterCurrentC.textContent = data.heaterCurrent_C;
+          heaterCurrentA.textContent = (data.heaterCurrent_A !== null ? "Current: " + data.heaterCurrent_A : "Current: " + "--");
+          heaterCurrentB.textContent = (data.heaterCurrent_B !== null ? "Current: " + data.heaterCurrent_B : "Current: " + "--");
+          heaterCurrentC.textContent = (data.heaterCurrent_C !== null ? "Current: " + data.heaterCurrent_C : "Current: " + "--");
 
-          heaterVoltageA.textContent = data.heaterVoltage_A;
-          heaterVoltageB.textContent = data.heaterVoltage_B;
-          heaterVoltageC.textContent = data.heaterVoltage_C;
+          heaterVoltageA.textContent = (data.heaterVoltage_A !== null ? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
+          heaterVoltageB.textContent = (data.heaterVoltage_B !== null ? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
+          heaterVoltageC.textContent = (data.heaterVoltage_C !== null ? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
           const dateObj = new Date(data.siteLastUpdated);
           const clean_string = dateObj.toLocaleString("en-US", {
             hour12: false,

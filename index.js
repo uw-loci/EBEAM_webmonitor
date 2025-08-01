@@ -1436,13 +1436,13 @@ try {
           const sensor5 = document.getElementById('sensor-5');
           const sensor6 = document.getElementById('sensor-6');
 
-          heaterCurrentA.textContent = (data.heaterCurrent_A !== null ? "Current: " + data.heaterCurrent_A : "Current: " + "--");
-          heaterCurrentB.textContent = (data.heaterCurrent_B !== null ? "Current: " + data.heaterCurrent_B : "Current: " + "--");
-          heaterCurrentC.textContent = (data.heaterCurrent_C !== null ? "Current: " + data.heaterCurrent_C : "Current: " + "--");
+          heaterCurrentA.textContent = (data.heaterCurrent_A !== null && data.heaterCurrent_A !== undefined ? "Current: " + data.heaterCurrent_A : "Current: " + "--");
+          heaterCurrentB.textContent = (data.heaterCurrent_B !== null && data.heaterCurrent_B !== undefined ? "Current: " + data.heaterCurrent_B : "Current: " + "--");
+          heaterCurrentC.textContent = (data.heaterCurrent_C !== null && data.heaterCurrent_C !== undefined ? "Current: " + data.heaterCurrent_C : "Current: " + "--");
 
-          heaterVoltageA.textContent = (data.heaterVoltage_A !== null ? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
-          heaterVoltageB.textContent = (data.heaterVoltage_B !== null ? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
-          heaterVoltageC.textContent = (data.heaterVoltage_C !== null ? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
+          heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined ? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
+          heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
+          heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
           const dateObj = new Date(data.siteLastUpdated);
           const clean_string = dateObj.toLocaleString("en-US", {
             hour12: false,
@@ -1467,10 +1467,11 @@ try {
      
         toggleButton.addEventListener('click', async () => {
           if (!showingFull) {
+            pre.textContent = ' Fetching file contents...';
+            fullSection.classList.add('active');
             await fetch('/refresh-display');
             const resp = await (await fetch('/raw')).text();
             pre.textContent = resp;
-            fullSection.classList.add('active');
             toggleButton.textContent = 'Collapse Log View';
           } else {
             fullSection.classList.remove('active');

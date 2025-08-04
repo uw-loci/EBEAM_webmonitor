@@ -1451,12 +1451,13 @@ try {
           siteLastUpdated.textContent = clean_string;
 
           pressureReadings.textContent = data.pressure;
-          sensor1.textContent = data.temperatures[0];
-          sensor2.textContent = data.temperatures[1];
-          sensor3.textContent = data.temperatures[2];
-          sensor4.textContent = data.temperatures[3];
-          sensor5.textContent = data.temperatures[4];
-          sensor6.textContent = data.temperatures[5];
+          sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None") ? '--' : data.temperatures["1"] + '°C';
+          sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None") ? '--' : data.temperatures["2"] + '°C';
+          sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None") ? '--' : data.temperatures["3"] + '°C';
+          sensor4.querySelector('.gauge-cover').textContent = (!data.temperatures["4"] || data.temperatures["4"] === "DISCONNECTED" || data.temperatures["4"] === "None") ? '--' : data.temperatures["4"] + '°C';
+          sensor5.querySelector('.gauge-cover').textContent = (!data.temperatures["5"] || data.temperatures["5"] === "DISCONNECTED" || data.temperatures["5"] === "None") ? '--' : data.temperatures["5"] + '°C';
+          sensor6.querySelector('.gauge-cover').textContent = (!data.temperatures["6"] || data.temperatures["6"] === "DISCONNECTED" || data.temperatures["6"] === "None") ? '--' : data.temperatures["6"] + '°C';
+
 
           console.log(sensor1.textContent);
           }

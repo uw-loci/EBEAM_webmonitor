@@ -692,7 +692,7 @@ async function fetchAndUpdateFile() {
  */
 
 fetchAndUpdateFile();
-setInterval(fetchAndUpdateFile, 60000);
+setInterval(fetchAndUpdateFile, 10000);
 
 app.get('/', async (req, res) => {
 try {
@@ -818,8 +818,17 @@ try {
       temperatures: data.temperatures,                   // Object of PMON temperature readings
       vacuumBits: data.vacuumBits,                        // 8-bit vacuum/interlock state array
       vacuumColors: vacColors,
-      sicColors: [vacuumPowerColor, vacuumPressureColor, waterColor, doorColor, oilHighColor, oilLowColor, hvoltColor, estopIntColor, estopExtColor, allInterlocksColor, 
-        G9OutputColor],
+      sicColors: [doorColor,
+        waterColor,
+        vacuumPowerColor,
+        vacuumPressureColor,
+        oilLowColor,
+        oilHighColor,
+        estopIntColor,
+        estopExtColor,
+        allInterlocksColor,
+        G9OutputColor,
+        hvoltColor],
       heaterCurrent_A: data.heaterCurrent_A,
       heaterCurrent_B: data.heaterCurrent_B,
       heaterCurrent_C: data.heaterCurrent_C,
@@ -1247,7 +1256,7 @@ try {
               <div>Turbo Rotor ON</div>
             </div>
             <div class="vacuum-indicators-item">
-              <div id = vac-indicator-2 class="vacuum-indicators-circle" style="background-color:${vacColors[2]}"></div>
+              <div id = "vac-indicator-2" class="vacuum-indicators-circle" style="background-color:${vacColors[2]}"></div>
               <div>Turbo Vent Open</div>
             </div>
             <div class="vacuum-indicators-item">

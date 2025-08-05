@@ -543,7 +543,6 @@ async function fetchDisplayFileContents(){
     if (writeResult.status === 'fulfilled') {
       console.log("File write complete.");
       lastModifiedTime = dataFile.modifiedTime; // Update in-memory cache
-      data.webMonitorLastModified = dataFile.modifiedTime;
       logFileName = dataFile.name;
       // experimentRunning = true;
     } else {
@@ -641,6 +640,7 @@ async function fetchAndUpdateFile() {
 
     if (extractionResult.status === 'fulfilled') {
       data.webMonitorLastModified = dataFile.modifiedTime;
+      data.displayLogLastModified = displayFile.modifiedTime;
       console.log("Extraction complete:", data);
     } else {
       console.error("Extraction failed:", extractionResult.reason);
@@ -1076,18 +1076,6 @@ try {
           text-align: center;
           font-size: 0.9em;
         }
-        // .gauge-cover {
-        //   width: 100%;
-        //   height: 100%;
-        //   border-radius: 50%;
-        //   background: rgba(0, 0, 0, 0.4);
-        //   display: flex;
-        //   align-items: center;
-        //   justify-content: center;
-        //   font-size: 1em;
-        //   color: #fff;
-        // }
-        // .sensor-label { font-weight: bold; }
         /* =========================
            LOG VIEWER
         ========================== */
@@ -1196,19 +1184,6 @@ try {
           <strong>Web Monitor Log Last Modified:</strong> <span id="log-last-modified">${fileModified}</span> | 
           <strong>Site Last Updated:</strong> <span id="site-last-updated">${currentTime}</span>
         </p>
-        <!-- Example Cards (Optional) -->
-        <!--
-        <div class="card-container">
-          <div class="card">Hi, I am Card 1</div>
-          <div class="card">Hi, I am Card 2</div>
-          <div class="card">Hi, I am Card 3</div>
-          <div class="card">Hi, I am Card 4</div>
-          <div class="card">Hi, I am Card 5</div>
-          <div class="card">Hi, I am Card 6</div>
-          <div class="card">Hi, I am Card 7</div>
-          <div class="card">Hi, I am Card 8</div>
-        </div>
-        -->
         <!-- Interlocks Section -->
         <div class="interlocks-section">
           <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
@@ -1364,7 +1339,10 @@ try {
         </div>
         <!-- Log Viewer -->
           <div class="env-section">
-            <h3 class="dashboard-subtitle env-title">System Logs</h3>
+            <h3 class="dashboard-subtitle env-title">System Logs; Last Update: ${new Date(data.displayLogLastModified).toLocaleString("en-US", {
+              hour12: true,
+              timeZone: "America/Chicago"
+            })}</h3>
               <button id="toggleButton" class="btn-toggle">Show Full Log</button>
               <div id="fullContent" class="content-section">
             <pre></pre>

@@ -1460,7 +1460,7 @@ try {
 
           const logLastModified = document.getElementById('log-last-modified');
           const dateObject1 = new Date(data.webMonitorLastModified)
-          const clean_string_1 = dateObj.toLocaleString("en-US", {
+          const clean_string_1 = dateObject1.toLocaleString("en-US", {
             hour12: true,
             timeZone: "America/Chicago"
           });

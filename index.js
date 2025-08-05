@@ -333,8 +333,8 @@ async function extractData(lines){
     data = {
       pressure: null,
       pressureTimestamp: null,
-      safetyOutputDataFlags: null,
       safetyInputDataFlags: null,
+      safetyOutputDataFlags: null,
       temperatures: null,
       vacuumBits: null
     };
@@ -692,7 +692,7 @@ async function fetchAndUpdateFile() {
  */
 
 fetchAndUpdateFile();
-setInterval(fetchAndUpdateFile, 10000);
+setInterval(fetchAndUpdateFile, 60000);
 
 app.get('/', async (req, res) => {
 try {
@@ -810,13 +810,35 @@ try {
    */
 
   app.get('/data', (req, res) => {
+    const inF  = data.safetyInputDataFlags  || [];
+    const outF = data.safetyOutputDataFlags || [];
+
+    const doorColor           = getDoorStatus(inF);
+    const waterColor          = getWaterStatus(inF);
+    const vacuumPowerColor    = getVacuumPower(inF);
+    const vacuumPressureColor = getVacuumPressure(inF);
+    const oilLowColor         = getOilLow(inF);
+    const oilHighColor        = getOilHigh(inF);
+    const estopIntColor       = getEStopInternal(inF);
+    const estopExtColor       = getEStopExternal(inF);
+    const allInterlocksColor  = getAllInterlocksStatus(outF);
+    const G9OutputColor       = getG9Output(outF);
+    const hvoltColor          = getHvoltOn(inF);
+
+    // recompute all 8 vacuum‐bit colours:
+    const vacColors = Array.from({ length: 8 }, (_, i) =>
+      data.vacuumBits
+        ? varBitToColour(data.vacuumBits, i)
+        : 'grey'
+    );
+
     res.json({
-      pressure: data.pressure,                         // Most recent pressure value
-      pressureTimestamp: data.pressureTimestamp,       // Timestamp associated with pressure reading
-      safetyOutputDataFlags: data.safetyOutputDataFlags, // Output flags as parsed from logger
-      safetyInputDataFlags: data.safetyInputDataFlags,   // Input flags from logger
-      temperatures: data.temperatures,                   // Object of PMON temperature readings
-      vacuumBits: data.vacuumBits,                        // 8-bit vacuum/interlock state array
+      pressure: data.pressure,                         
+      pressureTimestamp: data.pressureTimestamp,       
+      safetyOutputDataFlags: data.safetyOutputDataFlags, 
+      safetyInputDataFlags: data.safetyInputDataFlags,  
+      temperatures: data.temperatures,                  
+      vacuumBits: data.vacuumBits,                       
       vacuumColors: vacColors,
       sicColors: [doorColor,
         waterColor,
@@ -1446,6 +1468,7 @@ try {
           
 
           console.log(sensor1.textContent);
+          console.log(data.sicColors);
           }
           catch {
           console.error('Failed to load the dashboard!')

@@ -543,6 +543,7 @@ async function fetchDisplayFileContents(){
     if (writeResult.status === 'fulfilled') {
       console.log("File write complete.");
       lastModifiedTime = dataFile.modifiedTime; // Update in-memory cache
+      data.webMonitorLastModified = dataFile.modifiedTime;
       logFileName = dataFile.name;
       // experimentRunning = true;
     } else {
@@ -612,29 +613,18 @@ async function fetchAndUpdateFile() {
         heaterVoltage_B: null,
         heaterVoltage_C: null,
         fileModifiedTime: null,
-        logLastModified: null
+        webMonitorLastModified: null
       };
     } else {
       experimentRunning = true;
     }
 
-      // If we don't even have a reversed file, just log and continue
-      if (!fs.existsSync(REVERSED_FILE_PATH)) {
-        console.log("Experiment not running but passing through");
-      }
-      // } else {
-      //   console.log("Experiment not running - no updates in 15 minutes");
-      //   return false;
-      // }
-
-    // Step 3: No change detected — skip processing
     if (lastModifiedTime === dataFile.modifiedTime) {
       console.log("No new updates. Using cached data.");
       // experimentRunning = true;
       return false;
     }
 
-    // Step 4: File has changed → proceed to fetch contents
     console.log("Fetching new file...");
     let dataExtractionLines = null;
     try {
@@ -644,16 +634,14 @@ async function fetchAndUpdateFile() {
       console.error("WebMonitor file failed:", e);
     }
     
-    // Step 5: Run extraction and file write in parallel
     const extractPromise = extractData(dataExtractionLines); // Parse data from logs
     const [extractionResult] = await Promise.allSettled([
       extractPromise,
     ]);
 
-    // Step 6: Handle extraction result
     if (extractionResult.status === 'fulfilled') {
+      data.webMonitorLastModified = dataFile.modifiedTime;
       console.log("Extraction complete:", data);
-      // experimentRunning = true;
     } else {
       console.error("Extraction failed:", extractionResult.reason);
     }
@@ -682,7 +670,7 @@ async function fetchAndUpdateFile() {
       heaterVoltage_B: null,
       heaterVoltage_C: null,
       fileModifiedTime: null,
-      logLastModified: null
+      webMonitorLastModified: null
     };
 
     console.log("Could not extract the log data");
@@ -702,10 +690,9 @@ async function fetchAndUpdateFile() {
  * Immediately fetches and processes the latest available log file when the app starts,
  * and sets up a repeating fetch every 60 seconds to keep data updated.
  */
-fetchAndUpdateFile();               // Initial call to fetch and parse the latest file
-setInterval(fetchAndUpdateFile, 60000); // Repeats every 60 sec = 1 minute
 
-
+fetchAndUpdateFile();
+setInterval(fetchAndUpdateFile, 60000);
 
 app.get('/', async (req, res) => {
 try {
@@ -739,7 +726,7 @@ try {
   heaterVoltage_B: null,
   heaterVoltage_C: null,
   fileModifiedTime: null,
-  logLastModified: null
+  webMonitorLastModified: null
   };
   // todo: use this safedata in place of data var after this point for better "data" null pointer handling.
 
@@ -821,6 +808,7 @@ try {
    * The values come from the shared `data` object in memory, which gets 
    * updated every minute by `fetchAndUpdateFile()`.
    */
+
   app.get('/data', (req, res) => {
     res.json({
       pressure: data.pressure,                         // Most recent pressure value
@@ -838,7 +826,8 @@ try {
       heaterVoltage_A: data.heaterVoltage_A,
       heaterVoltage_B: data.heaterVoltage_B,
       heaterVoltage_C: data.heaterVoltage_C,
-      siteLastUpdated: new Date().toISOString()
+      siteLastUpdated: new Date().toISOString(),
+      webMonitorLastModified: data.webMonitorLastModified || null
     });
   });
 
@@ -1204,7 +1193,7 @@ try {
         <!-- Title & Subtitle -->
         <h2 class="dashboard-title">E-beam Web Monitor</h2>
         <p class="dashboard-subtitle">
-          <strong id="log-last-modified">Web Monitor Log Last Modified:</strong> ${fileModified} | 
+          <strong>Web Monitor Log Last Modified:</strong> <span id="log-last-modified">${fileModified}</span> | 
           <strong>Site Last Updated:</strong> <span id="site-last-updated">${currentTime}</span>
         </p>
         <!-- Example Cards (Optional) -->
@@ -1420,6 +1409,8 @@ try {
 
           const pressureReadings = document.getElementById('pressureReadings');
 
+          const webMonitorLastModified = document.getElementById('log-last-modified');
+
           const heaterCurrentA = document.getElementById('heaterCurrentA');
           const heaterCurrentB = document.getElementById('heaterCurrentB');
           const heaterCurrentC = document.getElementById('heaterCurrentC');
@@ -1445,7 +1436,7 @@ try {
           heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
           const dateObj = new Date(data.siteLastUpdated);
           const clean_string = dateObj.toLocaleString("en-US", {
-            hour12: false,
+            hour12: true,
             timeZone: "America/Chicago"
           });
           siteLastUpdated.textContent = clean_string;
@@ -1458,6 +1449,14 @@ try {
           sensor5.querySelector('.gauge-cover').textContent = (!data.temperatures["5"] || data.temperatures["5"] === "DISCONNECTED" || data.temperatures["5"] === "None") ? '--' : data.temperatures["5"] + '°C';
           sensor6.querySelector('.gauge-cover').textContent = (!data.temperatures["6"] || data.temperatures["6"] === "DISCONNECTED" || data.temperatures["6"] === "None") ? '--' : data.temperatures["6"] + '°C';
 
+          const logLastModified = document.getElementById('log-last-modified');
+          const dateObject1 = new Date(data.webMonitorLastModified)
+          const clean_string_1 = dateObj.toLocaleString("en-US", {
+            hour12: true,
+            timeZone: "America/Chicago"
+          });
+          logLastModified.textContent = clean_string_1;
+          
 
           console.log(sensor1.textContent);
           }

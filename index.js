@@ -1459,7 +1459,7 @@ try {
           sensor6.querySelector('.gauge-cover').textContent = (!data.temperatures["6"] || data.temperatures["6"] === "DISCONNECTED" || data.temperatures["6"] === "None") ? '--' : data.temperatures["6"] + '°C';
 
           const logLastModified = document.getElementById('log-last-modified');
-          const dateObject1 = new Date(data.webMonitorLastModified)
+          const dateObject1 = new Date(data.webMonitorLastModified);
           const clean_string_1 = dateObject1.toLocaleString("en-US", {
             hour12: true,
             timeZone: "America/Chicago"

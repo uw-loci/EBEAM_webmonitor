@@ -544,7 +544,6 @@ async function fetchDisplayFileContents(){
       console.log("File write complete.");
       lastModifiedTime = dataFile.modifiedTime; // Update in-memory cache
       logFileName = dataFile.name;
-      // experimentRunning = true;
     } else {
       console.error("File write failed:", writeResult.reason);
       // You could reset experimentRunning = false here if desired
@@ -612,15 +611,16 @@ async function fetchAndUpdateFile() {
         heaterVoltage_B: null,
         heaterVoltage_C: null,
         fileModifiedTime: null,
-        webMonitorLastModified: null
+        webMonitorLastModified: null,
+        experimentRunning: false
       };
     } else {
+      data.experimentRunning = true;
       experimentRunning = true;
     }
 
     if (lastModifiedTime === dataFile.modifiedTime) {
       console.log("No new updates. Using cached data.");
-      // experimentRunning = true;
       return false;
     }
 
@@ -1208,7 +1208,9 @@ try {
     <body>
       <div class="container-fluid mt-4">
         <!-- If experiment isn't running, show a neon warning. In the alternate case, show a neon success -->
-        ${!experimentRunning ? `<div class="neon-warning fixed-top-right">Dashboard is not running</div>` : `<div class="neon-success fixed-top-right">Dashboard is running</div>`}
+        <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'} fixed-top-right">
+          Dashboard is ${!experimentRunning ? 'not ' : ''}running
+        </div>
         <!-- Title & Subtitle -->
         <h2 class="dashboard-title">E-beam Web Monitor</h2>
         <p class="dashboard-subtitle">
@@ -1370,10 +1372,10 @@ try {
         </div>
         <!-- Log Viewer -->
           <div class="env-section">
-            <h3 class="dashboard-subtitle env-title">System Logs; Last Update: ${new Date(data.displayLogLastModified).toLocaleString("en-US", {
+            <h3 class="dashboard-subtitle env-title">System Logs; Last Update: <span id = "display-last-updated">${new Date(data.displayLogLastModified).toLocaleString("en-US", {
               hour12: true,
               timeZone: "America/Chicago"
-            })}</h3>
+            })}</span></h3>
               <button id="toggleButton" class="btn-toggle">Show Full Log</button>
               <div id="fullContent" class="content-section">
             <pre></pre>
@@ -1408,12 +1410,12 @@ try {
 
           interlockIds.forEach((id, i) => {
             const elem = document.getElementById(id);
-            if (elem) elem.style.backgroundColor = data.sicColors[i];
+            if (elem && data.experimentRunning) elem.style.backgroundColor = data.sicColors[i];
           });
 
           vacuumIds.forEach((id, i) => {
             const elem = document.getElementById(id);
-            if (elem) elem.style.backgroundColor = data.vacuumColors[i];
+            if (elem && data.experimentRunning) elem.style.backgroundColor = data.vacuumColors[i];
           });
 
           const pressureReadings = document.getElementById('pressureReadings');
@@ -1436,13 +1438,13 @@ try {
           const sensor5 = document.getElementById('sensor-5');
           const sensor6 = document.getElementById('sensor-6');
 
-          heaterCurrentA.textContent = (data.heaterCurrent_A !== null && data.heaterCurrent_A !== undefined ? "Current: " + data.heaterCurrent_A : "Current: " + "--");
-          heaterCurrentB.textContent = (data.heaterCurrent_B !== null && data.heaterCurrent_B !== undefined ? "Current: " + data.heaterCurrent_B : "Current: " + "--");
-          heaterCurrentC.textContent = (data.heaterCurrent_C !== null && data.heaterCurrent_C !== undefined ? "Current: " + data.heaterCurrent_C : "Current: " + "--");
+          heaterCurrentA.textContent = (data.heaterCurrent_A !== null && data.heaterCurrent_A !== undefined && data.experimentRunning? "Current: " + data.heaterCurrent_A : "Current: " + "--");
+          heaterCurrentB.textContent = (data.heaterCurrent_B !== null && data.heaterCurrent_B !== undefined && data.experimentRunning? "Current: " + data.heaterCurrent_B : "Current: " + "--");
+          heaterCurrentC.textContent = (data.heaterCurrent_C !== null && data.heaterCurrent_C !== undefined && data.experimentRunning? "Current: " + data.heaterCurrent_C : "Current: " + "--");
 
-          heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined ? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
-          heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
-          heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
+          heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined && data.experimentRunning? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
+          heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && data.experimentRunning? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
+          heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && data.experimentRunning? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
           const dateObj = new Date(data.siteLastUpdated);
           const clean_string = dateObj.toLocaleString("en-US", {
             hour12: true,
@@ -1451,20 +1453,43 @@ try {
           siteLastUpdated.textContent = clean_string;
 
           pressureReadings.textContent = data.pressure;
-          sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None") ? '--' : data.temperatures["1"] + '°C';
-          sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None") ? '--' : data.temperatures["2"] + '°C';
-          sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None") ? '--' : data.temperatures["3"] + '°C';
-          sensor4.querySelector('.gauge-cover').textContent = (!data.temperatures["4"] || data.temperatures["4"] === "DISCONNECTED" || data.temperatures["4"] === "None") ? '--' : data.temperatures["4"] + '°C';
-          sensor5.querySelector('.gauge-cover').textContent = (!data.temperatures["5"] || data.temperatures["5"] === "DISCONNECTED" || data.temperatures["5"] === "None") ? '--' : data.temperatures["5"] + '°C';
-          sensor6.querySelector('.gauge-cover').textContent = (!data.temperatures["6"] || data.temperatures["6"] === "DISCONNECTED" || data.temperatures["6"] === "None") ? '--' : data.temperatures["6"] + '°C';
+          sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["1"] + '°C';
+          sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["2"] + '°C';
+          sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["3"] + '°C';
+          sensor4.querySelector('.gauge-cover').textContent = (!data.temperatures["4"] || data.temperatures["4"] === "DISCONNECTED" || data.temperatures["4"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["4"] + '°C';
+          sensor5.querySelector('.gauge-cover').textContent = (!data.temperatures["5"] || data.temperatures["5"] === "DISCONNECTED" || data.temperatures["5"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["5"] + '°C';
+          sensor6.querySelector('.gauge-cover').textContent = (!data.temperatures["6"] || data.temperatures["6"] === "DISCONNECTED" || data.temperatures["6"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["6"] + '°C';
+
+          const statusDiv = document.getElementById('experiment-status');
+
+          if (data.experimentRunning) {
+              statusDiv.textContent = 'Dashboard is running';
+              statusDiv.classList.remove('neon-warning');
+              statusDiv.classList.add('neon-success');
+            } else {
+              statusDiv.textContent = 'Dashboard is not running';
+              statusDiv.classList.remove('neon-success');
+              statusDiv.classList.add('neon-warning');
+            }
 
           const logLastModified = document.getElementById('log-last-modified');
+          const displayLastModified = document.getElementById('display-last-modified');
+
           const dateObject1 = new Date(data.webMonitorLastModified);
+          const dateObject2 = new Date(data.displayLogLastModified);
+
           const clean_string_1 = dateObject1.toLocaleString("en-US", {
             hour12: true,
             timeZone: "America/Chicago"
           });
+
+          const clean_string_2 = dateObject2.toLocaleString("en-US", {
+            hour12: true,
+            timeZone: "America/Chicago"
+          });
+
           logLastModified.textContent = clean_string_1;
+          displayLastModified.textContent = clean_string_2;
           
 
           console.log(sensor1.textContent);

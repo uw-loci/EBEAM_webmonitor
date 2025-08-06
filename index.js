@@ -611,11 +611,9 @@ async function fetchAndUpdateFile() {
         heaterVoltage_B: null,
         heaterVoltage_C: null,
         fileModifiedTime: null,
-        webMonitorLastModified: null,
-        experimentRunning: false
+        webMonitorLastModified: null
       };
     } else {
-      data.experimentRunning = true;
       experimentRunning = true;
     }
 
@@ -691,8 +689,18 @@ async function fetchAndUpdateFile() {
  * and sets up a repeating fetch every 60 seconds to keep data updated.
  */
 
-fetchAndUpdateFile();
-setInterval(fetchAndUpdateFile, 60000);
+
+(async function start() {
+  // 1) grab the latest logs right now
+  await fetchAndUpdateFile();
+
+  // 2) then keep polling every minute
+  setInterval(fetchAndUpdateFile, 60_000);
+
+  // 3) finally open the HTTP port
+  app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+})();
+ 
 
 app.get('/', async (req, res) => {
 try {
@@ -858,7 +866,8 @@ try {
       heaterVoltage_B: data.heaterVoltage_B,
       heaterVoltage_C: data.heaterVoltage_C,
       siteLastUpdated: new Date().toISOString(),
-      webMonitorLastModified: data.webMonitorLastModified || null
+      webMonitorLastModified: data.webMonitorLastModified || null,
+      displayLogLastModified: data.displayLogLastModified
     });
   });
 
@@ -1402,21 +1411,58 @@ try {
         
         setInterval(async() => {
           try {
+
           const res = await fetch('/data');
           const data = await res.json();
 
           const interlockIds = ['sic-door', 'sic-water', 'sic-vacuum-power', 'sic-vacuum-pressure', 'sic-oil-low', 'sic-oil-high', 'sic-estop', 'sic-estopExt', 'all-interlocks', 'g9-output', 'hvolt'];
           const vacuumIds = ['vac-indicator-0', 'vac-indicator-1', 'vac-indicator-2', 'vac-indicator-3', 'vac-indicator-4', 'vac-indicator-5', 'vac-indicator-6', 'vac-indicator-7'];
 
+          const statusDiv = document.getElementById('experiment-status');
+
+          const logLastModified = document.getElementById('log-last-modified');
+          const displayLastModified = document.getElementById('display-last-updated');
+
+          const dateObject1 = new Date(data.webMonitorLastModified);
+          const dateObject2 = new Date(data.displayLogLastModified);
+
+          const clean_string_1 = dateObject1.toLocaleString("en-US", {
+            hour12: true,
+            timeZone: "America/Chicago"
+          });
+
+          const clean_string_2 = dateObject2.toLocaleString("en-US", {
+            hour12: true,
+            timeZone: "America/Chicago"
+          });
+
+          logLastModified.textContent = clean_string_1;
+          displayLastModified.textContent = clean_string_2;
+
+          const now = Date.now();
+
+          const THRESHOLD = 15 * 60 * 1000;
+
+          let experimentRunning = (now - dateObject1) <= THRESHOLD;
+
+          statusDiv.textContent = experimentRunning
+          ? 'Dashboard is running'
+          : 'Dashboard is not running';
+
+          statusDiv.classList.toggle('neon-success', experimentRunning);
+          statusDiv.classList.toggle('neon-warning', !experimentRunning);
+
           interlockIds.forEach((id, i) => {
             const elem = document.getElementById(id);
-            if (elem && data.experimentRunning) elem.style.backgroundColor = data.sicColors[i];
+            if (elem && experimentRunning) elem.style.backgroundColor = data.sicColors[i];
           });
 
           vacuumIds.forEach((id, i) => {
             const elem = document.getElementById(id);
-            if (elem && data.experimentRunning) elem.style.backgroundColor = data.vacuumColors[i];
+            if (elem && experimentRunning) elem.style.backgroundColor = data.vacuumColors[i];
           });
+
+
 
           const pressureReadings = document.getElementById('pressureReadings');
 
@@ -1438,13 +1484,13 @@ try {
           const sensor5 = document.getElementById('sensor-5');
           const sensor6 = document.getElementById('sensor-6');
 
-          heaterCurrentA.textContent = (data.heaterCurrent_A !== null && data.heaterCurrent_A !== undefined && data.experimentRunning? "Current: " + data.heaterCurrent_A : "Current: " + "--");
-          heaterCurrentB.textContent = (data.heaterCurrent_B !== null && data.heaterCurrent_B !== undefined && data.experimentRunning? "Current: " + data.heaterCurrent_B : "Current: " + "--");
-          heaterCurrentC.textContent = (data.heaterCurrent_C !== null && data.heaterCurrent_C !== undefined && data.experimentRunning? "Current: " + data.heaterCurrent_C : "Current: " + "--");
+          heaterCurrentA.textContent = (data.heaterCurrent_A !== null && data.heaterCurrent_A !== undefined && experimentRunning? "Current: " + data.heaterCurrent_A : "Current: " + "--");
+          heaterCurrentB.textContent = (data.heaterCurrent_B !== null && data.heaterCurrent_B !== undefined && experimentRunning? "Current: " + data.heaterCurrent_B : "Current: " + "--");
+          heaterCurrentC.textContent = (data.heaterCurrent_C !== null && data.heaterCurrent_C !== undefined && experimentRunning? "Current: " + data.heaterCurrent_C : "Current: " + "--");
 
-          heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined && data.experimentRunning? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
-          heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && data.experimentRunning? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
-          heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && data.experimentRunning? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
+          heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
+          heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
+          heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
           const dateObj = new Date(data.siteLastUpdated);
           const clean_string = dateObj.toLocaleString("en-US", {
             hour12: true,
@@ -1453,43 +1499,13 @@ try {
           siteLastUpdated.textContent = clean_string;
 
           pressureReadings.textContent = data.pressure;
-          sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["1"] + '°C';
-          sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["2"] + '°C';
-          sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["3"] + '°C';
-          sensor4.querySelector('.gauge-cover').textContent = (!data.temperatures["4"] || data.temperatures["4"] === "DISCONNECTED" || data.temperatures["4"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["4"] + '°C';
-          sensor5.querySelector('.gauge-cover').textContent = (!data.temperatures["5"] || data.temperatures["5"] === "DISCONNECTED" || data.temperatures["5"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["5"] + '°C';
-          sensor6.querySelector('.gauge-cover').textContent = (!data.temperatures["6"] || data.temperatures["6"] === "DISCONNECTED" || data.temperatures["6"] === "None" && !data.experimentRunning) ? '--' : data.temperatures["6"] + '°C';
+          sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None" && !experimentRunning) ? '--' : data.temperatures["1"] + '°C';
+          sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None" && !experimentRunning) ? '--' : data.temperatures["2"] + '°C';
+          sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None" && !experimentRunning) ? '--' : data.temperatures["3"] + '°C';
+          sensor4.querySelector('.gauge-cover').textContent = (!data.temperatures["4"] || data.temperatures["4"] === "DISCONNECTED" || data.temperatures["4"] === "None" && !experimentRunning) ? '--' : data.temperatures["4"] + '°C';
+          sensor5.querySelector('.gauge-cover').textContent = (!data.temperatures["5"] || data.temperatures["5"] === "DISCONNECTED" || data.temperatures["5"] === "None" && !experimentRunning) ? '--' : data.temperatures["5"] + '°C';
+          sensor6.querySelector('.gauge-cover').textContent = (!data.temperatures["6"] || data.temperatures["6"] === "DISCONNECTED" || data.temperatures["6"] === "None" && !experimentRunning) ? '--' : data.temperatures["6"] + '°C';
 
-          const statusDiv = document.getElementById('experiment-status');
-
-          if (data.experimentRunning) {
-              statusDiv.textContent = 'Dashboard is running';
-              statusDiv.classList.remove('neon-warning');
-              statusDiv.classList.add('neon-success');
-            } else {
-              statusDiv.textContent = 'Dashboard is not running';
-              statusDiv.classList.remove('neon-success');
-              statusDiv.classList.add('neon-warning');
-            }
-
-          const logLastModified = document.getElementById('log-last-modified');
-          const displayLastModified = document.getElementById('display-last-modified');
-
-          const dateObject1 = new Date(data.webMonitorLastModified);
-          const dateObject2 = new Date(data.displayLogLastModified);
-
-          const clean_string_1 = dateObject1.toLocaleString("en-US", {
-            hour12: true,
-            timeZone: "America/Chicago"
-          });
-
-          const clean_string_2 = dateObject2.toLocaleString("en-US", {
-            hour12: true,
-            timeZone: "America/Chicago"
-          });
-
-          logLastModified.textContent = clean_string_1;
-          displayLastModified.textContent = clean_string_2;
           
 
           console.log(sensor1.textContent);
@@ -1548,6 +1564,6 @@ try {
 });
 
 
-app.listen(PORT, () => {
-console.log(`Server running on port ${PORT}`);
-});
+// app.listen(PORT, () => {
+// console.log(`Server running on port ${PORT}`);
+// });

@@ -60,7 +60,7 @@ const drive = google.drive({ version: 'v3', auth: API_KEY });
 let lastModifiedTime = null;
 let experimentRunning = false;
 // Inactivity threshold for deciding if the experiment is "stale" (15 min in ms)
-const INACTIVE_THRESHOLD = 15 * 60 * 1000;
+const INACTIVE_THRESHOLD = 2 * 60 * 1000;
 
 // variable Structure to store ALL the data extracted 
 let data = {
@@ -609,9 +609,7 @@ async function fetchAndUpdateFile() {
         heaterCurrent_C: null,
         heaterVoltage_A: null,
         heaterVoltage_B: null,
-        heaterVoltage_C: null,
-        fileModifiedTime: null,
-        webMonitorLastModified: null
+        heaterVoltage_C: null
       };
     } else {
       experimentRunning = true;
@@ -705,7 +703,7 @@ async function fetchAndUpdateFile() {
 app.get('/', async (req, res) => {
 try {
   // console.log("Preview content (first 20 lines):\n", previewContent);
-  const fileModified = lastModifiedTime
+  const fileModified = (lastModifiedTime && !isNaN(lastModifiedTime))
     ? new Date(lastModifiedTime).toLocaleString("en-US", {timeZone: "America/Chicago"})
     : "N/A";
   // console.log("fileModifiedTime", fileModified);
@@ -1381,10 +1379,14 @@ try {
         </div>
         <!-- Log Viewer -->
           <div class="env-section">
-            <h3 class="dashboard-subtitle env-title">System Logs; Last Update: <span id = "display-last-updated">${new Date(data.displayLogLastModified).toLocaleString("en-US", {
-              hour12: true,
-              timeZone: "America/Chicago"
-            })}</span></h3>
+            <h3 class="dashboard-subtitle env-title">System Logs; Last Update: <span id="display-last-updated">${
+                data.displayLogLastModified
+                  ? new Date(data.displayLogLastModified).toLocaleString("en-US", {
+                      hour12: true,
+                      timeZone: "America/Chicago"
+                    })
+                  : "N/A"
+              }</span></h3>
               <button id="toggleButton" class="btn-toggle">Show Full Log</button>
               <div id="fullContent" class="content-section">
             <pre></pre>
@@ -1424,24 +1426,24 @@ try {
           const displayLastModified = document.getElementById('display-last-updated');
 
           const dateObject1 = new Date(data.webMonitorLastModified);
-          const dateObject2 = new Date(data.displayLogLastModified);
+          const dateObject2 = data.displayLogLastModified? new Date(data.displayLogLastModified) : null;
 
           const clean_string_1 = dateObject1.toLocaleString("en-US", {
             hour12: true,
             timeZone: "America/Chicago"
           });
 
-          const clean_string_2 = dateObject2.toLocaleString("en-US", {
+          const clean_string_2 = dateObject2? dateObject2.toLocaleString("en-US", {
             hour12: true,
             timeZone: "America/Chicago"
-          });
+          }) : "N/A";
 
           logLastModified.textContent = clean_string_1;
           displayLastModified.textContent = clean_string_2;
 
           const now = Date.now();
 
-          const THRESHOLD = 15 * 60 * 1000;
+          const THRESHOLD = 2 * 60 * 1000;
 
           let experimentRunning = (now - dateObject1) <= THRESHOLD;
 

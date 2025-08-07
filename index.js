@@ -1456,12 +1456,12 @@ try {
 
           interlockIds.forEach((id, i) => {
             const elem = document.getElementById(id);
-            if (elem && experimentRunning) elem.style.backgroundColor = experimentRunning ? data.sicColors[i] : 'grey';
+            elem.style.backgroundColor = experimentRunning ? data.sicColors[i] : 'grey';
           });
 
           vacuumIds.forEach((id, i) => {
             const elem = document.getElementById(id);
-            if (elem && experimentRunning) elem.style.backgroundColor = experimentRunning ? data.vacuumColors[i] : 'grey';
+            elem.style.backgroundColor = experimentRunning ? data.vacuumColors[i] : 'grey';
           });
 
 

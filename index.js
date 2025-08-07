@@ -1425,13 +1425,13 @@ try {
           const logLastModified = document.getElementById('log-last-modified');
           const displayLastModified = document.getElementById('display-last-updated');
 
-          const dateObject1 = new Date(data.webMonitorLastModified);
+          const dateObject1 = data.webMonitorLastModified? new Date(data.webMonitorLastModified) : null;
           const dateObject2 = data.displayLogLastModified? new Date(data.displayLogLastModified) : null;
 
-          const clean_string_1 = dateObject1.toLocaleString("en-US", {
+          const clean_string_1 = dataObject1? dateObject1.toLocaleString("en-US", {
             hour12: true,
             timeZone: "America/Chicago"
-          });
+          }) : "N/A";
 
           const clean_string_2 = dateObject2? dateObject2.toLocaleString("en-US", {
             hour12: true,

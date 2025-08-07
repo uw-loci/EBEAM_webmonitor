@@ -865,7 +865,7 @@ try {
       heaterVoltage_C: data.heaterVoltage_C,
       siteLastUpdated: new Date().toISOString(),
       webMonitorLastModified: data.webMonitorLastModified || null,
-      displayLogLastModified: data.displayLogLastModified
+      displayLogLastModified: data.displayLogLastModified || null
     });
   });
 
@@ -1362,7 +1362,7 @@ try {
                   ? data.heaterCurrent_B.toFixed(2) + ' A' 
                   : '--'}</div>
                 <div id="heaterVoltageB" class="ccs-reading">Voltage: ${data.heaterVoltage_B != null && experimentRunning
-                  ? data.heaterVoltage_A.toFixed(2) + ' V' 
+                  ? data.heaterVoltage_B.toFixed(2) + ' V' 
                   : '--'}</div>
               </div>
               <div class="cathode-box">
@@ -1428,7 +1428,7 @@ try {
           const dateObject1 = data.webMonitorLastModified? new Date(data.webMonitorLastModified) : null;
           const dateObject2 = data.displayLogLastModified? new Date(data.displayLogLastModified) : null;
 
-          const clean_string_1 = dataObject1? dateObject1.toLocaleString("en-US", {
+          const clean_string_1 = dateObject1? dateObject1.toLocaleString("en-US", {
             hour12: true,
             timeZone: "America/Chicago"
           }) : "N/A";

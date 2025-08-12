@@ -1046,6 +1046,13 @@ try {
           gap: 1rem;
           margin-top: 1rem;
         }
+        .beam-energy-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(140px, 1fr));
+          gap: 1rem;
+          align-items: stretch;
+          margin-top: 1rem;
+        }
         .ccs-reading {
           font-size: 0.8rem;
           font-weight: 500;
@@ -1054,6 +1061,17 @@ try {
           border-radius: 6px;
           background-color:rgb(116, 118, 121);
           border: 1px solid #ced4da;
+        }
+        .beam-energy-reading {
+          font-size: 0.9rem;
+          font-weight: 500;
+          margin-top: 2px;
+          border-radius: 6px;
+          background-color:rgb(116, 118, 121);
+          border: 1px solid #ced4da;
+        }
+        .beam-energy-reading p{
+          margin-top: 7px;
         }
         .cathode-box {
           flex: 1;
@@ -1375,6 +1393,16 @@ try {
                   : '--'}
                   </div>
               </div>
+          </div>
+        </div>
+        <!-- Beam Energy -->
+        <div class="env-section">
+        <h3 class="dashboard-subtitle env-title">Beam Energy</h3>
+        <div class="beam-energy-grid">
+                <div class = "beam-energy-reading"><p>Set: --</p></div> 
+                <div class = "beam-energy-reading"><p>High Voltage: --</p></div>
+                <div class = "beam-energy-reading"><p>Current: --</p></div>
+        </div>
           </div>
         </div>
         <!-- Log Viewer -->

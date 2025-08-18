@@ -713,6 +713,7 @@ try {
   // let pressure = null;
   // let timeStampDebug = data.pressureTimestamp;
   let pressure = null;
+  pressure = data.pressure;
  //  if (data && data.differenceTimestamp != null && data.differenceTimestamp <= 75) {
  //    // pressure = data.pressure;
  //    pressure = Number(data.pressure).toExponential(3);

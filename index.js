@@ -368,20 +368,20 @@ async function extractData(lines){
             // let diff = nowSec - jsonData.timestamp;
             // if (diff < 0) diff += 24 * 3600;
 
-            if (jsonData.status.pressure != null) {
+            if (jsonData.status.pressure != null && data.pressure === null) {
               data.pressure          = jsonData.status.pressure;
               data.pressureTimestamp = jsonData.timestamp;
             }
-            if (jsonData.status.safetyOutputDataFlags !== null){
+            if (jsonData.status.safetyOutputDataFlags !== null && data.safetyOutputDataFlags === null){
               data.safetyOutputDataFlags = jsonData.status.safetyOutputDataFlags;
             }
-            if (jsonData.status.safetyInputDataFlags !== null){
+            if (jsonData.status.safetyInputDataFlags !== null && data.safetyInputDataFlags === null){
               data.safetyInputDataFlags = jsonData.status.safetyInputDataFlags;
             }
-            if (jsonData.status.temperatures !== null){
+            if (jsonData.status.temperatures !== null && data.temperatures === null){
               data.temperatures = jsonData.status.temperatures;
             }
-            if (jsonData.status.vacuumBits !== null){
+            if (jsonData.status.vacuumBits !== null && data.vacuumBits === null){
               data.vacuumBits = jsonData.status.vacuumBits;
               if (typeof jsonData.status.vacuumBits === 'string') {
                data.vacuumBits = jsonData.status.vacuumBits

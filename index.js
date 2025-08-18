@@ -1529,7 +1529,7 @@ try {
           });
           siteLastUpdated.textContent = clean_string;
 
-          pressureReadings.textContent = data.pressure;
+          pressureReadings.textContent = "Vacuum Indicators: " + String(data.pressure).replace("E", "e") + " mbar";
           sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None" && !experimentRunning) ? '--' : data.temperatures["1"] + '°C';
           sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None" && !experimentRunning) ? '--' : data.temperatures["2"] + '°C';
           sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None" && !experimentRunning) ? '--' : data.temperatures["3"] + '°C';

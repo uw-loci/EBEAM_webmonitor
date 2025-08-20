@@ -390,29 +390,42 @@ async function extractData(lines){
               }
             }
 
-            if (jsonData.status["Cathode A - Heater Current: "] !== null) {
+            if (jsonData.status["Cathode A - Heater Current:"] !== null) {
               data.heaterCurrent_A = jsonData.status["Cathode A - Heater Current: "];
             }
 
-            if (jsonData.status["Cathode B - Heater Current: "] !== null) {
+            if (jsonData.status["Cathode B - Heater Current:"] !== null) {
               data.heaterCurrent_B = jsonData.status["Cathode B - Heater Current: "];
             }
 
-            if (jsonData.status["Cathode C - Heater Current: "] !== null) {
+            if (jsonData.status["Cathode C - Heater Current:"] !== null) {
               data.heaterCurrent_C = jsonData.status["Cathode C - Heater Current: "];
             }
 
-            if (jsonData.status["Cathode A - Heater Voltage: "] !== null) {
+            if (jsonData.status["Cathode A - Heater Voltage:"] !== null) {
               data.heaterVoltage_A = jsonData.status["Cathode A - Heater Voltage: "];
             }
 
-            if (jsonData.status["Cathode B - Heater Voltage: "] !== null) {
+            if (jsonData.status["Cathode B - Heater Voltage:"] !== null) {
               data.heaterVoltage_B = jsonData.status["Cathode B - Heater Voltage: "];
             }
 
-            if (jsonData.status["Cathode C - Heater Voltage: "] !== null) {
+            if (jsonData.status["Cathode C - Heater Voltage:"] !== null) {
               data.heaterVoltage_C = jsonData.status["Cathode C - Heater Voltage: "];
             }
+
+            if (jsonData.status["clamp_temperature_A"] !== null) {
+              data.clamp_temperature_A = jsonData.status["clamp_temperature_A"];
+            }
+
+            if (jsonData.status["clamp_temperature_B"] !== null) {
+              data.clamp_temperature_B = jsonData.status["clamp_temperature_B"];
+            }
+
+            if (jsonData.status["clamp_temperature_C"] !== null) {
+              data.clamp_temperature_C = jsonData.status["clamp_temperature_C"];
+            }
+
           }
           
           catch(e){
@@ -609,7 +622,10 @@ async function fetchAndUpdateFile() {
         heaterCurrent_C: null,
         heaterVoltage_A: null,
         heaterVoltage_B: null,
-        heaterVoltage_C: null
+        heaterVoltage_C: null,
+        clamp_temperature_A: null,
+        clamp_temperature_B: null,
+        clamp_temperature_C: null
       };
     } else {
       experimentRunning = true;
@@ -665,6 +681,9 @@ async function fetchAndUpdateFile() {
       heaterVoltage_A: null,
       heaterVoltage_B: null,
       heaterVoltage_C: null,
+      clamp_temperature_A: null,
+      clamp_temperature_B: null,
+      clamp_temperature_C: null,
       fileModifiedTime: null,
       webMonitorLastModified: null
     };
@@ -732,6 +751,9 @@ try {
   heaterVoltage_A: null,
   heaterVoltage_B: null,
   heaterVoltage_C: null,
+  clamp_temperature_A: null,
+  clamp_temperature_B: null,
+  clamp_temperature_C: null,
   fileModifiedTime: null,
   webMonitorLastModified: null
   };
@@ -864,6 +886,9 @@ try {
       heaterVoltage_A: data.heaterVoltage_A,
       heaterVoltage_B: data.heaterVoltage_B,
       heaterVoltage_C: data.heaterVoltage_C,
+      clamp_temperature_A: data.clamp_temperature_A,
+      clamp_temperature_B: data.clamp_temperature_B,
+      clamp_temperature_C: data.clamp_temperature_C,
       siteLastUpdated: new Date().toISOString(),
       webMonitorLastModified: data.webMonitorLastModified || null,
       displayLogLastModified: data.displayLogLastModified || null
@@ -1374,6 +1399,9 @@ try {
               <div id="heaterVoltageA" class="ccs-reading">Voltage: ${data.heaterVoltage_A != null && experimentRunning
                 ? data.heaterVoltage_A.toFixed(2) + ' V' 
                 : '--'}</div>
+                <div id="heaterTemperatureA" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_A != null && experimentRunning
+                ? data.clamp_temperature_A.toFixed(2) + ' C' 
+                : '--'}</div>
               </div>
               <div class="cathode-box">
                 <p class="cathode-heading">Cathode 2</p>
@@ -1383,6 +1411,9 @@ try {
                 <div id="heaterVoltageB" class="ccs-reading">Voltage: ${data.heaterVoltage_B != null && experimentRunning
                   ? data.heaterVoltage_B.toFixed(2) + ' V' 
                   : '--'}</div>
+                <div id="heaterTemperatureB" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_B != null && experimentRunning
+                ? data.clamp_temperature_B.toFixed(2) + ' C' 
+                : '--'}</div>
               </div>
               <div class="cathode-box">
                 <p class="cathode-heading">Cathode 3</p>
@@ -1393,6 +1424,9 @@ try {
                   ? data.heaterVoltage_C.toFixed(2) + ' V' 
                   : '--'}
                   </div>
+                <div id="heaterTemperatureC" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_C != null && experimentRunning
+                ? data.clamp_temperature_C.toFixed(2) + ' C' 
+                : '--'}</div>
               </div>
           </div>
         </div>
@@ -1506,6 +1540,11 @@ try {
           const heaterVoltageA = document.getElementById('heaterVoltageA');
           const heaterVoltageB = document.getElementById('heaterVoltageB');
           const heaterVoltageC = document.getElementById('heaterVoltageC');
+
+          const heaterTemperatureA = document.getElementById('heaterTemperatureA');
+          const heaterTemperatureB = document.getElementById('heaterTemperatureB');
+          const heaterTemperatureC = document.getElementById('heaterTemperatureC');
+
           const siteLastUpdated = document.getElementById('site-last-updated');
 
           const sensor1 = document.getElementById('sensor-1');
@@ -1522,6 +1561,12 @@ try {
           heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
           heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
           heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
+
+          heaterTemperatureA.textContent = (data.clamp_temperature_A !== null && data.clamp_temperature_A !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_A : "Clamp Temperature: " + "--");
+          heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_B : "Clamp Temperature: " + "--");
+          heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_C : "Clamp Temperature: " + "--");
+
+
           const dateObj = new Date(data.siteLastUpdated);
           const clean_string = dateObj.toLocaleString("en-US", {
             hour12: true,

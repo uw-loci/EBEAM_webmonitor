@@ -68,6 +68,8 @@ pressure: null,
 pressureTimestamp: null,
 safetyOutputDataFlags: null,
 safetyInputDataFlags: null,
+safetyOutputStatusFlags: null,
+safetyInputStatusFlags: null,
 temperatures: null, 
 vacuumBits: null
 };
@@ -91,21 +93,27 @@ const interlockStates = {
 // 1 --> green, 0 --> red, Default --> grey.
 
 // Interlocks
-function getDoorStatus(inputFlags) {
- if (!inputFlags || inputFlags.length < 13) return "grey";
- return inputFlags[4] && inputFlags[5] ? "green" : "red";
+function getDoorStatus(inputFlags, statusFlags) {
+  if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
+  const data = inputFlags[4] && inputFlags[5];
+  const status_f = statusFlags[4] && statusFlags[5];
+  return (data && status_f)? "green" : "red";
 }
 
 
-function getVacuumPower(inputFlags) {
- if (!inputFlags || inputFlags.length < 13) return "grey";
- return inputFlags[6] ? "green" : "red";
+function getVacuumPower(inputFlags, statusFlags) {
+  if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
+  const data = inputFlags[6];
+  const status_f = statusFlags[6];
+  return (data && status_f)? "green" : "red";
 }
 
 
-function getVacuumPressure(inputFlags) {
-  if (!inputFlags || inputFlags.length < 13) return "grey";
-  return inputFlags[7] ? "green" : "red";
+function getVacuumPressure(inputFlags, statusFlags) {
+  if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
+  const data = inputFlags[7];
+  const status_f = statusFlags[7];
+  return (data && status_f)? "green" : "red";
 }
 
 
@@ -116,9 +124,11 @@ function getAllInterlocksStatus(outputFlags) {
 }
 
 
-function getWaterStatus(inputFlags) {
- if (!inputFlags || inputFlags.length < 13) return "grey";
- return inputFlags[10] ? "green" : "red";
+function getWaterStatus(inputFlags, statusFlags) {
+  if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
+  const data = inputFlags[10];
+  const status_f = statusFlags[10];
+  return (data && status_f)? "green" : "red";
 }
 
 
@@ -128,33 +138,48 @@ function getG9Output(outputFlags) {
 }
 
 
-function getEStopInternal(inputFlags) {
- if (!inputFlags || inputFlags.length < 13) return "grey";
- return inputFlags[0] && inputFlags[1] ? "green" : "red";
+function getEStopInternal(inputFlags, statusFlags) {
+  if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
+  const data = inputFlags[0] && inputFlags[1];
+  const status_f = statusFlags[0] && statusFlags[1];
+  return (data && status_f)? "green" : "red";
 }
 
 
-function getEStopExternal(inputFlags) {
- if (!inputFlags || inputFlags.length < 13) return "grey";
- return inputFlags[2] && inputFlags[3] ? "green" : "red";
+function getEStopExternal(inputFlags, statusFlags) {
+  if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
+  const data = inputFlags[2] && inputFlags[3];
+  const status_f = statusFlags[2] && statusFlags[3];
+  return (data && status_f)? "green" : "red";
 }
 
 
-function getOilLow(inputFlags) {
- if (!inputFlags || inputFlags.length < 13) return "grey";
- return inputFlags[9] ? "green" : "red";
+function getOilLow(inputFlags, statusFlags) {
+  if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
+  const data = inputFlags[9];
+  const status_f = statusFlags[9];
+  return (data && status_f)? "green" : "red";
 }
 
 
-function getOilHigh(inputFlags) {
- if (!inputFlags || inputFlags.length < 13) return "grey";
- return inputFlags[8] ? "green" : "red";
+function getOilHigh(inputFlags, statusFlags) {
+  if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
+  const data = inputFlags[8];
+  const status_f = statusFlags[8];
+  return (data && status_f)? "green" : "red";
 }
 
 
-function getHvoltOn(inputFlags) {
- if (!inputFlags || inputFlags.length < 13) return "grey";
- return inputFlags[12] ? "green" : "red";
+function getHvoltOn(inputFlags, statusFlags) {
+  if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
+  const data = inputFlags[11];
+  const status_f = statusFlags[11];
+  if (data == 0 && status_f == 1){
+    return "green"
+  }
+  else{
+    return "red"
+  }
 }
 
 // Vacuume Indicators
@@ -335,6 +360,8 @@ async function extractData(lines){
       pressureTimestamp: null,
       safetyInputDataFlags: null,
       safetyOutputDataFlags: null,
+      safetyInputStatusFlags: null,
+      safetyOutputStatusFlags: null,
       temperatures: null,
       vacuumBits: null
     };
@@ -377,6 +404,12 @@ async function extractData(lines){
             }
             if (jsonData.status.safetyInputDataFlags !== null && data.safetyInputDataFlags === null){
               data.safetyInputDataFlags = jsonData.status.safetyInputDataFlags;
+            }
+            if (jsonData.status.safetyOutputStatusFlags !== null && data.safetyOutputStatusFlags === null){
+              data.safetyOutputStatusFlags = jsonData.status.safetyOutputStatusFlags;
+            }
+            if (jsonData.status.safetyInputStatusFlags !== null && data.safetyInputStatusFlags === null){
+              data.safetyInputStatusFlags = jsonData.status.safetyInputStatusFlags;
             }
             if (jsonData.status.temperatures !== null && data.temperatures === null){
               data.temperatures = jsonData.status.temperatures;
@@ -443,6 +476,8 @@ async function extractData(lines){
         data.pressureTimestamp !== null &&
         data.safetyOutputDataFlags !== null &&
         data.safetyInputDataFlags !== null &&
+        data.safetyOutputStatusFlags !== null &&
+        data.safetyInputStatusFlags !== null &&
         data.temperatures !== null &&
         data.vacuumBits !== null
       ) {
@@ -615,6 +650,8 @@ async function fetchAndUpdateFile() {
         pressureTimestamp: null,
         safetyOutputDataFlags: null,
         safetyInputDataFlags: null,
+        safetyOutputStatusFlags: null,
+        safetyInputStatusFlags: null,
         temperatures: null, 
         vacuumBits: null,
         heaterCurrent_A: null,
@@ -673,6 +710,8 @@ async function fetchAndUpdateFile() {
       pressureTimestamp: null,
       safetyOutputDataFlags: null,
       safetyInputDataFlags: null,
+      safetyOutputStatusFlags: null,
+      safetyInputStatusFlags: null,
       temperatures: null, 
       vacuumBits: null,
       heaterCurrent_A: null,
@@ -743,6 +782,8 @@ try {
   pressureTimestamp: null,
   safetyOutputDataFlags: null,
   safetyInputDataFlags: null,
+  safetyOutputStatusFlags: null,
+  safetyInputStatusFlags: null,
   temperatures: null, 
   vacuumBits: null,
   heaterCurrent_A: null,
@@ -800,15 +841,15 @@ try {
   // console.log('AA', temperatures);
 
 
-  let vacuumPowerColor = experimentRunning? getVacuumPower(data.safetyInputDataFlags) : "grey";
-  let vacuumPressureColor = experimentRunning? getVacuumPressure(data.safetyInputDataFlags) : "grey";
-  let waterColor = experimentRunning? getWaterStatus(data.safetyInputDataFlags) : "grey";
-  let doorColor = experimentRunning? getDoorStatus(data.safetyInputDataFlags) : "grey";
-  let oilHighColor = experimentRunning? getOilHigh(data.safetyInputDataFlags) : "grey";
-  let oilLowColor = experimentRunning? getOilLow(data.safetyInputDataFlags) : "grey";
-  let hvoltColor = experimentRunning? getHvoltOn(data.safetyInputDataFlags) : "grey";
-  let estopIntColor = experimentRunning? getEStopInternal(data.safetyInputDataFlags) : "grey";
-  let estopExtColor = experimentRunning? getEStopExternal(data.safetyInputDataFlags) : "grey";
+  let vacuumPowerColor = experimentRunning? getVacuumPower(data.safetyInputDataFlags, data.safetyInputStatusFlags) : "grey";
+  let vacuumPressureColor = experimentRunning? getVacuumPressure(data.safetyInputDataFlags, data.safetyInputStatusFlags) : "grey";
+  let waterColor = experimentRunning? getWaterStatus(data.safetyInputDataFlags, data.safetyInputStatusFlags) : "grey";
+  let doorColor = experimentRunning? getDoorStatus(data.safetyInputDataFlags, data.safetyInputStatusFlags) : "grey";
+  let oilHighColor = experimentRunning? getOilHigh(data.safetyInputDataFlags, data.safetyInputStatusFlags) : "grey";
+  let oilLowColor = experimentRunning? getOilLow(data.safetyInputDataFlags, data.safetyInputStatusFlags) : "grey";
+  let hvoltColor = experimentRunning? getHvoltOn(data.safetyInputDataFlags, data.safetyInputStatusFlags) : "grey";
+  let estopIntColor = experimentRunning? getEStopInternal(data.safetyInputDataFlags, data.safetyInputStatusFlags) : "grey";
+  let estopExtColor = experimentRunning? getEStopExternal(data.safetyInputDataFlags, data.safetyInputStatusFlags) : "grey";
   let allInterlocksColor = experimentRunning? getAllInterlocksStatus(data.safetyOutputDataFlags) : "grey";
   let G9OutputColor = experimentRunning? getG9Output(data.safetyOutputDataFlags) : "grey";
 
@@ -842,17 +883,19 @@ try {
     const inF  = data.safetyInputDataFlags  || [];
     const outF = data.safetyOutputDataFlags || [];
 
-    const doorColor           = getDoorStatus(inF);
-    const waterColor          = getWaterStatus(inF);
-    const vacuumPowerColor    = getVacuumPower(inF);
-    const vacuumPressureColor = getVacuumPressure(inF);
-    const oilLowColor         = getOilLow(inF);
-    const oilHighColor        = getOilHigh(inF);
-    const estopIntColor       = getEStopInternal(inF);
-    const estopExtColor       = getEStopExternal(inF);
+    const inSF = data.safetyInputStatusFlags || [];
+
+    const doorColor           = getDoorStatus(inF, inSF);
+    const waterColor          = getWaterStatus(inF, inSF);
+    const vacuumPowerColor    = getVacuumPower(inF, inSF);
+    const vacuumPressureColor = getVacuumPressure(inF, inSF);
+    const oilLowColor         = getOilLow(inF, inSF);
+    const oilHighColor        = getOilHigh(inF, inSF);
+    const estopIntColor       = getEStopInternal(inF, inSF);
+    const estopExtColor       = getEStopExternal(inF, inSF);
     const allInterlocksColor  = getAllInterlocksStatus(outF);
     const G9OutputColor       = getG9Output(outF);
-    const hvoltColor          = getHvoltOn(inF);
+    const hvoltColor          = getHvoltOn(inF, inSF);
 
     // recompute all 8 vacuum‐bit colours:
     const vacColors = Array.from({ length: 8 }, (_, i) =>
@@ -863,7 +906,9 @@ try {
 
     res.json({
       pressure: data.pressure,                         
-      pressureTimestamp: data.pressureTimestamp,       
+      pressureTimestamp: data.pressureTimestamp,   
+      safetyInputStatusFlags: data.safetyInputStatusFlags,
+      safetyOutputStatusFlags: data.safetyOutputStatusFlags,    
       safetyOutputDataFlags: data.safetyOutputDataFlags, 
       safetyInputDataFlags: data.safetyInputDataFlags,  
       temperatures: data.temperatures,                  

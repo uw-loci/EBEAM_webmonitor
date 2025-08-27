@@ -573,7 +573,6 @@ async function fetchDisplayFileContents(){
 
     if (!displayFile){
       console.log("No display file found!")
-      return false;
     }
 
     // Step 4: File has changed → proceed to fetch contents
@@ -611,7 +610,6 @@ async function fetchDisplayFileContents(){
   } catch (err) {
     // Catch-all error handling for the fetch/extract/write process
     console.error(`Error processing file: ${err.message}`);
-
     return false;
   }
 }

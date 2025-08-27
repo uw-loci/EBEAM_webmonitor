@@ -199,7 +199,7 @@ function secondsSinceMidnightChicago() {
  *
  * Steps:
  * 1) Drive API list call:
- *      - Folder constraint:  `'${FOLDER_ID}' in parents`
+ *      - Folder constraint:  `'${LOG_FOLDER_ID}' in parents`
  *      - File type filter:   `mimeType='text/plain'`
  * 2) Sort descending by `modifiedTime` so index 0 is newest.
  * 3) Return that file’s `{ id, name, modifiedTime }`.
@@ -238,17 +238,19 @@ async function getMostRecentFile() {
       if (file.name.startsWith('webMonitor')){
         dataFile = file;
         console.log(dataFile);
+        console.log("DATA FILE'S ID: ", dataFile.id)
       }
       else if (file.name.startsWith('log_')){
         displayFile = file;
       }
-      if (dataFile && displayFile) break;
+      //TEMP CHANGE: Add Display File here
+      if (dataFile) break;
     }
-    return {dataFile, displayFile}
+    return {dataFile, displayFile};
   
   } catch (err) {
     console.error(`Google Drive API Error: ${err.message}`);
-    return {dataFile: null, displayFile: null};
+    return {dataFile: null};
   }
 }
 
@@ -318,15 +320,18 @@ async function fetchFileContents(fileId) {
 
     } catch (err) {
       console.log(`Retry ${4 - retries}: ${err.message}`);
-      retries--;
+      return false
 
-      if (retries === 0) {
-        // Out of retries – bubble the error up
-        throw err;
-      }
+      // TEMP CHANGE: Uncomment this chunk after fixing fetch issues with data file
+      // retries--;
 
-      // Simple back-off (2 sec) before the next attempt
-      await new Promise(res => setTimeout(res, 2000));
+      // if (retries === 0) {
+      //   // Out of retries – bubble the error up
+      //   throw err;
+      // }
+
+      // // Simple back-off (2 sec) before the next attempt
+      // await new Promise(res => setTimeout(res, 2000));
     }
   }
 }
@@ -563,10 +568,12 @@ async function fetchDisplayFileContents(){
 
   try {
     // Step 1: Get the most recent file from Drive
-    const {dataFile, displayFile} = await getMostRecentFile();
+    //TEMP CHANGE: Uncomment
+    const { dataFile } = await getMostRecentFile();
 
     if (!displayFile){
       console.log("No display file found!")
+      return false;
     }
 
     // Step 4: File has changed → proceed to fetch contents
@@ -574,6 +581,10 @@ async function fetchDisplayFileContents(){
     let displayLines = null;
     try {
       displayLines = await fetchFileContents(displayFile.id);
+      if (!Array.isArray(displayLines)) {
+        console.warn("Display File fetch failed or returned no lines. Skipping extraction.");
+        return false;
+      }
       displayLines.reverse();
       displayLines = displayLines.slice(0, 100000);
     } catch (e) {
@@ -624,7 +635,7 @@ async function fetchAndUpdateFile() {
 
   try {
     // Step 1: Get the most recent file from Drive
-    const {dataFile, displayFile} = await getMostRecentFile();
+    const { dataFile } = await getMostRecentFile();
 
     if (!dataFile){
       console.log("No data file found!")
@@ -677,6 +688,10 @@ async function fetchAndUpdateFile() {
     let dataExtractionLines = null;
     try {
       dataExtractionLines = await fetchFileContents(dataFile.id);
+      if (!Array.isArray(dataExtractionLines)) {
+        console.warn("File fetch failed or returned no lines. Skipping extraction.");
+        return false;
+      }
       dataExtractionLines.reverse();
     } catch (e) {
       console.error("WebMonitor file failed:", e);
@@ -689,7 +704,8 @@ async function fetchAndUpdateFile() {
 
     if (extractionResult.status === 'fulfilled') {
       data.webMonitorLastModified = dataFile.modifiedTime;
-      data.displayLogLastModified = displayFile.modifiedTime;
+      //TEMP CHANGE: Uncomment
+      // data.displayLogLastModified = displayFile.modifiedTime;
       console.log("Extraction complete:", data);
     } else {
       console.error("Extraction failed:", extractionResult.reason);

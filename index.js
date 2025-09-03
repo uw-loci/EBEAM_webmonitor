@@ -89,7 +89,7 @@ const interlockStates = {
  "HVolt ON": "red",
 };
 
-// Quick helper function to help with data to colour while integration
+// Quick helper function to help with data to color while integration
 // 1 --> green, 0 --> red, Default --> grey.
 
 // Interlocks
@@ -182,17 +182,39 @@ function getHvoltOn(inputFlags, statusFlags) {
   }
 }
 
-// Vacuume Indicators
-function varBitToColour(bits, index) {
+// Vacuum Indicators
+function varBitToColor(bits, index) {
   if (!Array.isArray(bits) || bits.length < 8) return "grey";   // Default
   return bits[index] ? "green" : "red";                         // 1 --> green, 0 --> red
 }
 
+
+const chicagoTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Chicago',
+  hour: 'numeric',
+  minute: 'numeric',
+  second: 'numeric',
+  hour12: false
+});
+
 function secondsSinceMidnightChicago() {
- const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
- const d = new Date(now);
- return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+  const parts = chicagoTimeFormatter.formatToParts(new Date());
+  let hours = 0, minutes = 0, seconds = 0;
+
+  for (const part of parts) {
+    if (part.type === 'hour') hours = parseInt(part.value, 10);
+    else if (part.type === 'minute') minutes = parseInt(part.value, 10);
+    else if (part.type === 'second') seconds = parseInt(part.value, 10);
+  }
+
+  return hours * 3600 + minutes * 60 + seconds;
 }
+
+// function secondsSinceMidnightChicago() {
+//  const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+//  const d = new Date(now);
+//  return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+// }
 
 /**
  * Fetch the single most-recent plain-text log file in the Drive folder.
@@ -250,7 +272,7 @@ async function getMostRecentFile() {
   
   } catch (err) {
     console.error(`Google Drive API Error: ${err.message}`);
-    return {dataFile: null};
+    return {dataFile: null, displayFile: null};
   }
 }
 
@@ -378,6 +400,10 @@ async function extractData(lines){
     // // Loop through each line in the log file
     for (let i = 0; i < lines.length; i++){
       const line = lines[i]
+      
+      // FIXME: why is this block there. Also has an issue as there can be
+      // more than one brace on a line. We could technically two braces on first line
+      // and then only one on the next line. This issue would not be detected.
       if (!jsonStart && line.includes('{')){
         jsonStart = true;
         jsonBlock = '';
@@ -476,25 +502,27 @@ async function extractData(lines){
     }
     
       // If all fields are filled, stop early to save processing time
-      if (
-        data.pressure !== null &&
-        data.pressureTimestamp !== null &&
-        data.safetyOutputDataFlags !== null &&
-        data.safetyInputDataFlags !== null &&
-        data.safetyOutputStatusFlags !== null &&
-        data.safetyInputStatusFlags !== null &&
-        data.temperatures !== null &&
-        data.vacuumBits !== null
-      ) {
+      // if (
+      //   data.pressure !== null &&
+      //   data.pressureTimestamp !== null &&
+      //   data.safetyOutputDataFlags !== null &&
+      //   data.safetyInputDataFlags !== null &&
+      //   data.safetyOutputStatusFlags !== null &&
+      //   data.safetyInputStatusFlags !== null &&
+      //   data.temperatures !== null &&
+      //   data.vacuumBits !== null
+      // ) {
+      if(Object.values(data).every(value => value != null)) {
         console.log(" All data fields found within 1 hour. Exiting early.");
         return true;
       }
     
     return true; // success
-  }catch(e) {
+  } catch(e) {
     console.log("Error: ", e);
     throw new Error("extraction failed: pattern not found: ", e); // rethrow with message
-  }}
+  }
+}
 
 /**
  * Asynchronously writes an array of log lines to a local file in reverse order.
@@ -569,7 +597,7 @@ async function fetchDisplayFileContents(){
   try {
     // Step 1: Get the most recent file from Drive
     //TEMP CHANGE: Uncomment
-    const { dataFile } = await getMostRecentFile();
+    const { dataFile, displayFile } = await getMostRecentFile();
 
     if (!displayFile){
       console.log("No display file found!")
@@ -633,7 +661,7 @@ async function fetchAndUpdateFile() {
 
   try {
     // Step 1: Get the most recent file from Drive
-    const { dataFile } = await getMostRecentFile();
+    const { dataFile, displayFile } = await getMostRecentFile();
 
     if (!dataFile){
       console.log("No data file found!")
@@ -868,14 +896,14 @@ try {
   let G9OutputColor = experimentRunning? getG9Output(data.safetyOutputDataFlags) : "grey";
 
   let vacColors = (bits => [
-    experimentRunning? varBitToColour(bits, 0) : "grey",
-    experimentRunning? varBitToColour(bits, 1) : "grey",
-    experimentRunning? varBitToColour(bits, 2) : "grey",
-    experimentRunning? varBitToColour(bits, 3) : "grey",
-    experimentRunning? varBitToColour(bits, 4) : "grey",
-    experimentRunning? varBitToColour(bits, 5) : "grey",
-    experimentRunning? varBitToColour(bits, 6) : "grey",
-    experimentRunning? varBitToColour(bits, 7) : "grey"
+    experimentRunning? varBitToColor(bits, 0) : "grey",
+    experimentRunning? varBitToColor(bits, 1) : "grey",
+    experimentRunning? varBitToColor(bits, 2) : "grey",
+    experimentRunning? varBitToColor(bits, 3) : "grey",
+    experimentRunning? varBitToColor(bits, 4) : "grey",
+    experimentRunning? varBitToColor(bits, 5) : "grey",
+    experimentRunning? varBitToColor(bits, 6) : "grey",
+    experimentRunning? varBitToColor(bits, 7) : "grey"
     ])(data.vacuumBits);
 
   
@@ -911,10 +939,10 @@ try {
     const G9OutputColor       = getG9Output(outF);
     const hvoltColor          = getHvoltOn(inF, inSF);
 
-    // recompute all 8 vacuum‐bit colours:
+    // recompute all 8 vacuum‐bit colors:
     const vacColors = Array.from({ length: 8 }, (_, i) =>
       data.vacuumBits
-        ? varBitToColour(data.vacuumBits, i)
+        ? varBitToColor(data.vacuumBits, i)
         : 'grey'
     );
 

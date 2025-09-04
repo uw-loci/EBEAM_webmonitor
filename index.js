@@ -381,6 +381,7 @@ async function fetchFileContents(fileId) {
  */
 
 async function extractData(lines){
+  // FIXME: how is extraction constrained to only fresh data
   try{
     data = {
       pressure: null,
@@ -397,28 +398,25 @@ async function extractData(lines){
     let bracesCount = 0;
     let jsonStart = false;
 
-    // // Loop through each line in the log file
+    // Loop through each line in the log file
     for (let i = 0; i < lines.length; i++){
       const line = lines[i]
       
-      // FIXME: why is this block there. Also has an issue as there can be
-      // more than one brace on a line. We could technically two braces on first line
-      // and then only one on the next line. This issue would not be detected.
+      
       if (!jsonStart && line.includes('{')){
         jsonStart = true;
         jsonBlock = '';
-        bracesCount++;
       }
+
+      // FIXME: Need to eventually make this brace counting logic for json extraction more robust for defensive programming
+      // to handle malformed data that is syntactically valid json but logically invalid
       if (jsonStart){
-        jsonBlock += line;
+        jsonBlock += line + '\n'; // preserve line breaks
+
         bracesCount += (line.match(/{/g) || []).length;
         bracesCount -= (line.match(/}/g) || []).length;
+
         if (bracesCount === 0){
-          jsonStart = false;
-        }
-        if (line.includes('}')){
-          // console.log(line.temperatures)
-          jsonStart = false;
           try{
             const jsonData = JSON.parse(jsonBlock);
 
@@ -426,31 +424,33 @@ async function extractData(lines){
             // let diff = nowSec - jsonData.timestamp;
             // if (diff < 0) diff += 24 * 3600;
 
-            if (jsonData.status.pressure != null && data.pressure === null) {
+            // can't do just jsonData.status?.pressure as pressure could be 0.0
+            if (jsonData.status?.pressure != null && data.pressure === null) {
               data.pressure          = jsonData.status.pressure;
               data.pressureTimestamp = jsonData.timestamp;
             }
-            if (jsonData.status.safetyOutputDataFlags !== null && data.safetyOutputDataFlags === null){
+            if (jsonData.status?.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
               data.safetyOutputDataFlags = jsonData.status.safetyOutputDataFlags;
             }
-            if (jsonData.status.safetyInputDataFlags !== null && data.safetyInputDataFlags === null){
+            if (jsonData.status?.safetyInputDataFlags && data.safetyInputDataFlags === null) {
               data.safetyInputDataFlags = jsonData.status.safetyInputDataFlags;
             }
-            if (jsonData.status.safetyOutputStatusFlags !== null && data.safetyOutputStatusFlags === null){
+            if (jsonData.status?.safetyOutputStatusFlags && data.safetyOutputStatusFlags === null) {
               data.safetyOutputStatusFlags = jsonData.status.safetyOutputStatusFlags;
             }
-            if (jsonData.status.safetyInputStatusFlags !== null && data.safetyInputStatusFlags === null){
+            if (jsonData.status?.safetyInputStatusFlags && data.safetyInputStatusFlags === null) {
               data.safetyInputStatusFlags = jsonData.status.safetyInputStatusFlags;
             }
-            if (jsonData.status.temperatures !== null && data.temperatures === null){
+            if (jsonData.status?.temperatures && data.temperatures === null) {
               data.temperatures = jsonData.status.temperatures;
             }
-            if (jsonData.status.vacuumBits !== null && data.vacuumBits === null){
-              data.vacuumBits = jsonData.status.vacuumBits;
+            if (jsonData.status?.vacuumBits && data.vacuumBits === null) {
               if (typeof jsonData.status.vacuumBits === 'string') {
-               data.vacuumBits = jsonData.status.vacuumBits
+                data.vacuumBits = jsonData.status.vacuumBits
                   .split('')
                   .map(bit => bit === '1');
+              } else {
+                data.vacuumBits = jsonData.status.vacuumBits;
               }
             }
 
@@ -490,32 +490,27 @@ async function extractData(lines){
               data.clamp_temperature_C = jsonData.status["clamp_temperature_C"];
             }
 
+
+
+            // If all fields are filled, stop early to save processing time
+            if(Object.values(data).every(value => value != null)) {
+              console.log(" All data fields found within 1 hour. Exiting early.");
+              return true;
+            }
+
           }
-          
+
+          // FIXME: should we throw an error here as well?
           catch(e){
             console.log("Error parsing JSON: ", e);
           }
+
           jsonBlock = '';
           bracesCount = 0;
+          jsonStart = false;
         }
       }
     }
-    
-      // If all fields are filled, stop early to save processing time
-      // if (
-      //   data.pressure !== null &&
-      //   data.pressureTimestamp !== null &&
-      //   data.safetyOutputDataFlags !== null &&
-      //   data.safetyInputDataFlags !== null &&
-      //   data.safetyOutputStatusFlags !== null &&
-      //   data.safetyInputStatusFlags !== null &&
-      //   data.temperatures !== null &&
-      //   data.vacuumBits !== null
-      // ) {
-      if(Object.values(data).every(value => value != null)) {
-        console.log(" All data fields found within 1 hour. Exiting early.");
-        return true;
-      }
     
     return true; // success
   } catch(e) {

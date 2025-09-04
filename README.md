@@ -9,6 +9,7 @@ The url for the website is: [ebeam-webmonitor.onrender.com/](https://ebeam-webmo
    Switch to the correct branch: `git checkout feature/create_global_dict`
    
    (i) Connect your laptop to Wi-Fi to ensure syncs happen properly.
+   
    (ii) Follow the EBEAM-Dashboard documentation for:
       - Installing requirements
       - Setting up dependencies
@@ -16,12 +17,14 @@ The url for the website is: [ebeam-webmonitor.onrender.com/](https://ebeam-webmo
      
    Note: The EBEAM-Dashboard is required for adding new subsystems to the global dict as we integrate them into the dashboard.
 
-2. Start the Express.js Server & Web Monitor
+3. Start the Express.js Server & Web Monitor
    
    From the project root:
       (i) Express.js Server
+   
           - `npm install`
           - `npm start`
+   
       (ii) Webmonitor
           - `node index.js`
 
@@ -95,5 +98,6 @@ render requires the following environment variables:
    
 
 **Contributors**: Pratyush, Anurag, Arundhati
+
 
 

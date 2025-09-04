@@ -85,10 +85,10 @@ Please note the correspondence between each of the input and output Safety Termi
 
 ## Overarching System Architecture:
 1) Subsystem Data Source:
-   
-  (i) Data (e.g., voltages, currents, beam status) is collected in Python as a global dictionary.
-  
-  (ii) Each update is passed to the WebMonitorLogger class.
+
+   (i) Data (e.g., voltages, currents, beam status) is collected in Python as a global dictionary.
+
+   (ii) Each update is passed to the WebMonitorLogger class.
 
 3) Logger (Python):
    
@@ -106,14 +106,15 @@ If you create new folder directories for storing log files, make sure to update 
 
 ## Extending the Project
 
-(i) Add new subsystems: Extend the Python dictionary keys and logger updates.
+1) Add new subsystems: Extend the Python dictionary keys and logger updates.
 
-(ii) Increase Uptime: Build a more robust system by separating the directories for both the log files. Failure to sync the displayFile must not affect the logFile and vice-versa.
+2) Increase Uptime: Build a more robust system by separating the directories for both the log files. Failure to sync the displayFile must not affect the logFile and vice-versa.
   
 ## Hosting Information:
 
 [render.com](https://render.com/) is the hosting service. Render automatically restarts the hosting server for each change to the git main branch.
 render requires the following environment variables:
+
  (i) API_KEY: api key associated with the dashboard google account to access google drive resources.
             Need to create it in a google cloud platform project.
             
@@ -124,6 +125,7 @@ render requires the following environment variables:
 
 
 #### Contributors: Pratyush, Anurag, Arundhati
+
 
 
 

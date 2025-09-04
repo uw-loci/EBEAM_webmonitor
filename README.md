@@ -39,7 +39,9 @@ When you run the dashboard on the `feature/create_global_dict` branch, two files
 2) System Log File
    
    (i) Purpose: to provide a complete view of the raw logs.
+   
    (ii) The View Box at the bottom of the dashboard displays these logs directly, allowing you to trace detailed patterns or troubleshoot issues that might not be fully captured by the UI.
+   
    (iii) While the UI elements are optimized for quick, real-time monitoring of subsystem health, the raw logs serve as a complementary source for deeper diagnostics.
      
 ## Features
@@ -47,19 +49,25 @@ When you run the dashboard on the `feature/create_global_dict` branch, two files
 1) Scalable Backend
    
    (i) Modular driver/subsystem design enables the WebMonitor to integrate new hardware subsystems (Interlocks, VTRX, CCS, Beam Energy, etc.) without major rewrites.
+   
    (ii) Each subsystem logs independently but funnels into a consistent pipeline for UI rendering and API serving.
 
 3) Efficient UI Updates
    
    (i) Differential Refreshes: UI elements auto-reload every 60 minutes without refreshing the entire dashboard.
+   
    (ii) On-Demand Logs: Full log files are only fetched and displayed when the user clicks Expand, preventing rate-limit issues and avoiding unnecessary latency caused because of excessive               resource consumption on the backend side.
 
 5) Async File Handling (Express.js)
    
    (i) getMostRecentFile: Fetches the latest WebMonitor and raw log files from Google Drive, populating the dataFile and displayFile references.
+   
    (ii) fetchFileContents: Streams and parses large text files line-by-line. Used to power the log display on the web monitor.
+   
    (iii) extractData: Parses JSON blocks from log files to extract experimental metrics (pressure, temperatures, interlocks, vacuum states, etc.), updating the in-memory data dictionary.
+   
    (iv) fetchDisplayFileContents: Updates the UI log preview by pulling only the newest display logs, writing them to a reversed file buffer for frontend viewing.
+   
    (v) fetchAndUpdateFile: Periodically checks for new log files, resets stale data if thresholds are exceeded, and refreshes the shared data object for API consumption.
 
 
@@ -70,13 +78,16 @@ Please note the correspondence between each of the input and output Safety Termi
 
 ## How to deploy changes:
 (i) Test code by running on replit
+
 (ii) Push code to github repo
+
 (iii) Wait for render autoupdate
 
 ## Overarching System Architecture:
 1) Subsystem Data Source:
    
   (i) Data (e.g., voltages, currents, beam status) is collected in Python as a global dictionary.
+  
   (ii) Each update is passed to the WebMonitorLogger class.
 
 3) Logger (Python):
@@ -87,6 +98,7 @@ Please note the correspondence between each of the input and output Safety Termi
 5) Express.js Dashboard:
    
    (i) Periodically fetches the latest data from the log file.
+   
    (ii) Displays status on a real-time dashboard.
   
 ## Important 
@@ -95,6 +107,7 @@ If you create new folder directories for storing log files, make sure to update 
 ## Extending the Project
 
 (i) Add new subsystems: Extend the Python dictionary keys and logger updates.
+
 (ii) Increase Uptime: Build a more robust system by separating the directories for both the log files. Failure to sync the displayFile must not affect the logFile and vice-versa.
   
 ## Hosting Information:
@@ -103,6 +116,7 @@ If you create new folder directories for storing log files, make sure to update 
 render requires the following environment variables:
  (i) API_KEY: api key associated with the dashboard google account to access google drive resources.
             Need to create it in a google cloud platform project.
+            
  (ii) FOLDER_ID: folder id of the associated google drive logs folder
 
 
@@ -110,6 +124,7 @@ render requires the following environment variables:
 
 
 #### Contributors: Pratyush, Anurag, Arundhati
+
 
 
 

@@ -77,11 +77,11 @@ Please note the correspondence between each of the input and output Safety Termi
 ![Annotated Schematic Diagram](schematic_diagram.svg)
 
 ## How to deploy changes:
-(i) Test code by running on replit
+1) Test code by running on replit
 
-(ii) Push code to github repo
+2) Push code to github repo
 
-(iii) Wait for render autoupdate
+3) Wait for render autoupdate
 
 ## Overarching System Architecture:
 1) Subsystem Data Source:
@@ -115,16 +115,17 @@ If you create new folder directories for storing log files, make sure to update 
 [render.com](https://render.com/) is the hosting service. Render automatically restarts the hosting server for each change to the git main branch.
 render requires the following environment variables:
 
- (i) API_KEY: api key associated with the dashboard google account to access google drive resources.
+ 1) API_KEY: api key associated with the dashboard google account to access google drive resources.
             Need to create it in a google cloud platform project.
             
- (ii) FOLDER_ID: folder id of the associated google drive logs folder
+ 2) FOLDER_ID: folder id of the associated google drive logs folder
 
 
 
 
 
 #### Contributors: Pratyush, Anurag, Arundhati
+
 
 
 

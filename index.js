@@ -94,6 +94,7 @@ const interlockStates = {
 
 // Interlocks
 function getDoorStatus(inputFlags, statusFlags) {
+  if (!Array.isArray(inputFlags) || !Array.isArray(statusFlags)) return "grey";
   if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
   const data = inputFlags[4] && inputFlags[5];
   const status_f = statusFlags[4] && statusFlags[5];
@@ -102,6 +103,7 @@ function getDoorStatus(inputFlags, statusFlags) {
 
 
 function getVacuumPower(inputFlags, statusFlags) {
+  if (!Array.isArray(inputFlags) || !Array.isArray(statusFlags)) return "grey";
   if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
   const data = inputFlags[6];
   const status_f = statusFlags[6];
@@ -110,6 +112,7 @@ function getVacuumPower(inputFlags, statusFlags) {
 
 
 function getVacuumPressure(inputFlags, statusFlags) {
+  if (!Array.isArray(inputFlags) || !Array.isArray(statusFlags)) return "grey";
   if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
   const data = inputFlags[7];
   const status_f = statusFlags[7];
@@ -118,6 +121,7 @@ function getVacuumPressure(inputFlags, statusFlags) {
 
 
 function getAllInterlocksStatus(outputFlags) {
+ if (!Array.isArray(outputFlags) || !Array.isArray(outputFlags)) return "grey";
  if (!outputFlags || outputFlags.length < 7) return "grey";
  if (outputFlags[6]) return "red";
  return outputFlags[5] ? "green" : "red";
@@ -125,6 +129,7 @@ function getAllInterlocksStatus(outputFlags) {
 
 
 function getWaterStatus(inputFlags, statusFlags) {
+  if (!Array.isArray(inputFlags) || !Array.isArray(statusFlags)) return "grey";
   if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
   const data = inputFlags[10];
   const status_f = statusFlags[10];
@@ -133,12 +138,14 @@ function getWaterStatus(inputFlags, statusFlags) {
 
 
 function getG9Output(outputFlags) {
+ if (!Array.isArray(outputFlags) || !Array.isArray(outputFlags)) return "grey";
  if (!outputFlags || outputFlags.length < 7) return "grey";
  return outputFlags[4] ? "green" : "red";
 }
 
 
 function getEStopInternal(inputFlags, statusFlags) {
+  if (!Array.isArray(inputFlags) || !Array.isArray(statusFlags)) return "grey";
   if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
   const data = inputFlags[0] && inputFlags[1];
   const status_f = statusFlags[0] && statusFlags[1];
@@ -147,6 +154,7 @@ function getEStopInternal(inputFlags, statusFlags) {
 
 
 function getEStopExternal(inputFlags, statusFlags) {
+  if (!Array.isArray(inputFlags) || !Array.isArray(statusFlags)) return "grey";
   if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
   const data = inputFlags[2] && inputFlags[3];
   const status_f = statusFlags[2] && statusFlags[3];
@@ -155,6 +163,7 @@ function getEStopExternal(inputFlags, statusFlags) {
 
 
 function getOilLow(inputFlags, statusFlags) {
+  if (!Array.isArray(inputFlags) || !Array.isArray(statusFlags)) return "grey";
   if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
   const data = inputFlags[9];
   const status_f = statusFlags[9];
@@ -163,6 +172,7 @@ function getOilLow(inputFlags, statusFlags) {
 
 
 function getOilHigh(inputFlags, statusFlags) {
+  if (!Array.isArray(inputFlags) || !Array.isArray(statusFlags)) return "grey";
   if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
   const data = inputFlags[8];
   const status_f = statusFlags[8];
@@ -171,6 +181,7 @@ function getOilHigh(inputFlags, statusFlags) {
 
 
 function getHvoltOn(inputFlags, statusFlags) {
+  if (!Array.isArray(inputFlags) || !Array.isArray(statusFlags)) return "grey";
   if (!inputFlags || inputFlags.length < 13 || !statusFlags || statusFlags.length < 13) return "grey";
   const data = inputFlags[11];
   const status_f = statusFlags[11];
@@ -391,7 +402,16 @@ async function extractData(lines){
       safetyInputStatusFlags: null,
       safetyOutputStatusFlags: null,
       temperatures: null,
-      vacuumBits: null
+      vacuumBits: null,
+      heaterCurrent_A: null,
+      heaterCurrent_B: null,
+      heaterCurrent_C: null,
+      heaterVoltage_A: null,
+      heaterVoltage_B: null,
+      heaterVoltage_C: null,
+      clamp_temperature_A: null,
+      clamp_temperature_B: null,
+      clamp_temperature_C: null
     };
 
     let jsonBlock = '';
@@ -713,7 +733,7 @@ async function fetchAndUpdateFile() {
         console.warn("File fetch failed or returned no lines. Skipping extraction.");
         return false;
       }
-      dataExtractionLines.reverse();
+      dataExtractionLines = dataExtractionLines.reverse();
     } catch (e) {
       console.error("WebMonitor file failed:", e);
     }
@@ -917,10 +937,10 @@ try {
    */
 
   app.get('/data', (req, res) => {
-    const inF  = data.safetyInputDataFlags  || [];
-    const outF = data.safetyOutputDataFlags || [];
+    const inF  = data.safetyInputDataFlags || null;
+    const outF = data.safetyOutputDataFlags || null;
 
-    const inSF = data.safetyInputStatusFlags || [];
+    const inSF = data.safetyInputStatusFlags || null;
 
     const doorColor           = getDoorStatus(inF, inSF);
     const waterColor          = getWaterStatus(inF, inSF);

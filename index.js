@@ -75,19 +75,19 @@ vacuumBits: null
 };
 
 // Assume All Interlocks Start Red
-const interlockStates = {
- "Door": "red",
- "Water": "red",
- "Vacuum Power": "red",
- "Vacuum Pressure": "red",
- "Low Oil": "red",
- "High Oil": "red",
- "E-STOP Int": "red",
- "E-STOP Ext": "red",
- "All Interlocks": "red",
- "G9SP Active": "red",
- "HVolt ON": "red",
-};
+// const interlockStates = {
+//  "Door": "red",
+//  "Water": "red",
+//  "Vacuum Power": "red",
+//  "Vacuum Pressure": "red",
+//  "Low Oil": "red",
+//  "High Oil": "red",
+//  "E-STOP Int": "red",
+//  "E-STOP Ext": "red",
+//  "All Interlocks": "red",
+//  "G9SP Active": "red",
+//  "HVolt ON": "red",
+// };
 
 // Quick helper function to help with data to color while integration
 // 1 --> green, 0 --> red, Default --> grey.
@@ -718,6 +718,7 @@ async function fetchAndUpdateFile() {
       console.error("WebMonitor file failed:", e);
     }
     
+    // TODO: Need to add experimentRunning check
     const extractPromise = extractData(dataExtractionLines); // Parse data from logs
     const [extractionResult] = await Promise.allSettled([
       extractPromise,

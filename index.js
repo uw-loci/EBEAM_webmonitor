@@ -1542,6 +1542,42 @@ try {
                 <div class = "beam-energy-reading"><p>Current: --</p></div>
         </div>
           </div>
+        <div id="chart-wrapper" style="overflow-x: auto;">
+          <div id="chart" style="width: 1000px; height: 400px;"></div>
+
+          <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
+          <script>
+            const numPoints = 1000;
+            const startTime = Date.now() / 1000;
+            const xVals = [], yVals = [];
+
+            for (let i = 0; i < numPoints; i++) {
+              xVals.push(startTime + i * 60); // 1-minute intervals
+              yVals.push(Math.sin(i / 50) + Math.random() * 0.3);
+            }
+
+            const data = [xVals, yVals];
+
+            const opts = {
+              width: 1000, // Fixed width for desktop
+              height: 400,
+              scales: {
+                x: { time: true },
+                y: { auto: true }
+              },
+              series: [
+                { label: "Time" },
+                { label: "Value", stroke: "blue", width: 1 }
+              ],
+              axes: [
+                { stroke: "#555" },
+                { stroke: "#555" }
+              ]
+            };
+
+            new uPlot(opts, data, document.getElementById("chart"));
+          </script>
+        </div>
         </div>
         <!-- Log Viewer -->
           <div class="env-section">

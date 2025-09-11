@@ -1572,8 +1572,8 @@ try {
             const data = [xVals, yVals];
 
             const opts = {
-              width: 1000,
-              height: 400,
+              width: 700,
+              height: 200,
               scales: {
                 x: { time: true },
                 y: { auto: true }

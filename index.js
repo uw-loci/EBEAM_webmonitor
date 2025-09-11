@@ -1555,7 +1555,16 @@ try {
       <div class="env-section">
         <p>This is a paragraph of text.</p>
       </div>
-      <div class="env-section">
+      <div style="
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 15px;
+        padding: 5px 10px;
+        margin: 50px auto;
+        width: 90%;
+        max-width: 800px;
+      ">
         <div id="chart-wrapper" style="overflow-x: auto;">
           <div id="chart" style="width: 1000px; height: 400px;"></div>
 

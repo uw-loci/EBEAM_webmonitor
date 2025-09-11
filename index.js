@@ -1492,106 +1492,81 @@ try {
         </div>
         <!-- CCS Section -->
         <div class="env-section">
-        <h3 class="dashboard-subtitle env-title">CCS</h3>
-        <div class="ccs-grid">
+          <h3 class="dashboard-subtitle env-title">CCS</h3>
+          <div class="ccs-grid">
             <div class="cathode-box">
               <p class="cathode-heading">Cathode 1</p>
               <div id="heaterCurrentA" class="ccs-reading">Current: ${data.heaterCurrent_A != null && experimentRunning
                 ? data.heaterCurrent_A.toFixed(2) + ' A' 
-                : '--'}</div>
+                : '--'}
+              </div>
               <div id="heaterVoltageA" class="ccs-reading">Voltage: ${data.heaterVoltage_A != null && experimentRunning
                 ? data.heaterVoltage_A.toFixed(2) + ' V' 
-                : '--'}</div>
+                : '--'}
+              </div>
                 <div id="heaterTemperatureA" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_A != null && experimentRunning
                 ? data.clamp_temperature_A.toFixed(2) + ' C' 
-                : '--'}</div>
+                : '--'}
               </div>
-              <div class="cathode-box">
-                <p class="cathode-heading">Cathode 2</p>
-                <div id="heaterCurrentB" class="ccs-reading">Current: ${data.heaterCurrent_B != null && experimentRunning
-                  ? data.heaterCurrent_B.toFixed(2) + ' A' 
-                  : '--'}</div>
-                <div id="heaterVoltageB" class="ccs-reading">Voltage: ${data.heaterVoltage_B != null && experimentRunning
-                  ? data.heaterVoltage_B.toFixed(2) + ' V' 
-                  : '--'}</div>
-                <div id="heaterTemperatureB" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_B != null && experimentRunning
-                ? data.clamp_temperature_B.toFixed(2) + ' C' 
-                : '--'}</div>
+            </div>
+            <div class="cathode-box">
+              <p class="cathode-heading">Cathode 2</p>
+              <div id="heaterCurrentB" class="ccs-reading">Current: ${data.heaterCurrent_B != null && experimentRunning
+                ? data.heaterCurrent_B.toFixed(2) + ' A' 
+                : '--'}
               </div>
-              <div class="cathode-box">
-                <p class="cathode-heading">Cathode 3</p>
-                <div id="heaterCurrentC" class="ccs-reading">Current: ${data.heaterCurrent_C != null && experimentRunning
-                  ? data.heaterCurrent_C.toFixed(2) + ' A' 
-                  : '--'}</div>
-                <div id="heaterVoltageC" class="ccs-reading">Voltage: ${data.heaterVoltage_C != null && experimentRunning
-                  ? data.heaterVoltage_C.toFixed(2) + ' V' 
-                  : '--'}
-                  </div>
-                <div id="heaterTemperatureC" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_C != null && experimentRunning
+              <div id="heaterVoltageB" class="ccs-reading">Voltage: ${data.heaterVoltage_B != null && experimentRunning
+                ? data.heaterVoltage_B.toFixed(2) + ' V' 
+                : '--'}
+              </div>
+              <div id="heaterTemperatureB" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_B != null && experimentRunning
+              ? data.clamp_temperature_B.toFixed(2) + ' C' 
+              : '--'}
+              </div>
+            </div>
+            <div class="cathode-box">
+              <p class="cathode-heading">Cathode 3</p>
+              <div id="heaterCurrentC" class="ccs-reading">Current: ${data.heaterCurrent_C != null && experimentRunning
+                ? data.heaterCurrent_C.toFixed(2) + ' A' 
+                : '--'}
+              </div>
+              <div id="heaterVoltageC" class="ccs-reading">Voltage: ${data.heaterVoltage_C != null && experimentRunning
+                ? data.heaterVoltage_C.toFixed(2) + ' V' 
+                : '--'}
+              </div>
+              <div id="heaterTemperatureC" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_C != null && experimentRunning
                 ? data.clamp_temperature_C.toFixed(2) + ' C' 
-                : '--'}</div>
+                : '--'}
               </div>
+            </div>
           </div>
         </div>
         <!-- Beam Energy -->
         <div class="env-section">
-        <h3 class="dashboard-subtitle env-title">Beam Energy</h3>
-        <div class="beam-energy-grid">
+          <h3 class="dashboard-subtitle env-title">Beam Energy</h3>
+          <div class="beam-energy-grid">
                 <div class = "beam-energy-reading"><p>Set: --</p></div> 
                 <div class = "beam-energy-reading"><p>High Voltage: --</p></div>
                 <div class = "beam-energy-reading"><p>Current: --</p></div>
-        </div>
           </div>
-        <div id="chart-wrapper" style="overflow-x: auto;">
-          <div id="chart" style="width: 1000px; height: 400px;"></div>
-
-          <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
-          <script>
-            const numPoints = 1000;
-            const startTime = Date.now() / 1000;
-            const xVals = [], yVals = [];
-
-            for (let i = 0; i < numPoints; i++) {
-              xVals.push(startTime + i * 60); // 1-minute intervals
-              yVals.push(Math.sin(i / 50) + Math.random() * 0.3);
-            }
-
-            const data = [xVals, yVals];
-
-            const opts = {
-              width: 1000, // Fixed width for desktop
-              height: 400,
-              scales: {
-                x: { time: true },
-                y: { auto: true }
-              },
-              series: [
-                { label: "Time" },
-                { label: "Value", stroke: "blue", width: 1 }
-              ],
-              axes: [
-                { stroke: "#555" },
-                { stroke: "#555" }
-              ]
-            };
-
-            new uPlot(opts, data, document.getElementById("chart"));
-          </script>
         </div>
-        </div>
-        <!-- Log Viewer -->
-          <div class="env-section">
-            <h3 class="dashboard-subtitle env-title">System Logs; Last Update: <span id="display-last-updated">${
-                data.displayLogLastModified
-                  ? new Date(data.displayLogLastModified).toLocaleString("en-US", {
-                      hour12: true,
-                      timeZone: "America/Chicago"
-                    })
-                  : "N/A"
-              }</span></h3>
-              <button id="toggleButton" class="btn-toggle">Show Full Log</button>
-              <div id="fullContent" class="content-section">
-            <pre></pre>
+      </div>
+      <div class="env-section">
+        <p>This is a paragraph of text.</p>
+      </div>
+      <!-- Log Viewer -->
+      <div class="env-section">
+        <h3 class="dashboard-subtitle env-title">System Logs; Last Update: <span id="display-last-updated">${
+            data.displayLogLastModified
+              ? new Date(data.displayLogLastModified).toLocaleString("en-US", {
+                  hour12: true,
+                  timeZone: "America/Chicago"
+                })
+              : "N/A"
+        }</span></h3>
+        <button id="toggleButton" class="btn-toggle">Show Full Log</button>
+        <div id="fullContent" class="content-section">
+          <pre></pre>
         </div>
       </div>
       <!-- Auto-refresh & Toggle Script -->

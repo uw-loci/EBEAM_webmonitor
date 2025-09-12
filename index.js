@@ -678,8 +678,13 @@ async function fetchDisplayFileContents(){
 async function fetchAndUpdateFile() {
 
   // FIXME: Uncomment this
-  xVals.push(Date.now() / 1000);
-  yVals.push(Math.sin(xVals.length / 50) + Math.random() * 0.3);
+  for (let i = 0; i < 10; i++) {
+    xVals.push(startTime + i * 60); // 1-minute intervals
+    yVals.push(Math.sin((xVals.length + i) / 50) + Math.random() * 0.5); // some variation
+  }
+
+  // xVals.push(Date.now() / 1000);
+  // yVals.push(Math.sin(xVals.length / 50) + Math.random() * 0.3);
 
 
   let release; // used if you implement lock control (e.g. mutex/fmutex)
@@ -1563,7 +1568,7 @@ try {
         </div>
       </div>
       <div class="env-section">
-        <p>This is a paragraph of text.</p>
+        <p>This is a paragraph of text. ${xVals}, ${yVals}</p>
       </div>
       <div style="
         background: rgba(255, 255, 255, 0.08);

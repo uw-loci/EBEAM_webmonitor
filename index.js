@@ -676,12 +676,14 @@ async function fetchDisplayFileContents(){
  * - true: implicitly if successful (not used but possible)
  */
 async function fetchAndUpdateFile() {
-  const startTime = Date.now() / 1000;
-  
-  // FIXME: Uncomment this
-  for (let i = 0; i < 10; i++) {
-    xVals.push(startTime + i * 60); // 1-minute intervals
-    yVals.push(Math.sin((xVals.length + i) / 50) + Math.random() * 0.5); // some variation
+  if (xVals.length < 1000) {
+    const startTime = Date.now() / 1000;
+
+    // FIXME: Uncomment this
+    for (let i = 0; i < 10; i++) {
+      xVals.push(startTime + i * 60); // 1-minute intervals
+      yVals.push(Math.sin((xVals.length + i) / 50) + Math.random() * 0.5); // some variation
+    }
   }
 
   // xVals.push(Date.now() / 1000);

@@ -397,11 +397,6 @@ async function fetchFileContents(fileId) {
 async function extractData(lines){
   // FIXME: how is extraction constrained to only fresh data
 
-
-  xVals.push(Date.now() / 1000);
-  yVals.push(Math.sin(xVals.length / 50) + Math.random() * 0.3);
-
-
   try{
     data = {
       pressure: null,
@@ -681,6 +676,12 @@ async function fetchDisplayFileContents(){
  * - true: implicitly if successful (not used but possible)
  */
 async function fetchAndUpdateFile() {
+
+  // FIXME: Uncomment this
+  xVals.push(Date.now() / 1000);
+  yVals.push(Math.sin(xVals.length / 50) + Math.random() * 0.3);
+
+
   let release; // used if you implement lock control (e.g. mutex/fmutex)
 
   try {

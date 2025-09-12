@@ -74,6 +74,9 @@ temperatures: null,
 vacuumBits: null
 };
 
+let xVals = [];
+let yVals = [];
+
 // Assume All Interlocks Start Red
 // const interlockStates = {
 //  "Door": "red",
@@ -393,6 +396,12 @@ async function fetchFileContents(fileId) {
 
 async function extractData(lines){
   // FIXME: how is extraction constrained to only fresh data
+
+
+  xVals.push(Date.now() / 1000);
+  yVals.push(Math.sin(xVals.length / 50) + Math.random() * 0.3);
+
+
   try{
     data = {
       pressure: null,
@@ -1560,7 +1569,7 @@ try {
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-radius: 15px;
-        padding: 5px 10px;
+        padding: 0px 5px;
         margin: 50px auto;
         width: 90%;
         max-width: 800px;
@@ -1569,17 +1578,6 @@ try {
           <div id="chart" style="width: 1000px; height: 400px;"></div>
 
           <script>
-            const numPoints = 1000;
-            const startTime = Date.now() / 1000;
-            const xVals = [], yVals = [];
-
-            for (let i = 0; i < numPoints; i++) {
-              xVals.push(startTime + i * 60);
-              yVals.push(Math.sin(i / 50) + Math.random() * 0.3);
-            }
-
-            const data = [xVals, yVals];
-
             const opts = {
               width: 700,
               height: 200,
@@ -1597,7 +1595,7 @@ try {
               ]
             };
 
-            new uPlot(opts, data, document.getElementById("chart"));
+            new uPlot(opts, [${xVals}, ${yVals}], document.getElementById("chart"));
           </script>
         </div>
       </div>

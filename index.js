@@ -676,7 +676,8 @@ async function fetchDisplayFileContents(){
  * - true: implicitly if successful (not used but possible)
  */
 async function fetchAndUpdateFile() {
-
+  const startTime = Date.now() / 1000;
+  
   // FIXME: Uncomment this
   for (let i = 0; i < 10; i++) {
     xVals.push(startTime + i * 60); // 1-minute intervals

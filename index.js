@@ -77,6 +77,18 @@ vacuumBits: null
 let xVals = [];
 let yVals = [];
 
+// Add a new sinusoidal data point using current time as x
+function addDataPoint() {
+  if (xVals.length < 50) {
+    // const nowMs = Date.now();
+    // const tSec = Math.floor(nowMs / 1000);
+    // const y = Math.sin(tSec / 10); // simple sinusoid
+
+    xVals.push(Math.floor(Date.now() / 1000));
+    yVals.push(Math.sin(tSec / 10));
+  }
+}
+
 // Assume All Interlocks Start Red
 // const interlockStates = {
 //  "Door": "red",
@@ -676,15 +688,16 @@ async function fetchDisplayFileContents(){
  * - true: implicitly if successful (not used but possible)
  */
 async function fetchAndUpdateFile() {
-  if (xVals.length < 1000) {
-    const startTime = Date.now() / 1000;
+  addDataPoint()
+  // if (xVals.length < 20) {
+  //   const startTime = Date.now() / 1000;
 
-    // FIXME: Uncomment this
-    for (let i = 0; i < 10; i++) {
-      xVals.push(startTime + i * 60); // 1-minute intervals
-      yVals.push(Math.sin((xVals.length + i) / 50) + Math.random() * 0.5); // some variation
-    }
-  }
+  //   // FIXME: Uncomment this
+  //   for (let i = 0; i < 5; i++) {
+  //     xVals.push(startTime + (i + 5) * 60); // 1-minute intervals
+  //     yVals.push(Math.sin((xVals.length + i + 5) / 50) + Math.random() * 0.5); // some variation
+  //   }
+  // }
 
   // xVals.push(Date.now() / 1000);
   // yVals.push(Math.sin(xVals.length / 50) + Math.random() * 0.3);
@@ -1573,40 +1586,48 @@ try {
       <div class="env-section">
         <p>This is a paragraph of text. ${xVals}, ${yVals}</p>
       </div>
-      <div style="
-        background: rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 15px;
-        padding: 0px 5px;
-        margin: 50px auto;
-        width: 90%;
-        max-width: 800px;
-      ">
-        <div id="chart-wrapper" style="overflow-x: auto;">
-          <div id="chart" style="width: 1000px; height: 400px;"></div>
-
-          <script>
-            const opts = {
-              width: 700,
-              height: 200,
-              scales: {
-                x: { time: true },
-                y: { auto: true }
-              },
-              series: [
-                { label: "Time" },
-                { label: "Value", stroke: "blue", width: 1 }
-              ],
-              axes: [
-                { stroke: "#555" },
-                { stroke: "#555" }
-              ]
-            };
-
-            new uPlot(opts, [${xVals}, ${yVals}], document.getElementById("chart"));
-          </script>
+        <div style="
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 15px;
+          padding: 0px 5px;
+          margin: 50px auto;
+          width: 90%;
+          max-width: 800px;
+        ">
+        <div class="wrap">
+          <h2>Sinusoidal Time Series</h2>
+          <div id="chart"></div>
+          <div class="meta">Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.</div>
         </div>
+        <script>
+          // Data embedded by server
+          const x = ${JSON.stringify(xVals)}; // Unix seconds
+          const y = ${JSON.stringify(yVals)};
+
+          const data = [x, y];
+
+          const opts = {
+            width: Math.min(900, window.innerWidth - 48),
+            height: 400,
+            series: [
+              {},
+              { label: 'sin(t/10)', stroke: 'blue', points: { show: true, size: 5, fill: 'blue', stroke: 'blue' } }
+            ],
+            scales: {
+              x: { time: true },
+            },
+            axes: [
+              { stroke: '#333' },
+              { stroke: '#333' },
+            ],
+            cursor: { focus: { prox: 16 } },
+          };
+
+          const el = document.getElementById('chart');
+          const u = new uPlot(opts, data, el);
+        </script>
       </div>
       <!-- Log Viewer -->
       <div class="env-section">

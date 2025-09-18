@@ -688,7 +688,7 @@ async function fetchDisplayFileContents(){
  * - true: implicitly if successful (not used but possible)
  */
 async function fetchAndUpdateFile() {
-  addDataPoint()
+  addDataPoint();
   // if (xVals.length < 20) {
   //   const startTime = Date.now() / 1000;
 

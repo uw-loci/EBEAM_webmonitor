@@ -79,7 +79,7 @@ let yVals = [];
 
 // Add a new sinusoidal data point using current time as x
 function addDataPoint() {
-  if (xVals.length < 50) {
+  if (xVals.length < 10) {
     // const nowMs = Date.now();
     // const tSec = Math.floor(nowMs / 1000);
     // const y = Math.sin(tSec / 10); // simple sinusoid
@@ -826,6 +826,10 @@ async function fetchAndUpdateFile() {
   }
 }
 
+
+const codeLastUpdated = new Date().toLocaleString('en-US', {
+  timeZone: 'America/Chicago'
+});
 
 /**
  * Startup routine
@@ -1584,7 +1588,9 @@ try {
         </div>
       </div>
       <div class="env-section">
-        <p>This is a paragraph of text. ${xVals}, ${yVals}</p>
+        <p>Code last updated: ${codeLastUpdated}</p>
+        <p>xVals: ${xVals}</p>
+        <p>yVals: ${yVals}</p>
       </div>
         <div style="
           background: rgba(255, 255, 255, 0.08);

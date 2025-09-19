@@ -80,12 +80,12 @@ let yVals = [];
 // Add a new sinusoidal data point using current time as x
 function addDataPoint() {
   if (xVals.length < 10) {
-    // const nowMs = Date.now();
-    // const tSec = Math.floor(nowMs / 1000);
-    // const y = Math.sin(tSec / 10); // simple sinusoid
+    const nowMs = Date.now();
+    const tSec = Math.floor(nowMs / 1000);
+    const y = Math.sin(tSec / 10); // simple sinusoid
 
-    xVals.push(Math.floor(Date.now() / 1000));
-    yVals.push(Math.sin(tSec / 10));
+    xVals.push(tSec);
+    yVals.push(y);
   }
 }
 

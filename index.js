@@ -1615,8 +1615,8 @@ try {
           const data = [x, y];
 
           const opts = {
-            width: Math.min(900, window.innerWidth - 48),
-            height: 400,
+            width: 400,
+            height: 200,
             series: [
               {},
               { label: 'sin(t/10)', stroke: 'blue', points: { show: true, size: 5, fill: 'blue', stroke: 'blue' } }

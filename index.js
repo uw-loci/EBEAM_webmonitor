@@ -1600,7 +1600,6 @@ try {
           padding: 0px 5px;
           margin: 50px auto;
           width: 90%;
-          max-width: 800px;
         ">
         <div class="wrap">
           <h2>Sinusoidal Time Series</h2>

@@ -1599,7 +1599,9 @@ try {
           border-radius: 15px;
           padding: 5px 5px;
           margin: 50px auto;
-          width: 90%;
+          width: 95%;
+          min-height: 300px;
+          overflow: visible;
         ">
         <div class="wrap">
           <h2>Sinusoidal Time Series</h2>

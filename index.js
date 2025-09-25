@@ -1597,16 +1597,15 @@ try {
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-radius: 15px;
-        padding: 20px 10px 30px 10px;
+        padding: 10px;
         margin: 50px auto;
         width: 98%;
-        min-height: auto;
-        overflow: visible;
+        overflow: hidden;
       ">
       <div class="wrap">
-        <h2 style="margin-top:2px; margin-bottom:0px;">Sinusoidal Time Series</h2>
-        <div id="chart" style="height: 300px; margin: 0; padding: 0;"></div>
-        <div class="meta" style="margin-top: 10px; margin-bottom: 0; font-size: 0.9em; color: #ccc;">
+        <h2 style="margin: 0 0 10px 0;">Sinusoidal Time Series</h2>
+        <div id="chart" style="height: 300px; position: relative;"></div>
+        <div class="meta" style="margin-top: 10px; font-size: 0.9em; color: #ccc;">
           Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
         </div>
       </div>

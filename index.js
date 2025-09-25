@@ -1597,7 +1597,7 @@ try {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-radius: 15px;
-          padding: 0px 5px;
+          padding: 5px 5px;
           margin: 50px auto;
           width: 90%;
         ">
@@ -1614,8 +1614,8 @@ try {
           const data = [x, y];
 
           const opts = {
-            width: 400,
-            height: 200,
+            width: 700,
+            height: 100,
             series: [
               {},
               { label: 'sin(t/10)', stroke: 'blue', points: { show: true, size: 5, fill: 'blue', stroke: 'blue' } }

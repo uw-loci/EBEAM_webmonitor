@@ -1599,8 +1599,8 @@ try {
           border-radius: 15px;
           padding: 5px 5px;
           margin: 50px auto;
-          width: 95%;
-          min-height: 300px;
+          width: 98%;
+          min-height: 600px;
           overflow: visible;
         ">
         <div class="wrap">
@@ -1616,8 +1616,8 @@ try {
           const data = [x, y];
 
           const opts = {
-            width: 700,
-            height: 100,
+            width: 400,
+            height: 300,
             series: [
               {},
               { label: 'sin(t/10)', stroke: 'blue', points: { show: true, size: 5, fill: 'blue', stroke: 'blue' } }

@@ -1592,50 +1592,52 @@ try {
         <p>xVals: ${xVals}</p>
         <p>yVals: ${yVals}</p>
       </div>
-        <div style="
-          background: rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-radius: 15px;
-          padding: 5px 5px;
-          margin: 50px auto;
-          width: 98%;
-          min-height: 600px;
-          overflow: visible;
-        ">
-        <div class="wrap">
-          <h2>Sinusoidal Time Series</h2>
-          <div id="chart"></div>
-          <div class="meta">Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.</div>
+      <div style="
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 15px;
+        padding: 10px 5px;
+        margin: 50px auto;
+        width: 98%;
+        min-height: 600px;
+        overflow: visible;
+      ">
+      <div class="wrap">
+        <h2 style="margin-top:10px; margin-bottom:5px;">Sinusoidal Time Series</h2>
+        <div id="chart" style="height: 300px; margin: 0; padding: 0;"></div>
+        <div class="meta" style="margin-top: 10px; margin-bottom: 0; font-size: 0.9em; color: #ccc;">
+          Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
         </div>
-        <script>
-          // Data embedded by server
-          const x = ${JSON.stringify(xVals)}; // Unix seconds
-          const y = ${JSON.stringify(yVals)};
-
-          const data = [x, y];
-
-          const opts = {
-            width: 400,
-            height: 300,
-            series: [
-              {},
-              { label: 'sin(t/10)', stroke: 'blue', points: { show: true, size: 5, fill: 'blue', stroke: 'blue' } }
-            ],
-            scales: {
-              x: { time: true },
-            },
-            axes: [
-              { stroke: '#333' },
-              { stroke: '#333' },
-            ],
-            cursor: { focus: { prox: 16 } },
-          };
-
-          const el = document.getElementById('chart');
-          const u = new uPlot(opts, data, el);
-        </script>
       </div>
+      <script>
+        // Data embedded by server
+        const x = ${JSON.stringify(xVals)}; // Unix seconds
+        const y = ${JSON.stringify(yVals)};
+
+        const data = [x, y];
+
+        const opts = {
+          width: 400,
+          height: 300,
+          series: [
+            {},
+            { label: 'sin(t/10)', stroke: 'blue', points: { show: true, size: 5, fill: 'blue', stroke: 'blue' } }
+          ],
+          scales: {
+            x: { time: true },
+          },
+          axes: [
+            { stroke: '#333' },
+            { stroke: '#333' },
+          ],
+          cursor: { focus: { prox: 16 } },
+        };
+
+        const el = document.getElementById('chart');
+        const u = new uPlot(opts, data, el);
+      </script>
+    </div>
       <!-- Log Viewer -->
       <div class="env-section">
         <h3 class="dashboard-subtitle env-title">System Logs; Last Update: <span id="display-last-updated">${

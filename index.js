@@ -1604,7 +1604,7 @@ try {
       ">
       <div class="wrap">
         <h2 style="margin: 0 0 10px 0;">Sinusoidal Time Series</h2>
-        <div id="chart" style="height: 300px; position: relative;"></div>
+        <div id="chart" style="position: relative; height: 300px;"></div>
         <div class="meta" style="margin-top: 10px; font-size: 0.9em; color: #ccc;">
           Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
         </div>
@@ -1634,7 +1634,14 @@ try {
         };
 
         const el = document.getElementById('chart');
-        const u = new uPlot(opts, data, el);
+        new uPlot(opts, data, el);
+
+        const chartCanvasWrapper = el.querySelector(':scope > *');
+        if (chartCanvasWrapper) {
+          chartCanvasWrapper.style.position = 'absolute';
+          chartCanvasWrapper.style.top = '0';
+          chartCanvasWrapper.style.left = '0';
+        }
       </script>
     </div>
       <!-- Log Viewer -->

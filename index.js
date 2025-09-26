@@ -1603,7 +1603,6 @@ try {
         overflow: hidden;
       ">
       <div class="wrap">
-        <h2 style="margin: 0 0 10px 0;">Sinusoidal Time Series</h2>
         <div id="chart" style="position: relative; height: 300px;"></div>
         <div class="meta" style="margin-top: 10px; font-size: 0.9em; color: #ccc;">
           Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.

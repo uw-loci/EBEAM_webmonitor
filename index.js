@@ -1601,12 +1601,11 @@ try {
         margin: 50px auto;
         width: 98%;
         overflow: hidden;
+        position: relative;
       ">
-      <div class="wrap">
-        <div id="chart" style="position: relative; height: 300px;"></div>
-        <div class="meta" style="margin-top: 10px; font-size: 0.9em; color: #ccc;">
-          Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
-        </div>
+      <div id="chart" style="position: relative; height: 300px;"></div>
+      <div style="margin-top: 10px; font-size: 0.9em; color: #ccc;">
+        Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
       </div>
       <script>
         // Data embedded by server
@@ -1616,7 +1615,7 @@ try {
         const data = [x, y];
 
         const opts = {
-          width: 400,
+          width: 600,
           height: 300,
           series: [
             {},
@@ -1635,11 +1634,13 @@ try {
         const el = document.getElementById('chart');
         new uPlot(opts, data, el);
 
-        const chartCanvasWrapper = el.querySelector(':scope > *');
-        if (chartCanvasWrapper) {
-          chartCanvasWrapper.style.position = 'absolute';
-          chartCanvasWrapper.style.top = '0';
-          chartCanvasWrapper.style.left = '0';
+        const innerChart = el.querySelector(':scope > *');
+        if (innerChart) {
+          innerChart.style.position = 'absolute';
+          innerChart.style.top = '0';
+          innerChart.style.left = '0';
+          innerChart.style.width = '100%';
+          innerChart.style.height = '100%';
         }
       </script>
     </div>

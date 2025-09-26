@@ -1600,11 +1600,12 @@ try {
         padding: 10px;
         margin: 50px auto;
         width: 98%;
-        overflow: hidden;
-        position: relative;
+        max-height: 500px;
+        overflow-y: auto;
+        border: 2px dashed red;
       ">
-      <div id="chart" style="position: relative; height: 300px;"></div>
-      <div style="margin-top: 10px; font-size: 0.9em; color: #ccc;">
+      <div id="chart" style="position: relative; height: 300px; border: 2px solid blue;"></div>
+      <div style="margin-top: 10px; font-size: 0.9em; color: #ccc; border: 1px dotted green;">
         Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
       </div>
       <script>
@@ -1641,6 +1642,7 @@ try {
           innerChart.style.left = '0';
           innerChart.style.width = '100%';
           innerChart.style.height = '100%';
+          inner.style.border = '1px solid orange';
         }
       </script>
     </div>

@@ -1392,6 +1392,41 @@ try {
             font-size: 3.0em;
           }
         }
+
+        /* =========================
+          CHART STYLES
+        ========================== */
+
+        .chart-container {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 15px;
+          padding: 10px;
+          margin: 50px auto;
+          width: 98%;
+          max-height: 500px;
+          overflow-y: auto;
+          border: 2px dashed red;
+          position: relative; /* Key to ensure inner chart positioning */
+        }
+
+        #chart {
+          width: 100%;  /* Make sure the chart takes up the full width of the container */
+          height: 300px; /* Set a fixed height for the chart */
+          border: 2px solid blue;
+          position: relative; /* Make sure the chart is positioned correctly inside its container */
+        }
+
+        .debug {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          border: 1px solid yellow;
+          pointer-events: none; /* Prevent it from interfering with interactions */
+        }
       </style>
       <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
     </head>
@@ -1592,60 +1627,50 @@ try {
         <p>xVals: ${xVals}</p>
         <p>yVals: ${yVals}</p>
       </div>
-      <div style="
-        background: rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 15px;
-        padding: 10px;
-        margin: 50px auto;
-        width: 98%;
-        max-height: 500px;
-        overflow-y: auto;
-        border: 2px dashed red;
-      ">
-      <div id="chart" style="position: relative; width: 100%; height: 300px; border: 2px solid blue; box-sizing: border-box;"></div>
-      <div style="margin-top: 10px; font-size: 0.9em; color: #ccc; border: 1px dotted green;">
-        Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
+      <div class="chart-container">
+        <div class="debug"></div>
+        <div id="chart"></div>
+        <div style="margin-top: 10px; font-size: 0.9em; color: #ccc; border: 1px dotted green;">
+          Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
+        </div>
+        <script>
+          // Data embedded by server
+          const x = ${JSON.stringify(xVals)}; // Unix seconds
+          const y = ${JSON.stringify(yVals)};
+
+          const data = [x, y];
+
+          const opts = {
+            width: 650,
+            height: 300,
+            series: [
+              {},
+              { label: 'sin(t/10)', stroke: 'blue', points: { show: true, size: 5, fill: 'blue', stroke: 'blue' } }
+            ],
+            scales: {
+              x: { time: true },
+            },
+            axes: [
+              { stroke: '#ccc' },
+              { stroke: '#ccc' },
+            ],
+            cursor: { focus: { prox: 16 } },
+          };
+
+          const el = document.getElementById('chart');
+          new uPlot(opts, data, el);
+
+          const innerChart = el.querySelector(':scope > *');
+          if (innerChart) {
+            innerChart.style.position = 'absolute';
+            innerChart.style.top = '0';
+            innerChart.style.left = '0';
+            innerChart.style.width = '100%';
+            innerChart.style.height = '100%';
+            inner.style.border = '1px solid orange';
+          }
+        </script>
       </div>
-      <script>
-        // Data embedded by server
-        const x = ${JSON.stringify(xVals)}; // Unix seconds
-        const y = ${JSON.stringify(yVals)};
-
-        const data = [x, y];
-
-        const opts = {
-          width: 700,
-          height: 300,
-          series: [
-            {},
-            { label: 'sin(t/10)', stroke: 'blue', points: { show: true, size: 5, fill: 'blue', stroke: 'blue' } }
-          ],
-          scales: {
-            x: { time: true },
-          },
-          axes: [
-            { stroke: '#ccc' },
-            { stroke: '#ccc' },
-          ],
-          cursor: { focus: { prox: 16 } },
-        };
-
-        const el = document.getElementById('chart');
-        new uPlot(opts, data, el);
-
-        const innerChart = el.querySelector(':scope > *');
-        if (innerChart) {
-          innerChart.style.position = 'absolute';
-          innerChart.style.top = '0';
-          innerChart.style.left = '0';
-          innerChart.style.width = '100%';
-          innerChart.style.height = '100%';
-          inner.style.border = '1px solid orange';
-        }
-      </script>
-    </div>
       <!-- Log Viewer -->
       <div class="env-section">
         <h3 class="dashboard-subtitle env-title">System Logs; Last Update: <span id="display-last-updated">${

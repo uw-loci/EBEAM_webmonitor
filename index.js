@@ -1604,7 +1604,7 @@ try {
         overflow-y: auto;
         border: 2px dashed red;
       ">
-      <div id="chart" style="position: relative; height: 300px; border: 2px solid blue;"></div>
+      <div id="chart" style="position: relative; width: 100%; height: 300px; border: 2px solid blue; box-sizing: border-box;"></div>
       <div style="margin-top: 10px; font-size: 0.9em; color: #ccc; border: 1px dotted green;">
         Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
       </div>
@@ -1616,7 +1616,7 @@ try {
         const data = [x, y];
 
         const opts = {
-          width: 600,
+          width: 700,
           height: 300,
           series: [
             {},
@@ -1626,8 +1626,8 @@ try {
             x: { time: true },
           },
           axes: [
-            { stroke: '#333' },
-            { stroke: '#333' },
+            { stroke: '#ccc' },
+            { stroke: '#ccc' },
           ],
           cursor: { focus: { prox: 16 } },
         };

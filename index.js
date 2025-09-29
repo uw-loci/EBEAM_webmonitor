@@ -1839,6 +1839,103 @@ try {
           sessionStorage.setItem('showingFull', showingFull);
         })
       </script>
+
+
+
+
+
+
+
+
+      <!-- Chart Section -->
+      <div style="
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 15px;
+        padding: 10px;
+        margin: 50px auto;
+        width: 98%;
+        max-height: 500px;
+        overflow-y: auto;
+        border: 2px dashed red;
+      ">
+        <div id="chart" style="position: relative; height: 300px; border: 2px solid blue;"></div>
+        <div style="margin-top: 10px; font-size: 0.9em; color: #ccc; border: 1px dotted green;">
+          Auto-refreshes every ~10s. Max 50 points. New point added every 10s on server.
+        </div>
+      </div>
+
+      <script>
+        // Initial sample data
+        const MAX_POINTS = 50;
+
+        const xVals = []; // Unix timestamps (seconds)
+        const yVals = [];
+
+        // Populate with some initial values (fake)
+        const now = Math.floor(Date.now() / 1000);
+        for (let i = 0; i < 10; i++) {
+          xVals.push(now - (10 - i) * 10);
+          yVals.push(Math.sin((xVals[i] / 10)));
+        }
+
+        const data = [xVals, yVals];
+
+        const opts = {
+          width: 700,
+          height: 300,
+          series: [
+            {},
+            {
+              label: 'sin(t/10)',
+              stroke: 'blue',
+              points: { show: true, size: 5, fill: 'blue', stroke: 'blue' }
+            }
+          ],
+          scales: {
+            x: { time: true },
+          },
+          axes: [
+            { stroke: '#ccc' },
+            { stroke: '#ccc' },
+          ],
+          cursor: { focus: { prox: 16 } },
+        };
+
+        const el = document.getElementById('chart');
+        const uplot = new uPlot(opts, data, el);
+
+        // Optional: make chart fill container
+        const innerChart = el.querySelector(':scope > *');
+        if (innerChart) {
+          innerChart.style.position = 'absolute';
+          innerChart.style.top = '0';
+          innerChart.style.left = '0';
+          innerChart.style.width = '100%';
+          innerChart.style.height = '100%';
+        }
+
+        // Simulate live update every 10 seconds
+        setInterval(() => {
+          if (xVals.length === 20) return;
+          const newTime = Math.floor(Date.now() / 1000);
+          const newVal = Math.sin(newTime / 10);
+
+          xVals.push(newTime);
+          yVals.push(newVal);
+
+          // Trim to latest MAX_POINTS
+          if (xVals.length > MAX_POINTS) {
+            xVals.shift();
+            yVals.shift();
+          }
+
+          // Update the chart
+          uplot.setData([xVals, yVals]);
+
+        }, 10_000); // 10 seconds
+      </script>
     </body>
     </html>
  

@@ -1428,6 +1428,7 @@ try {
           pointer-events: none; /* Prevent it from interfering with interactions */
         }
       </style>
+      <link href="https://unpkg.com/uplot@2.0.2/dist/uPlot.min.css" rel="stylesheet">
       <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
     </head>
     <body>
@@ -1934,7 +1935,7 @@ try {
           // Update the chart
           uplot.setData([xVals, yVals]);
 
-        }, 20_000); // 10 seconds
+        }, 10_000); // 10 seconds
       </script>
     </body>
     </html>

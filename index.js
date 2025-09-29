@@ -1860,7 +1860,7 @@ try {
         overflow-y: auto;
         border: 2px dashed red;
       ">
-        <div id="chart" style="position: relative; height: 300px; border: 2px solid blue;"></div>
+        <div id="chart-2" style="position: relative; height: 300px; border: 2px solid blue;"></div>
         <div style="margin-top: 10px; font-size: 0.9em; color: #ccc; border: 1px dotted green;">
           Auto-refreshes every ~10s. Max 50 points. New point added every 10s on server.
         </div>
@@ -1903,11 +1903,11 @@ try {
           cursor: { focus: { prox: 16 } },
         };
 
-        const el = document.getElementById('chart');
-        const uplot = new uPlot(opts, data, el);
+        const graph = document.getElementById('chart-2');
+        const uplot = new uPlot(opts, data, graph);
 
         // Optional: make chart fill container
-        const innerChart = el.querySelector(':scope > *');
+        const innerChart = graph.querySelector(':scope > *');
         if (innerChart) {
           innerChart.style.position = 'absolute';
           innerChart.style.top = '0';
@@ -1934,7 +1934,7 @@ try {
           // Update the chart
           uplot.setData([xVals, yVals]);
 
-        }, 10_000); // 10 seconds
+        }, 20_000); // 10 seconds
       </script>
     </body>
     </html>

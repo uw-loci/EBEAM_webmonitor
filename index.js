@@ -1060,7 +1060,7 @@ try {
           background: #0d1117;
           background-size: 400% 400%;
           color: white;
-          padding: 10px;
+          padding: 1px;
           margin: 0;
         }
         @keyframes gradientMove {
@@ -1075,7 +1075,7 @@ try {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-radius: 15px;
-          padding: 20px;
+          padding: 1px;
           margin: 50px auto;
           width: 90%;
         }
@@ -1123,11 +1123,6 @@ try {
       </style>
     </head>
     <body>
-      <div class="env-section">
-        <p>Code last updated: ${codeLastUpdated}</p>
-        <p>xVals: ${xVals}</p>
-        <p>yVals: ${yVals}</p>
-      </div>
       <div class="chart-container">
         <div id="chart"></div>
         <div class="chart-info-text">
@@ -1184,6 +1179,11 @@ try {
             innerChart.style.height = '100%';
           }
         </script>
+      </div>
+      <div class="env-section">
+        <p>Code last updated: ${codeLastUpdated}</p>
+        <p>xVals: ${xVals}</p>
+        <p>yVals: ${yVals}</p>
       </div>
     </body>
     </html>

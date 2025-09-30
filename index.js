@@ -1134,7 +1134,7 @@ try {
           Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
         </div>
         <script>
-          const container = document.querySelector('.container');
+          const container = document.querySelector('.chart-container');
           const chartEl = document.getElementById('chart');
 
           // Data embedded by server

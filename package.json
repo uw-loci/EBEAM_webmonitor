@@ -23,6 +23,8 @@
     "puppeteer": "^24.1.1"
   },
   "devDependencies": {
-    "eslint": "^9.35.0"
+    "@eslint/js": "^9.36.0",
+    "eslint": "^9.36.0",
+    "globals": "^16.4.0"
   }
 }

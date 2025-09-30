@@ -34,7 +34,7 @@ const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const axios = require('axios');
+//const axios = require('axios');
 const app = express();
 app.use(express.static(path.join(__dirname, 'assets')));
 require('dotenv').config();
@@ -1060,7 +1060,7 @@ try {
           background: #0d1117;
           background-size: 400% 400%;
           color: white;
-          padding: 20px;
+          padding: 10px;
           margin: 0;
         }
         @keyframes gradientMove {
@@ -1068,24 +1068,9 @@ try {
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
-        /* =========================
-           GLASSMORPHISM CONTAINERS
-        ========================== */
-        .glass-container {
-          background: rgba(30, 30, 30, 0.9);
-          /* backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px); */
-          border-radius: 8px;
-          padding: 30px;
-          /* box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15); */
-          width: 100%;
-          margin: 0 auto;
-        }
-       
+
         /* For sections like Interlocks, Environmental, and Green Indicators */
-        .interlocks-section,
-        .env-section,
-        .vacuum-indicators{
+        .env-section{
           background: rgba(255, 255, 255, 0.08);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -1124,275 +1109,6 @@ try {
           opacity: 0.9;
           color: rgba(255, 255, 255, 0.8);
           display: flex;
-        }
-        /* =========================
-           INTERLOCKS SECTION
-        ========================== */
-        .interlocks-title {
-          font-weight: bold;
-          transition: text-shadow 0.3s ease;
-          font-size: 0.9em;
-        }
-        .interlocks-container {
-          display: flex;
-          justify-content: space-around;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-        .interlock-item {
-          text-align: center;
-          font-size: 0.75em;
-          margin: 10px;
-          transition: transform 0.3s ease, filter 0.3s ease;
-        }
-        .interlock-item div:last-child {
-          transition: font-weight 0.3s ease;
-        }
-        .circle {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          margin: 0 auto 5px auto;
-          transition: transform 0.3s ease, filter 0.3s ease;
-        }
-        /* =========================
-           GREEN INDICATORS SECTION
-        ========================== */
-        .vacuum-indicators-title {
-          font-weight: bold;
-          transition: text-shadow 0.3s ease;
-          font-size: 0.9em;
-        }
-        /* Reusing the interlocks container style for consistency */
-        .vacuum-indicators-container {
-          display: flex;
-          justify-content: space-around;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-        /* Items here are the same as interlock items but will only use green circles */
-        .vacuum-indicators-item {
-          text-align: center;
-          font-size: 0.75em;
-          margin: 10px;
-          transition: transform 0.3s ease, filter 0.3s ease;
-        }
-        .vacuum-indicators-item div:last-child {
-          transition: font-weight 0.3s ease;
-        }
-        /* Use same circle styling */
-        .vacuum-indicators-circle {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          margin: 0 auto 5px auto;
-          transition: transform 0.3s ease, filter 0.3s ease;
-        }
-        /* =========================
-           ENVIRONMENTAL SECTION
-        ========================== */
-        /* Radial Gauges*/
-        .gauge-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-          gap: 1rem;
-          margin-top: 1rem;
-        }
-        .gauge {
-          text-align: center;
-          color: #fff;
-        }
-        .ccs {
-          text-align: center;
-          color: #fff;
-        }
-        .ccs-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-          gap: 1rem;
-          margin-top: 1rem;
-        }
-        .beam-energy-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(140px, 1fr));
-          gap: 1rem;
-          align-items: stretch;
-          margin-top: 1rem;
-        }
-        .ccs-reading {
-          font-size: 0.8rem;
-          font-weight: 500;
-          margin-bottom: 12px;
-          padding: 10px;
-          border-radius: 6px;
-          background-color:rgb(116, 118, 121);
-          border: 1px solid #ced4da;
-        }
-        .beam-energy-reading {
-          font-size: 0.9rem;
-          font-weight: 500;
-          margin-top: 2px;
-          border-radius: 6px;
-          background-color:rgb(116, 118, 121);
-          border: 1px solid #ced4da;
-        }
-        .beam-energy-reading p{
-          margin-top: 7px;
-        }
-        .cathode-box {
-          flex: 1;
-          border: 1px solid #dee2e6;
-          margin-top: 5px;
-          margin-bottom: 12px;
-          border-radius: 7px;
-          padding: 20px;
-        }
-        .cathode-heading {
-           margin-bottom: 12px;
-        }
-        /* .gauge-circle {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: conic-gradient(#ccc 0deg, #ccc 360deg);
-          position: relative;
-          margin: 0 auto 0.5rem;
-          transition: background 0.3s;
-        } */
-        /* .gauge-cover {
-          position: absolute;
-          top: 12px; left: 12px;
-          width: 60px; height: 60px;
-          background: rgba(0,0,0,0.4);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1em;
-          color: #fff;
-        }
-        .sensor-label { font-weight: bold; } */
-     
-        /* horizontal layout */
-        .gauge-grid {
-          display: flex;
-          justify-content: space-around;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 1.5rem;
-          margin-top: 1.5rem;
-        }
-        .gauge {
-          text-align: center;
-          font-size: 0.75em;
-          color: #fff;
-        }
-        // gauge circle now displays the attributes of a textbox
-        .gauge-circle {
-          width: 80px;
-          height: 37px;
-          padding: 10px;
-          background-color: conic-gradient(#ccc 0deg, #ccc 360deg);
-          color: white;
-          border: 1px solid #ccc;
-          text-align: center;
-          font-size: 0.9em;
-        }
-        /* =========================
-           LOG VIEWER
-        ========================== */
-        pre {
-          white-space: pre-wrap;
-          font-family: 'Courier New', monospace;
-          text-align: left;
-          background-color: #000;
-          color: #ffffff;
-          padding: 20px 0;
-          max-height: 600px;
-          overflow-y: auto;
-          font-size: 0.9em;
-          border-radius: 9px;
-          margin-top: 0.65em;
-          }
-        .content-section {
-          display: none;
-        }
-        .content-section.active {
-          display: block;
-        }
-        .btn-toggle {
-          background-color: #00bcd4;
-          color: white;
-          border: none;
-          padding: 5px 10px;
-          font-size: 0.75em;
-          border-radius: 5px;
-          transition: background-color 0.3s ease;
-          float: right;
-          margin-top: -3.5em;
-          margin-bottom: 5px;
-        }
-        .btn-refresh {
-          width: 22px;
-          vertical-align: middle;
-          cursor: pointer;
-          border-radius: 1px;
-          transition: background-color 0.3s ease;
-          transform: translate(-529px, -47px);
-        }
-        
-        /* =========================
-           RESPONSIVE LAYOUT
-        ========================== */
-        @media (max-width: 992px) {
-          .card-container {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        @media (max-width: 600px) {
-          .card-container {
-            grid-template-columns: repeat(1, 1fr);
-          }
-        }
-        /* =========================
-           EXPERIMENT-RUNNING NOTICE
-        ========================== */
-        .fixed-top-right {
-          position: absolute;
-          top: 20px;
-          right: 25px;
-          padding: 5px 10px;
-          font-size: 0.7em;
-          border-radius: 8px;
-          color: white;
-          font-weight: bold;
-          z-index: 9999;
-        }
-        .neon-warning {
-          border: 2px solid red;
-          box-shadow: 0 0 10px red;
-          text-shadow: 0 0 10px red;
-          background-color: rgba(255, 0, 0, 0.2);
-        }
-        .neon-success {
-          border: 2px solid green;
-          box-shadow: 0 0 10px green;
-          text-shadow: 0 0 10px green;
-          background-color: rgba(0, 255, 0, 0.2);
-        }
-        @media (max-width: 768px) {
-          .fixed-top-right {
-            position: static;
-            display: block;
-            margin: 10px auto 20px;
-            width: fit-content;
-            font-size: 1.1em;
-            padding: 8px 16px;
-          }
-          .dashboard-title {
-            margin-top: 10px;
-            font-size: 3.0em;
-          }
         }
 
         /* =========================
@@ -1449,6 +1165,8 @@ try {
           Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
         </div>
         <script>
+          const el = document.getElementById('chart');
+
           // Data embedded by server
           const x = ${JSON.stringify(xVals)}; // Unix seconds
           const y = ${JSON.stringify(yVals)};
@@ -1456,7 +1174,7 @@ try {
           const data = [x, y];
 
           const opts = {
-            width: 650,
+            width: el.clientWidth,
             height: 300,
             series: [
               {},
@@ -1472,9 +1190,9 @@ try {
             cursor: { focus: { prox: 16 } },
           };
 
-          const el = document.getElementById('chart');
           new uPlot(opts, data, el);
 
+          /*
           const innerChart = el.querySelector(':scope > *');
           if (innerChart) {
             innerChart.style.position = 'absolute';
@@ -1482,8 +1200,9 @@ try {
             innerChart.style.left = '0';
             innerChart.style.width = '100%';
             innerChart.style.height = '100%';
-            inner.style.border = '1px solid orange';
+            innerChart.style.border = '1px solid orange';
           }
+          */
         </script>
       </div>
     </body>

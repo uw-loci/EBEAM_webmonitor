@@ -1047,6 +1047,8 @@ try {
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>Log System Dashboard</title>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+      <link href="https://unpkg.com/uplot@2.0.2/dist/uPlot.min.css" rel="stylesheet">
+      <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
       <style>
         /* =========================
            FUTURISTIC BACKGROUND
@@ -1408,14 +1410,19 @@ try {
           max-height: 500px;
           overflow-y: auto;
           border: 2px dashed red;
-          position: relative; /* Key to ensure inner chart positioning */
         }
 
         #chart {
-          width: 100%;  /* Make sure the chart takes up the full width of the container */
-          height: 300px; /* Set a fixed height for the chart */
+          position: relative;
+          height: 300px;
           border: 2px solid blue;
-          position: relative; /* Make sure the chart is positioned correctly inside its container */
+        }
+
+        .chart-info-text {
+          margin-top: 10px;
+          font-size: 0.9em;
+          color: #ccc;
+          border: 1px dotted green;
         }
 
         .debug {
@@ -1428,201 +1435,8 @@ try {
           pointer-events: none; /* Prevent it from interfering with interactions */
         }
       </style>
-      <link href="https://unpkg.com/uplot@2.0.2/dist/uPlot.min.css" rel="stylesheet">
-      <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
     </head>
     <body>
-      <div class="container-fluid mt-4">
-        <!-- If experiment isn't running, show a neon warning. In the alternate case, show a neon success -->
-        <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'} fixed-top-right">
-          Dashboard is ${!experimentRunning ? 'not ' : ''}running
-        </div>
-        <!-- Title & Subtitle -->
-        <h2 class="dashboard-title">E-beam Web Monitor</h2>
-        <p class="dashboard-subtitle">
-          <strong>Web Monitor Log Last Modified:</strong> <span id="log-last-modified">${fileModified}</span> | 
-          <strong>Site Last Updated:</strong> <span id="site-last-updated">${currentTime}</span>
-        </p>
-        <!-- Interlocks Section -->
-        <div class="interlocks-section">
-          <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
-          <div class="interlocks-container">
-            <div class="interlock-item">
-              <div id="sic-door" class="circle" style="background-color:${doorColor}"></div>
-              <div>Door</div>
-            </div>
-            <div class="interlock-item">
-              <div id="sic-water" class="circle" style="background-color:${waterColor}"></div>
-              <div>Water</div>
-            </div>
-            <div class="interlock-item">
-              <div id="sic-vacuum-power" class="circle" style="background-color:${vacuumPowerColor}"></div>
-              <div>Vacuum Power</div>
-            </div>
-            <div class="interlock-item">
-              <div id="sic-vacuum-pressure" class="circle" style="background-color:${vacuumPressureColor}"></div>
-              <div>Vacuum Pressure</div>
-            </div>
-            <div class="interlock-item">
-              <div id="sic-oil-low" class="circle" style="background-color:${oilLowColor}"></div>
-              <div>Low Oil</div>
-            </div>
-            <div class="interlock-item">
-              <div id="sic-oil-high" class="circle" style="background-color:${oilHighColor}"></div>
-              <div>High Oil</div>
-            </div>
-            <div class="interlock-item">
-              <div id="sic-estop" class="circle" style="background-color:${estopIntColor}"></div>
-              <div>E-STOP Int</div>
-            </div>
-            <div class="interlock-item">
-              <div id="sic-estopExt" class="circle" style="background-color:${estopExtColor}"></div>
-              <div>E-STOP Ext</div>
-            </div>
-            <div class="interlock-item">
-              <div id="all-interlocks" class="circle" style="background-color:${allInterlocksColor}"></div>
-              <div>All Interlocks</div>
-            </div>
-            <div class="interlock-item">
-              <div id="g9-output" class="circle" style="background-color:${G9OutputColor}"></div>
-              <div>G9 Output</div>
-            </div>
-            <div class="interlock-item">
-              <div id="hvolt" class="circle" style="background-color:${hvoltColor}"></div>
-              <div>HVolt ON</div>
-            </div>
-          </div>
-        </div>
-        <!-- Vacuum Indicators Section -->
-        <div class="vacuum-indicators">
-          <h3 id="pressureReadings" class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators: ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
-          <div class="vacuum-indicators-container">
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-0" class="vacuum-indicators-circle" style="background-color:${vacColors[0]}"></div>
-              <div>Pumps Power ON</div>
-            </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-1" class="vacuum-indicators-circle" style="background-color:${vacColors[1]}"></div>
-              <div>Turbo Rotor ON</div>
-            </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-2" class="vacuum-indicators-circle" style="background-color:${vacColors[2]}"></div>
-              <div>Turbo Vent Open</div>
-            </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-3" class="vacuum-indicators-circle" style="background-color:${vacColors[3]}"></div>
-              <div>972b Power On</div>
-            </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-4" class="vacuum-indicators-circle" style="background-color:${vacColors[4]}"></div>
-              <div>Turbo Gate Closed</div>
-            </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-5" class="vacuum-indicators-circle" style="background-color:${vacColors[5]}"></div>
-              <div>Turbo Gate Open</div>
-            </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-6" class="vacuum-indicators-circle" style="background-color:${vacColors[6]}"></div>
-              <div>Argon Gate Open</div>
-            </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-7" class="vacuum-indicators-circle" style="background-color:${vacColors[7]}"></div>
-              <div>Argon Gate Closed</div>
-            </div>
-          </div>
-        </div>
-        <!-- Environmental Section -->
-        <!-- Environmental Section (Horizontal Radial Gauges) -->
-        <div class="env-section">
-          <h3 class="dashboard-subtitle env-title">Environmental</h3>
-          <div class="gauge-grid">
-            <div class="gauge" id="sensor-1">
-              <div class="gauge-circle"><div class="gauge-cover">${temperatures["1"] === "DISCONNECTED" || temperatures["1"] === "None" ? '--' : temperatures["1"] + '°C'}</div></div>
-              <div class="sensor-label">Solenoid 1</div>
-            </div>
-            <div class="gauge" id="sensor-2">
-              <div class="gauge-circle"><div class="gauge-cover">${temperatures["2"] === "DISCONNECTED" || temperatures["2"] === "None" ? '--' : temperatures["2"] + '°C'}</div></div>
-              <div class="sensor-label">Solenoid 2</div>
-            </div>
-            <div class="gauge" id="sensor-3">
-              <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] === "DISCONNECTED" || temperatures["3"] === "None" ? '--' : temperatures["3"] + '°C'}</div></div>
-              <div class="sensor-label">Chmbr Bot</div>
-            </div>
-            <div class="gauge" id="sensor-4">
-              <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] === "DISCONNECTED" || temperatures["4"] === "None" ? '--' : temperatures["4"] + '°C'}</div></div>
-              <div class="sensor-label">Chmbr Top</div>
-            </div>
-            <div class="gauge" id="sensor-5">
-              <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] === "DISCONNECTED" || temperatures["5"] === "None" ? '--' : temperatures["5"] + '°C'}</div></div>
-              <div class="sensor-label">Air temp</div>
-            </div>
-            <div class="gauge" id="sensor-6">
-              <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] === "DISCONNECTED" || temperatures["6"] === "None" ? '--' : temperatures["6"] + '°C'}</div></div>
-              <div class="sensor-label">Extra 6</div>
-            </div>
-          </div>
-        </div>
-        <!-- CCS Section -->
-        <div class="env-section">
-          <h3 class="dashboard-subtitle env-title">CCS</h3>
-          <div class="ccs-grid">
-            <div class="cathode-box">
-              <p class="cathode-heading">Cathode 1</p>
-              <div id="heaterCurrentA" class="ccs-reading">Current: ${data.heaterCurrent_A != null && experimentRunning
-                ? data.heaterCurrent_A.toFixed(2) + ' A' 
-                : '--'}
-              </div>
-              <div id="heaterVoltageA" class="ccs-reading">Voltage: ${data.heaterVoltage_A != null && experimentRunning
-                ? data.heaterVoltage_A.toFixed(2) + ' V' 
-                : '--'}
-              </div>
-                <div id="heaterTemperatureA" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_A != null && experimentRunning
-                ? data.clamp_temperature_A.toFixed(2) + ' C' 
-                : '--'}
-              </div>
-            </div>
-            <div class="cathode-box">
-              <p class="cathode-heading">Cathode 2</p>
-              <div id="heaterCurrentB" class="ccs-reading">Current: ${data.heaterCurrent_B != null && experimentRunning
-                ? data.heaterCurrent_B.toFixed(2) + ' A' 
-                : '--'}
-              </div>
-              <div id="heaterVoltageB" class="ccs-reading">Voltage: ${data.heaterVoltage_B != null && experimentRunning
-                ? data.heaterVoltage_B.toFixed(2) + ' V' 
-                : '--'}
-              </div>
-              <div id="heaterTemperatureB" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_B != null && experimentRunning
-              ? data.clamp_temperature_B.toFixed(2) + ' C' 
-              : '--'}
-              </div>
-            </div>
-            <div class="cathode-box">
-              <p class="cathode-heading">Cathode 3</p>
-              <div id="heaterCurrentC" class="ccs-reading">Current: ${data.heaterCurrent_C != null && experimentRunning
-                ? data.heaterCurrent_C.toFixed(2) + ' A' 
-                : '--'}
-              </div>
-              <div id="heaterVoltageC" class="ccs-reading">Voltage: ${data.heaterVoltage_C != null && experimentRunning
-                ? data.heaterVoltage_C.toFixed(2) + ' V' 
-                : '--'}
-              </div>
-              <div id="heaterTemperatureC" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_C != null && experimentRunning
-                ? data.clamp_temperature_C.toFixed(2) + ' C' 
-                : '--'}
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Beam Energy -->
-        <div class="env-section">
-          <h3 class="dashboard-subtitle env-title">Beam Energy</h3>
-          <div class="beam-energy-grid">
-                <div class = "beam-energy-reading"><p>Set: --</p></div> 
-                <div class = "beam-energy-reading"><p>High Voltage: --</p></div>
-                <div class = "beam-energy-reading"><p>Current: --</p></div>
-          </div>
-        </div>
-      </div>
       <div class="env-section">
         <p>Code last updated: ${codeLastUpdated}</p>
         <p>xVals: ${xVals}</p>
@@ -1631,7 +1445,7 @@ try {
       <div class="chart-container">
         <div class="debug"></div>
         <div id="chart"></div>
-        <div style="margin-top: 10px; font-size: 0.9em; color: #ccc; border: 1px dotted green;">
+        <div class="chart-info-text">
           Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
         </div>
         <script>
@@ -1672,271 +1486,6 @@ try {
           }
         </script>
       </div>
-      <!-- Log Viewer -->
-      <div class="env-section">
-        <h3 class="dashboard-subtitle env-title">System Logs; Last Update: <span id="display-last-updated">${
-            data.displayLogLastModified
-              ? new Date(data.displayLogLastModified).toLocaleString("en-US", {
-                  hour12: true,
-                  timeZone: "America/Chicago"
-                })
-              : "N/A"
-        }</span></h3>
-        <button id="toggleButton" class="btn-toggle">Show Full Log</button>
-        <div id="fullContent" class="content-section">
-          <pre></pre>
-        </div>
-      </div>
-      <!-- Auto-refresh & Toggle Script -->
-      <script>
-
-         let savedState = sessionStorage.getItem('showingFull');
-         let showingFull = savedState === 'true';
-
-        // Toggle between preview/full log
-         const toggleButton = document.getElementById('toggleButton');
-         const fullSection = document.getElementById('fullContent');
-         const pre = fullSection.querySelector('pre')
-
-         if (showingFull) {
-          fetch('/raw').then(resp => resp.text()).then(text => {
-          pre.textContent = text;
-          fullSection.classList.add('active');
-          toggleButton.textContent = 'Collapse Log View';
-          });
-        }
-        
-        setInterval(async() => {
-          try {
-
-          const res = await fetch('/data');
-          const data = await res.json();
-
-          const interlockIds = ['sic-door', 'sic-water', 'sic-vacuum-power', 'sic-vacuum-pressure', 'sic-oil-low', 'sic-oil-high', 'sic-estop', 'sic-estopExt', 'all-interlocks', 'g9-output', 'hvolt'];
-          const vacuumIds = ['vac-indicator-0', 'vac-indicator-1', 'vac-indicator-2', 'vac-indicator-3', 'vac-indicator-4', 'vac-indicator-5', 'vac-indicator-6', 'vac-indicator-7'];
-
-          const statusDiv = document.getElementById('experiment-status');
-
-          const logLastModified = document.getElementById('log-last-modified');
-          const displayLastModified = document.getElementById('display-last-updated');
-
-          const dateObject1 = data.webMonitorLastModified? new Date(data.webMonitorLastModified) : null;
-          const dateObject2 = data.displayLogLastModified? new Date(data.displayLogLastModified) : null;
-
-          const clean_string_1 = dateObject1? dateObject1.toLocaleString("en-US", {
-            hour12: true,
-            timeZone: "America/Chicago"
-          }) : "N/A";
-
-          const clean_string_2 = dateObject2? dateObject2.toLocaleString("en-US", {
-            hour12: true,
-            timeZone: "America/Chicago"
-          }) : "N/A";
-
-          logLastModified.textContent = clean_string_1;
-          displayLastModified.textContent = clean_string_2;
-
-          const now = Date.now();
-
-          const THRESHOLD = 2 * 60 * 1000;
-
-          let experimentRunning = (now - dateObject1) <= THRESHOLD;
-
-          statusDiv.textContent = experimentRunning
-          ? 'Dashboard is running'
-          : 'Dashboard is not running';
-
-          statusDiv.classList.toggle('neon-success', experimentRunning);
-          statusDiv.classList.toggle('neon-warning', !experimentRunning);
-
-          interlockIds.forEach((id, i) => {
-            const elem = document.getElementById(id);
-            elem.style.backgroundColor = experimentRunning ? data.sicColors[i] : 'grey';
-          });
-
-          vacuumIds.forEach((id, i) => {
-            const elem = document.getElementById(id);
-            elem.style.backgroundColor = experimentRunning ? data.vacuumColors[i] : 'grey';
-          });
-
-
-
-          const pressureReadings = document.getElementById('pressureReadings');
-
-          const webMonitorLastModified = document.getElementById('log-last-modified');
-
-          const heaterCurrentA = document.getElementById('heaterCurrentA');
-          const heaterCurrentB = document.getElementById('heaterCurrentB');
-          const heaterCurrentC = document.getElementById('heaterCurrentC');
-
-          const heaterVoltageA = document.getElementById('heaterVoltageA');
-          const heaterVoltageB = document.getElementById('heaterVoltageB');
-          const heaterVoltageC = document.getElementById('heaterVoltageC');
-
-          const heaterTemperatureA = document.getElementById('heaterTemperatureA');
-          const heaterTemperatureB = document.getElementById('heaterTemperatureB');
-          const heaterTemperatureC = document.getElementById('heaterTemperatureC');
-
-          const siteLastUpdated = document.getElementById('site-last-updated');
-
-          const sensor1 = document.getElementById('sensor-1');
-          const sensor2 = document.getElementById('sensor-2');
-          const sensor3 = document.getElementById('sensor-3');
-          const sensor4 = document.getElementById('sensor-4');
-          const sensor5 = document.getElementById('sensor-5');
-          const sensor6 = document.getElementById('sensor-6');
-
-          heaterCurrentA.textContent = (data.heaterCurrent_A !== null && data.heaterCurrent_A !== undefined && experimentRunning? "Current: " + data.heaterCurrent_A : "Current: " + "--");
-          heaterCurrentB.textContent = (data.heaterCurrent_B !== null && data.heaterCurrent_B !== undefined && experimentRunning? "Current: " + data.heaterCurrent_B : "Current: " + "--");
-          heaterCurrentC.textContent = (data.heaterCurrent_C !== null && data.heaterCurrent_C !== undefined && experimentRunning? "Current: " + data.heaterCurrent_C : "Current: " + "--");
-
-          heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
-          heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
-          heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
-
-          heaterTemperatureA.textContent = (data.clamp_temperature_A !== null && data.clamp_temperature_A !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_A : "Clamp Temperature: " + "--");
-          heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_B : "Clamp Temperature: " + "--");
-          heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_C : "Clamp Temperature: " + "--");
-
-
-          const dateObj = new Date(data.siteLastUpdated);
-          const clean_string = dateObj.toLocaleString("en-US", {
-            hour12: true,
-            timeZone: "America/Chicago"
-          });
-          siteLastUpdated.textContent = clean_string;
-
-          pressureReadings.textContent = "Vacuum Indicators: " + String(data.pressure).replace("E", "e") + " mbar";
-          sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None" && !experimentRunning) ? '--' : data.temperatures["1"] + '°C';
-          sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None" && !experimentRunning) ? '--' : data.temperatures["2"] + '°C';
-          sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None" && !experimentRunning) ? '--' : data.temperatures["3"] + '°C';
-          sensor4.querySelector('.gauge-cover').textContent = (!data.temperatures["4"] || data.temperatures["4"] === "DISCONNECTED" || data.temperatures["4"] === "None" && !experimentRunning) ? '--' : data.temperatures["4"] + '°C';
-          sensor5.querySelector('.gauge-cover').textContent = (!data.temperatures["5"] || data.temperatures["5"] === "DISCONNECTED" || data.temperatures["5"] === "None" && !experimentRunning) ? '--' : data.temperatures["5"] + '°C';
-          sensor6.querySelector('.gauge-cover').textContent = (!data.temperatures["6"] || data.temperatures["6"] === "DISCONNECTED" || data.temperatures["6"] === "None" && !experimentRunning) ? '--' : data.temperatures["6"] + '°C';
-
-          
-
-          console.log(sensor1.textContent);
-          console.log(data.sicColors);
-          }
-          catch {
-          console.error('Failed to load the dashboard!')
-            }
-          }, 60000)
-     
-        toggleButton.addEventListener('click', async () => {
-          if (!showingFull) {
-            pre.textContent = ' Fetching file contents...';
-            fullSection.classList.add('active');
-            await fetch('/refresh-display');
-            const resp = await (await fetch('/raw')).text();
-            pre.textContent = resp;
-            toggleButton.textContent = 'Collapse Log View';
-          } else {
-            fullSection.classList.remove('active');
-            toggleButton.textContent = 'Show Full Log';
-          }
-          showingFull = !showingFull;
-          sessionStorage.setItem('showingFull', showingFull);
-        })
-      </script>
-
-
-
-
-
-
-
-
-      <!-- Chart Section -->
-      <div style="
-        background: rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 15px;
-        padding: 10px;
-        margin: 50px auto;
-        width: 98%;
-        max-height: 500px;
-        overflow-y: auto;
-        border: 2px dashed red;
-      ">
-        <div id="chart-2" style="position: relative; height: 300px; border: 2px solid blue;"></div>
-        <div style="margin-top: 10px; font-size: 0.9em; color: #ccc; border: 1px dotted green;">
-          Auto-refreshes every ~10s. Max 50 points. New point added every 10s on server.
-        </div>
-      </div>
-
-      <script>
-        // Initial sample data
-        const MAX_POINTS = 50;
-
-        const xVals = []; // Unix timestamps (seconds)
-        const yVals = [];
-
-        // Populate with some initial values (fake)
-        const now = Math.floor(Date.now() / 1000);
-        for (let i = 0; i < 10; i++) {
-          xVals.push(now - (10 - i) * 10);
-          yVals.push(Math.sin((xVals[i] / 10)));
-        }
-
-        const data = [xVals, yVals];
-
-        const opts = {
-          width: 700,
-          height: 300,
-          series: [
-            {},
-            {
-              label: 'sin(t/10)',
-              stroke: 'blue',
-              points: { show: true, size: 5, fill: 'blue', stroke: 'blue' }
-            }
-          ],
-          scales: {
-            x: { time: true },
-          },
-          axes: [
-            { stroke: '#ccc' },
-            { stroke: '#ccc' },
-          ],
-          cursor: { focus: { prox: 16 } },
-        };
-
-        const graph = document.getElementById('chart-2');
-        const uplot = new uPlot(opts, data, graph);
-
-        // Optional: make chart fill container
-        const innerChart = graph.querySelector(':scope > *');
-        if (innerChart) {
-          innerChart.style.position = 'absolute';
-          innerChart.style.top = '0';
-          innerChart.style.left = '0';
-          innerChart.style.width = '100%';
-          innerChart.style.height = '100%';
-        }
-
-        // Simulate live update every 10 seconds
-        setInterval(() => {
-          if (xVals.length === 20) return;
-          const newTime = Math.floor(Date.now() / 1000);
-          const newVal = Math.sin(newTime / 10);
-
-          xVals.push(newTime);
-          yVals.push(newVal);
-
-          // Trim to latest MAX_POINTS
-          if (xVals.length > MAX_POINTS) {
-            xVals.shift();
-            yVals.shift();
-          }
-
-          // Update the chart
-          uplot.setData([xVals, yVals]);
-
-        }, 10_000); // 10 seconds
-      </script>
     </body>
     </html>
  

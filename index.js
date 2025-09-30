@@ -1120,18 +1120,21 @@ try {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-radius: 15px;
-          padding: 10px;
           margin: 50px auto;
-          width: 98%;
+          width: 90vw;
+          max-width: 700px;
           max-height: 500px;
           overflow-y: auto;
           border: 2px dashed red;
         }
 
         #chart {
-          position: relative;
+          width: 100%;
           height: 300px;
           border: 2px solid blue;
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
         }
 
         .chart-info-text {

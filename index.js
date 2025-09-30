@@ -1079,38 +1079,7 @@ try {
           margin: 50px auto;
           width: 90%;
         }
-        /* =========================
-           TITLES / HEADERS
-        ========================== */
-        .dashboard-title {
-          font-size: 2em;
-          font-weight: 700;
-          color: #d6eaff;
-          text-align: left;
-          padding-left: 40px;
-          /* text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
-                       0px 0px 20px rgba(214, 234, 255, 0.4); */
-        }
-     
-        /* .dashboard-title::after {
-          content: "";
-          display: block;
-          width: 60%;
-          height: 5px;
-          background: rgba(0, 255, 255, 0.8);
-          margin: 10px auto;
-          box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
-          border-radius: 10px;
-        } */
-        .dashboard-subtitle {
-          font-size: 0.9em;
-          margin-bottom: 25px;
-          text-align: left;
-          opacity: 0.9;
-          color: rgba(255, 255, 255, 0.8);
-          display: flex;
-        }
-
+        
         /* =========================
           CHART STYLES
         ========================== */
@@ -1120,21 +1089,19 @@ try {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-radius: 15px;
+          padding: 10px;
           margin: 50px auto;
-          width: 90vw;
-          max-width: 700px;
+          width: 98%;
           max-height: 500px;
           overflow-y: auto;
           border: 2px dashed red;
         }
 
         #chart {
-          width: 100%;
+          position: relative;
           height: 300px;
+          width: 100%; /* Make chart fill the container width */
           border: 2px solid blue;
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
         }
 
         .chart-info-text {
@@ -1162,13 +1129,13 @@ try {
         <p>yVals: ${yVals}</p>
       </div>
       <div class="chart-container">
-        <div class="debug"></div>
         <div id="chart"></div>
         <div class="chart-info-text">
           Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
         </div>
         <script>
-          const el = document.getElementById('chart');
+          const container = document.querySelector('.container');
+          const chartEl = document.getElementById('chart');
 
           // Data embedded by server
           const x = ${JSON.stringify(xVals)}; // Unix seconds
@@ -1176,36 +1143,46 @@ try {
 
           const data = [x, y];
 
-          const opts = {
-            width: el.clientWidth,
-            height: 300,
-            series: [
-              {},
-              { label: 'sin(t/10)', stroke: 'blue', points: { show: true, size: 5, fill: 'blue', stroke: 'blue' } }
-            ],
-            scales: {
-              x: { time: true },
-            },
-            axes: [
-              { stroke: '#ccc' },
-              { stroke: '#ccc' },
-            ],
-            cursor: { focus: { prox: 16 } },
-          };
+          function createUplot() {
+            return new uPlot({
+              width: container.clientWidth,  // dynamic width based on container
+              height: 300,
+              series: [
+                {},
+                {
+                  label: 'sin(t/10)',
+                  stroke: 'blue',
+                  points: { show: true, size: 5, fill: 'blue', stroke: 'blue' }
+                }
+              ],
+              scales: {
+                x: { time: true },
+              },
+              axes: [
+                { stroke: '#ccc' },
+                { stroke: '#ccc' },
+              ],
+              cursor: { focus: { prox: 16 } },
+            }, data, chartEl);
+          }
 
-          new uPlot(opts, data, el);
+          let uplot = createUplot();
 
-          /*
-          const innerChart = el.querySelector(':scope > *');
+          // Resize handler to update chart width on window resize
+          window.addEventListener('resize', () => {
+            const newWidth = container.clientWidth;
+            uplot.setSize({ width: newWidth, height: 300 });
+          });
+
+          // Optional: adjust inner chart styles so it fills the container absolutely
+          const innerChart = chartEl.querySelector(':scope > *');
           if (innerChart) {
             innerChart.style.position = 'absolute';
             innerChart.style.top = '0';
             innerChart.style.left = '0';
             innerChart.style.width = '100%';
             innerChart.style.height = '100%';
-            innerChart.style.border = '1px solid orange';
           }
-          */
         </script>
       </div>
     </body>

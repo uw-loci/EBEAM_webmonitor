@@ -1089,7 +1089,7 @@ try {
           border: 2px solid blue;
         }
         .chart-info-text {
-          margin-top: 10px;
+          margin-top: 20px;
           font-size: 0.9em;
           color: #ccc;
           border: 1px dotted green;
@@ -1105,18 +1105,10 @@ try {
       </div>
 
       <script>
-        const MAX_POINTS = 50;
+        const x = ${JSON.stringify(xVals)}; // Unix seconds
+        const y = ${JSON.stringify(yVals)};
 
-        const xVals = [];
-        const yVals = [];
-
-        const now = Math.floor(Date.now() / 1000);
-        for (let i = 0; i < 10; i++) {
-          xVals.push(now - (10 - i) * 10);
-          yVals.push(Math.sin((xVals[i] / 10)));
-        }
-
-        const data = [xVals, yVals];
+        const data = [x, y];
 
         // Get container width dynamically
         const container = document.querySelector('.chart-container');
@@ -1162,24 +1154,6 @@ try {
           innerChart.style.width = '100%';
           innerChart.style.height = '100%';
         }
-
-        // Simulate live update every 10 seconds
-        setInterval(() => {
-          if (xVals.length === MAX_POINTS) return;
-          const newTime = Math.floor(Date.now() / 1000);
-          const newVal = Math.sin(newTime / 10);
-
-          xVals.push(newTime);
-          yVals.push(newVal);
-
-          if (xVals.length > MAX_POINTS) {
-            xVals.shift();
-            yVals.shift();
-          }
-
-          uplot.setData([xVals, yVals]);
-
-        }, 10_000);
       </script>
 
       <div class="env-section">

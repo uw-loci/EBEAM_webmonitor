@@ -1054,19 +1054,9 @@ try {
            FUTURISTIC BACKGROUND
         ========================== */
         body {
-          font-family: Arial, sans-serif;
-          text-align: center;
-          /* background: linear-gradient(-45deg, #001f3f, #003366, #005a9e); */
-          background: #0d1117;
-          background-size: 400% 400%;
-          color: white;
-          padding: 1px;
-          margin: 0;
-        }
-        @keyframes gradientMove {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
+          background: #111;
+          color: #ccc;
+          font-family: sans-serif;
         }
 
         /* For sections like Interlocks, Environmental, and Green Indicators */
@@ -1077,6 +1067,7 @@ try {
           border-radius: 15px;
           padding: 1px;
           margin: 50px auto;
+          overflow-x: auto;
           width: 90%;
         }
         

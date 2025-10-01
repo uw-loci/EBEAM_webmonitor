@@ -1043,6 +1043,8 @@ try {
     <!DOCTYPE html>
     <html>
     <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>uPlot Live Update</title>
       <link rel="stylesheet" href="https://unpkg.com/uplot/dist/uPlot.min.css">
       <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
@@ -1165,10 +1167,10 @@ try {
       </script>
 
       <div class="chart-container">
-      <p>Code last updated: ${codeLastUpdated}</p>
-      <p>xVals: ${xVals}</p>
-      <p>yVals: ${yVals}</p>
-    </div>
+        <p>Code last updated: ${codeLastUpdated}</p>
+        <p>xVals: ${xVals}</p>
+        <p>yVals: ${yVals}</p>
+      </div>
     </body>
     </html>
  

@@ -1065,7 +1065,7 @@ try {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-radius: 15px;
-          padding: 1px;
+          padding: 5px;
           margin: 50px auto;
           overflow-x: auto;
           width: 90%;
@@ -1080,7 +1080,6 @@ try {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-radius: 15px;
-          padding: 10px;
           margin: 50px auto;
           width: 98%;
           max-height: 500px;
@@ -1120,14 +1119,22 @@ try {
           Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
         </div>
         <script>
+          const MAX_POINTS = 50;
+
+          const xVals = [];
+          const yVals = [];
+
+          const now = Math.floor(Date.now() / 1000);
+          for (let i = 0; i < 10; i++) {
+            xVals.push(now - (10 - i) * 10);
+            yVals.push(Math.sin((xVals[i] / 10)));
+          }
+
+          const data = [xVals, yVals];
+
+          // Get container width dynamically
           const container = document.querySelector('.chart-container');
           const chartEl = document.getElementById('chart');
-
-          // Data embedded by server
-          const x = ${JSON.stringify(xVals)}; // Unix seconds
-          const y = ${JSON.stringify(yVals)};
-
-          const data = [x, y];
 
           function createUplot() {
             return new uPlot({
@@ -1169,6 +1176,24 @@ try {
             innerChart.style.width = '100%';
             innerChart.style.height = '100%';
           }
+
+          // Simulate live update every 10 seconds
+          setInterval(() => {
+            if (xVals.length === MAX_POINTS) return;
+            const newTime = Math.floor(Date.now() / 1000);
+            const newVal = Math.sin(newTime / 10);
+
+            xVals.push(newTime);
+            yVals.push(newVal);
+
+            if (xVals.length > MAX_POINTS) {
+              xVals.shift();
+              yVals.shift();
+            }
+
+            uplot.setData([xVals, yVals]);
+
+          }, 10_000);
         </script>
       </div>
       <div class="env-section">

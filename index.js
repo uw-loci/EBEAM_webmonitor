@@ -1046,6 +1046,7 @@ try {
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>uPlot Live Update</title>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
       <link rel="stylesheet" href="https://unpkg.com/uplot/dist/uPlot.min.css">
       <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
       <style>
@@ -1054,6 +1055,17 @@ try {
           color: #ccc;
           font-family: sans-serif;
         }
+
+        .env-section {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 15px;
+          padding: 20px;
+          margin: 50px auto;
+          width: 90%;
+        }
+
         .chart-container {
           background: rgba(255, 255, 255, 0.08);
           backdrop-filter: blur(20px);
@@ -1166,7 +1178,7 @@ try {
         }, 10_000);
       </script>
 
-      <div class="chart-container">
+      <div class="env-section">
         <p>Code last updated: ${codeLastUpdated}</p>
         <p>xVals: ${xVals}</p>
         <p>yVals: ${yVals}</p>

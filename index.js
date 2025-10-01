@@ -1050,6 +1050,10 @@ try {
       <link rel="stylesheet" href="https://unpkg.com/uplot/dist/uPlot.min.css">
       <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
       <style>
+        /* =========================
+           FUTURISTIC BACKGROUND
+        ========================== */
+
         body {
           font-family: Arial, sans-serif;
           text-align: center;
@@ -1059,8 +1063,31 @@ try {
           color: white;
           margin: 0;
         }
+        
+        @keyframes gradientMove {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
 
-        .env-section {
+        /* =========================
+           GLASSMORPHISM CONTAINERS
+        ========================== */
+
+        .glass-container {
+          background: rgba(30, 30, 30, 0.9);
+          /* backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px); */
+          border-radius: 8px;
+          padding: 30px;
+          /* box-shadow: 0px 4px 25px rgba(255, 255, 255, 0.15); */
+          width: 100%;
+          margin: 0 auto;
+        }
+
+        .interlocks-section,
+        .env-section,
+        .vacuum-indicators {
           background: rgba(255, 255, 255, 0.08);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -1069,6 +1096,311 @@ try {
           margin: 50px auto;
           width: 90%;
         }
+
+        /* =========================
+           TITLES / HEADERS
+        ========================== */
+        .dashboard-title {
+          font-size: 2em;
+          font-weight: 700;
+          color: #d6eaff;
+          text-align: left;
+          padding-left: 40px;
+          /* text-shadow: 0px 0px 12px rgba(214, 234, 255, 0.6),
+                       0px 0px 20px rgba(214, 234, 255, 0.4); */
+        }
+     
+        /* .dashboard-title::after {
+          content: "";
+          display: block;
+          width: 60%;
+          height: 5px;
+          background: rgba(0, 255, 255, 0.8);
+          margin: 10px auto;
+          box-shadow: 0px 0px 15px rgba(0, 255, 255, 1);
+          border-radius: 10px;
+        } */
+        .dashboard-subtitle {
+          font-size: 0.9em;
+          margin-bottom: 25px;
+          text-align: left;
+          opacity: 0.9;
+          color: rgba(255, 255, 255, 0.8);
+          display: flex;
+        }
+        /* =========================
+           INTERLOCKS SECTION
+        ========================== */
+        .interlocks-title {
+          font-weight: bold;
+          transition: text-shadow 0.3s ease;
+          font-size: 0.9em;
+        }
+        .interlocks-container {
+          display: flex;
+          justify-content: space-around;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        .interlock-item {
+          text-align: center;
+          font-size: 0.75em;
+          margin: 10px;
+          transition: transform 0.3s ease, filter 0.3s ease;
+        }
+        .interlock-item div:last-child {
+          transition: font-weight 0.3s ease;
+        }
+        .circle {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          margin: 0 auto 5px auto;
+          transition: transform 0.3s ease, filter 0.3s ease;
+        }
+        /* =========================
+           GREEN INDICATORS SECTION
+        ========================== */
+        .vacuum-indicators-title {
+          font-weight: bold;
+          transition: text-shadow 0.3s ease;
+          font-size: 0.9em;
+        }
+        /* Reusing the interlocks container style for consistency */
+        .vacuum-indicators-container {
+          display: flex;
+          justify-content: space-around;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        /* Items here are the same as interlock items but will only use green circles */
+        .vacuum-indicators-item {
+          text-align: center;
+          font-size: 0.75em;
+          margin: 10px;
+          transition: transform 0.3s ease, filter 0.3s ease;
+        }
+        .vacuum-indicators-item div:last-child {
+          transition: font-weight 0.3s ease;
+        }
+        /* Use same circle styling */
+        .vacuum-indicators-circle {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          margin: 0 auto 5px auto;
+          transition: transform 0.3s ease, filter 0.3s ease;
+        }
+        /* =========================
+           ENVIRONMENTAL SECTION
+        ========================== */
+        /* Radial Gauges*/
+        .gauge-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+        .gauge {
+          text-align: center;
+          color: #fff;
+        }
+        .ccs {
+          text-align: center;
+          color: #fff;
+        }
+        .ccs-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+        .beam-energy-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(140px, 1fr));
+          gap: 1rem;
+          align-items: stretch;
+          margin-top: 1rem;
+        }
+        .ccs-reading {
+          font-size: 0.8rem;
+          font-weight: 500;
+          margin-bottom: 12px;
+          padding: 10px;
+          border-radius: 6px;
+          background-color:rgb(116, 118, 121);
+          border: 1px solid #ced4da;
+        }
+        .beam-energy-reading {
+          font-size: 0.9rem;
+          font-weight: 500;
+          margin-top: 2px;
+          border-radius: 6px;
+          background-color:rgb(116, 118, 121);
+          border: 1px solid #ced4da;
+        }
+        .beam-energy-reading p{
+          margin-top: 7px;
+        }
+        .cathode-box {
+          flex: 1;
+          border: 1px solid #dee2e6;
+          margin-top: 5px;
+          margin-bottom: 12px;
+          border-radius: 7px;
+          padding: 20px;
+        }
+        .cathode-heading {
+           margin-bottom: 12px;
+        }
+        /* .gauge-circle {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: conic-gradient(#ccc 0deg, #ccc 360deg);
+          position: relative;
+          margin: 0 auto 0.5rem;
+          transition: background 0.3s;
+        } */
+        /* .gauge-cover {
+          position: absolute;
+          top: 12px; left: 12px;
+          width: 60px; height: 60px;
+          background: rgba(0,0,0,0.4);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1em;
+          color: #fff;
+        }
+        .sensor-label { font-weight: bold; } */
+     
+        /* horizontal layout */
+        .gauge-grid {
+          display: flex;
+          justify-content: space-around;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 1.5rem;
+          margin-top: 1.5rem;
+        }
+        .gauge {
+          text-align: center;
+          font-size: 0.75em;
+          color: #fff;
+        }
+        // gauge circle now displays the attributes of a textbox
+        .gauge-circle {
+          width: 80px;
+          height: 37px;
+          padding: 10px;
+          background-color: conic-gradient(#ccc 0deg, #ccc 360deg);
+          color: white;
+          border: 1px solid #ccc;
+          text-align: center;
+          font-size: 0.9em;
+        }
+        /* =========================
+           LOG VIEWER
+        ========================== */
+        pre {
+          white-space: pre-wrap;
+          font-family: 'Courier New', monospace;
+          text-align: left;
+          background-color: #000;
+          color: #ffffff;
+          padding: 20px 0;
+          max-height: 600px;
+          overflow-y: auto;
+          font-size: 0.9em;
+          border-radius: 9px;
+          margin-top: 0.65em;
+          }
+        .content-section {
+          display: none;
+        }
+        .content-section.active {
+          display: block;
+        }
+        .btn-toggle {
+          background-color: #00bcd4;
+          color: white;
+          border: none;
+          padding: 5px 10px;
+          font-size: 0.75em;
+          border-radius: 5px;
+          transition: background-color 0.3s ease;
+          float: right;
+          margin-top: -3.5em;
+          margin-bottom: 5px;
+        }
+        .btn-refresh {
+          width: 22px;
+          vertical-align: middle;
+          cursor: pointer;
+          border-radius: 1px;
+          transition: background-color 0.3s ease;
+          transform: translate(-529px, -47px);
+        }
+        
+        /* =========================
+           RESPONSIVE LAYOUT
+        ========================== */
+        @media (max-width: 992px) {
+          .card-container {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        @media (max-width: 600px) {
+          .card-container {
+            grid-template-columns: repeat(1, 1fr);
+          }
+        }
+        /* =========================
+           EXPERIMENT-RUNNING NOTICE
+        ========================== */
+        .fixed-top-right {
+          position: absolute;
+          top: 20px;
+          right: 25px;
+          padding: 5px 10px;
+          font-size: 0.7em;
+          border-radius: 8px;
+          color: white;
+          font-weight: bold;
+          z-index: 9999;
+        }
+        .neon-warning {
+          border: 2px solid red;
+          box-shadow: 0 0 10px red;
+          text-shadow: 0 0 10px red;
+          background-color: rgba(255, 0, 0, 0.2);
+        }
+        .neon-success {
+          border: 2px solid green;
+          box-shadow: 0 0 10px green;
+          text-shadow: 0 0 10px green;
+          background-color: rgba(0, 255, 0, 0.2);
+        }
+        @media (max-width: 768px) {
+          .fixed-top-right {
+            position: static;
+            display: block;
+            margin: 10px auto 20px;
+            width: fit-content;
+            font-size: 1.1em;
+            padding: 8px 16px;
+          }
+          .dashboard-title {
+            margin-top: 10px;
+            font-size: 3.0em;
+          }
+        }
+
+        /* =========================
+          CHART STYLES
+        ========================== */
 
         .chart-container {
           background: rgba(255, 255, 255, 0.08);
@@ -1097,6 +1429,198 @@ try {
       </style>
     </head>
     <body>
+      <div class="container-fluid mt-4">
+        <!-- If experiment isn't running, show a neon warning. In the alternate case, show a neon success -->
+        <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'} fixed-top-right">
+          Dashboard is ${!experimentRunning ? 'not ' : ''}running
+        </div>
+        <!-- Title & Subtitle -->
+        <h2 class="dashboard-title">E-beam Web Monitor</h2>
+        <p class="dashboard-subtitle">
+          <strong>Web Monitor Log Last Modified:</strong> <span id="log-last-modified">${fileModified}</span> | 
+          <strong>Site Last Updated:</strong> <span id="site-last-updated">${currentTime}</span>
+        </p>
+        <!-- Interlocks Section -->
+        <div class="interlocks-section">
+          <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
+          <div class="interlocks-container">
+            <div class="interlock-item">
+              <div id="sic-door" class="circle" style="background-color:${doorColor}"></div>
+              <div>Door</div>
+            </div>
+            <div class="interlock-item">
+              <div id="sic-water" class="circle" style="background-color:${waterColor}"></div>
+              <div>Water</div>
+            </div>
+            <div class="interlock-item">
+              <div id="sic-vacuum-power" class="circle" style="background-color:${vacuumPowerColor}"></div>
+              <div>Vacuum Power</div>
+            </div>
+            <div class="interlock-item">
+              <div id="sic-vacuum-pressure" class="circle" style="background-color:${vacuumPressureColor}"></div>
+              <div>Vacuum Pressure</div>
+            </div>
+            <div class="interlock-item">
+              <div id="sic-oil-low" class="circle" style="background-color:${oilLowColor}"></div>
+              <div>Low Oil</div>
+            </div>
+            <div class="interlock-item">
+              <div id="sic-oil-high" class="circle" style="background-color:${oilHighColor}"></div>
+              <div>High Oil</div>
+            </div>
+            <div class="interlock-item">
+              <div id="sic-estop" class="circle" style="background-color:${estopIntColor}"></div>
+              <div>E-STOP Int</div>
+            </div>
+            <div class="interlock-item">
+              <div id="sic-estopExt" class="circle" style="background-color:${estopExtColor}"></div>
+              <div>E-STOP Ext</div>
+            </div>
+            <div class="interlock-item">
+              <div id="all-interlocks" class="circle" style="background-color:${allInterlocksColor}"></div>
+              <div>All Interlocks</div>
+            </div>
+            <div class="interlock-item">
+              <div id="g9-output" class="circle" style="background-color:${G9OutputColor}"></div>
+              <div>G9 Output</div>
+            </div>
+            <div class="interlock-item">
+              <div id="hvolt" class="circle" style="background-color:${hvoltColor}"></div>
+              <div>HVolt ON</div>
+            </div>
+          </div>
+        </div>
+        <!-- Vacuum Indicators Section -->
+        <div class="vacuum-indicators">
+          <h3 id="pressureReadings" class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators: ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
+          <div class="vacuum-indicators-container">
+            <div class="vacuum-indicators-item">
+              <div id = "vac-indicator-0" class="vacuum-indicators-circle" style="background-color:${vacColors[0]}"></div>
+              <div>Pumps Power ON</div>
+            </div>
+            <div class="vacuum-indicators-item">
+              <div id = "vac-indicator-1" class="vacuum-indicators-circle" style="background-color:${vacColors[1]}"></div>
+              <div>Turbo Rotor ON</div>
+            </div>
+            <div class="vacuum-indicators-item">
+              <div id = "vac-indicator-2" class="vacuum-indicators-circle" style="background-color:${vacColors[2]}"></div>
+              <div>Turbo Vent Open</div>
+            </div>
+            <div class="vacuum-indicators-item">
+              <div id = "vac-indicator-3" class="vacuum-indicators-circle" style="background-color:${vacColors[3]}"></div>
+              <div>972b Power On</div>
+            </div>
+            <div class="vacuum-indicators-item">
+              <div id = "vac-indicator-4" class="vacuum-indicators-circle" style="background-color:${vacColors[4]}"></div>
+              <div>Turbo Gate Closed</div>
+            </div>
+            <div class="vacuum-indicators-item">
+              <div id = "vac-indicator-5" class="vacuum-indicators-circle" style="background-color:${vacColors[5]}"></div>
+              <div>Turbo Gate Open</div>
+            </div>
+            <div class="vacuum-indicators-item">
+              <div id = "vac-indicator-6" class="vacuum-indicators-circle" style="background-color:${vacColors[6]}"></div>
+              <div>Argon Gate Open</div>
+            </div>
+            <div class="vacuum-indicators-item">
+              <div id = "vac-indicator-7" class="vacuum-indicators-circle" style="background-color:${vacColors[7]}"></div>
+              <div>Argon Gate Closed</div>
+            </div>
+          </div>
+        </div>
+        <!-- Environmental Section -->
+        <!-- Environmental Section (Horizontal Radial Gauges) -->
+        <div class="env-section">
+          <h3 class="dashboard-subtitle env-title">Environmental</h3>
+          <div class="gauge-grid">
+            <div class="gauge" id="sensor-1">
+              <div class="gauge-circle"><div class="gauge-cover">${temperatures["1"] === "DISCONNECTED" || temperatures["1"] === "None" ? '--' : temperatures["1"] + '°C'}</div></div>
+              <div class="sensor-label">Solenoid 1</div>
+            </div>
+            <div class="gauge" id="sensor-2">
+              <div class="gauge-circle"><div class="gauge-cover">${temperatures["2"] === "DISCONNECTED" || temperatures["2"] === "None" ? '--' : temperatures["2"] + '°C'}</div></div>
+              <div class="sensor-label">Solenoid 2</div>
+            </div>
+            <div class="gauge" id="sensor-3">
+              <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] === "DISCONNECTED" || temperatures["3"] === "None" ? '--' : temperatures["3"] + '°C'}</div></div>
+              <div class="sensor-label">Chmbr Bot</div>
+            </div>
+            <div class="gauge" id="sensor-4">
+              <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] === "DISCONNECTED" || temperatures["4"] === "None" ? '--' : temperatures["4"] + '°C'}</div></div>
+              <div class="sensor-label">Chmbr Top</div>
+            </div>
+            <div class="gauge" id="sensor-5">
+              <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] === "DISCONNECTED" || temperatures["5"] === "None" ? '--' : temperatures["5"] + '°C'}</div></div>
+              <div class="sensor-label">Air temp</div>
+            </div>
+            <div class="gauge" id="sensor-6">
+              <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] === "DISCONNECTED" || temperatures["6"] === "None" ? '--' : temperatures["6"] + '°C'}</div></div>
+              <div class="sensor-label">Extra 6</div>
+            </div>
+          </div>
+        </div>
+        <!-- CCS Section -->
+        <div class="env-section">
+          <h3 class="dashboard-subtitle env-title">CCS</h3>
+          <div class="ccs-grid">
+            <div class="cathode-box">
+              <p class="cathode-heading">Cathode 1</p>
+              <div id="heaterCurrentA" class="ccs-reading">Current: ${data.heaterCurrent_A != null && experimentRunning
+                ? data.heaterCurrent_A.toFixed(2) + ' A' 
+                : '--'}
+              </div>
+              <div id="heaterVoltageA" class="ccs-reading">Voltage: ${data.heaterVoltage_A != null && experimentRunning
+                ? data.heaterVoltage_A.toFixed(2) + ' V' 
+                : '--'}
+              </div>
+                <div id="heaterTemperatureA" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_A != null && experimentRunning
+                ? data.clamp_temperature_A.toFixed(2) + ' C' 
+                : '--'}
+              </div>
+            </div>
+            <div class="cathode-box">
+              <p class="cathode-heading">Cathode 2</p>
+              <div id="heaterCurrentB" class="ccs-reading">Current: ${data.heaterCurrent_B != null && experimentRunning
+                ? data.heaterCurrent_B.toFixed(2) + ' A' 
+                : '--'}
+              </div>
+              <div id="heaterVoltageB" class="ccs-reading">Voltage: ${data.heaterVoltage_B != null && experimentRunning
+                ? data.heaterVoltage_B.toFixed(2) + ' V' 
+                : '--'}
+              </div>
+              <div id="heaterTemperatureB" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_B != null && experimentRunning
+              ? data.clamp_temperature_B.toFixed(2) + ' C' 
+              : '--'}
+              </div>
+            </div>
+            <div class="cathode-box">
+              <p class="cathode-heading">Cathode 3</p>
+              <div id="heaterCurrentC" class="ccs-reading">Current: ${data.heaterCurrent_C != null && experimentRunning
+                ? data.heaterCurrent_C.toFixed(2) + ' A' 
+                : '--'}
+              </div>
+              <div id="heaterVoltageC" class="ccs-reading">Voltage: ${data.heaterVoltage_C != null && experimentRunning
+                ? data.heaterVoltage_C.toFixed(2) + ' V' 
+                : '--'}
+              </div>
+              <div id="heaterTemperatureC" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_C != null && experimentRunning
+                ? data.clamp_temperature_C.toFixed(2) + ' C' 
+                : '--'}
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Beam Energy -->
+        <div class="env-section">
+          <h3 class="dashboard-subtitle env-title">Beam Energy</h3>
+          <div class="beam-energy-grid">
+                <div class = "beam-energy-reading"><p>Set: --</p></div> 
+                <div class = "beam-energy-reading"><p>High Voltage: --</p></div>
+                <div class = "beam-energy-reading"><p>Current: --</p></div>
+          </div>
+        </div>
+      </div>
+
       <div class="chart-container">
         <div id="chart"></div>
         <div class="chart-info-text">

@@ -1050,65 +1050,34 @@ try {
       <link href="https://unpkg.com/uplot@2.0.2/dist/uPlot.min.css" rel="stylesheet">
       <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
       <style>
-        /* =========================
-           FUTURISTIC BACKGROUND
-        ========================== */
         body {
           background: #111;
           color: #ccc;
           font-family: sans-serif;
         }
-
-        /* For sections like Interlocks, Environmental, and Green Indicators */
-        .env-section{
-          background: rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-radius: 15px;
-          padding: 5px;
-          margin: 50px auto;
-          overflow-x: auto;
-          width: 90%;
-        }
-        
-        /* =========================
-          CHART STYLES
-        ========================== */
-
         .chart-container {
           background: rgba(255, 255, 255, 0.08);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-radius: 15px;
+          padding: 10px;
           margin: 50px auto;
           width: 98%;
           max-height: 500px;
           overflow-y: auto;
           border: 2px dashed red;
         }
-
         #chart {
           position: relative;
           height: 300px;
           width: 100%; /* Make chart fill the container width */
           border: 2px solid blue;
         }
-
         .chart-info-text {
           margin-top: 10px;
           font-size: 0.9em;
           color: #ccc;
           border: 1px dotted green;
-        }
-
-        .debug {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          border: 1px solid yellow;
-          pointer-events: none; /* Prevent it from interfering with interactions */
         }
       </style>
     </head>
@@ -1196,7 +1165,7 @@ try {
           }, 10_000);
         </script>
       </div>
-      <div class="env-section">
+      <div class="chart-container">
         <p>Code last updated: ${codeLastUpdated}</p>
         <p>xVals: ${xVals}</p>
         <p>yVals: ${yVals}</p>

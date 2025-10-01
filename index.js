@@ -1041,13 +1041,10 @@ try {
   //  keep your HTML generation as-is below this
   res.send(`
     <!DOCTYPE html>
-    <html lang="en">
+    <html>
     <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Log System Dashboard</title>
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-      <link href="https://unpkg.com/uplot@2.0.2/dist/uPlot.min.css" rel="stylesheet">
+      <title>uPlot Live Update</title>
+      <link rel="stylesheet" href="https://unpkg.com/uplot/dist/uPlot.min.css">
       <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
       <style>
         body {
@@ -1085,91 +1082,93 @@ try {
       <div class="chart-container">
         <div id="chart"></div>
         <div class="chart-info-text">
-          Auto-refreshes every ~11s. Max 50 points. New point added every 10s on server.
+          Auto-refreshes every ~10s. Max 50 points. New point added every 10s on server.
         </div>
-        <script>
-          const MAX_POINTS = 50;
-
-          const xVals = [];
-          const yVals = [];
-
-          const now = Math.floor(Date.now() / 1000);
-          for (let i = 0; i < 10; i++) {
-            xVals.push(now - (10 - i) * 10);
-            yVals.push(Math.sin((xVals[i] / 10)));
-          }
-
-          const data = [xVals, yVals];
-
-          // Get container width dynamically
-          const container = document.querySelector('.chart-container');
-          const chartEl = document.getElementById('chart');
-
-          function createUplot() {
-            return new uPlot({
-              width: container.clientWidth,  // dynamic width based on container
-              height: 300,
-              series: [
-                {},
-                {
-                  label: 'sin(t/10)',
-                  stroke: 'blue',
-                  points: { show: true, size: 5, fill: 'blue', stroke: 'blue' }
-                }
-              ],
-              scales: {
-                x: { time: true },
-              },
-              axes: [
-                { stroke: '#ccc' },
-                { stroke: '#ccc' },
-              ],
-              cursor: { focus: { prox: 16 } },
-            }, data, chartEl);
-          }
-
-          let uplot = createUplot();
-
-          // Resize handler to update chart width on window resize
-          window.addEventListener('resize', () => {
-            const newWidth = container.clientWidth;
-            uplot.setSize({ width: newWidth, height: 300 });
-          });
-
-          // Optional: adjust inner chart styles so it fills the container absolutely
-          const innerChart = chartEl.querySelector(':scope > *');
-          if (innerChart) {
-            innerChart.style.position = 'absolute';
-            innerChart.style.top = '0';
-            innerChart.style.left = '0';
-            innerChart.style.width = '100%';
-            innerChart.style.height = '100%';
-          }
-
-          // Simulate live update every 10 seconds
-          setInterval(() => {
-            if (xVals.length === MAX_POINTS) return;
-            const newTime = Math.floor(Date.now() / 1000);
-            const newVal = Math.sin(newTime / 10);
-
-            xVals.push(newTime);
-            yVals.push(newVal);
-
-            if (xVals.length > MAX_POINTS) {
-              xVals.shift();
-              yVals.shift();
-            }
-
-            uplot.setData([xVals, yVals]);
-
-          }, 10_000);
-        </script>
       </div>
+
+      <script>
+        const MAX_POINTS = 50;
+
+        const xVals = [];
+        const yVals = [];
+
+        const now = Math.floor(Date.now() / 1000);
+        for (let i = 0; i < 10; i++) {
+          xVals.push(now - (10 - i) * 10);
+          yVals.push(Math.sin((xVals[i] / 10)));
+        }
+
+        const data = [xVals, yVals];
+
+        // Get container width dynamically
+        const container = document.querySelector('.chart-container');
+        const chartEl = document.getElementById('chart');
+
+        function createUplot() {
+          return new uPlot({
+            width: container.clientWidth,  // dynamic width based on container
+            height: 300,
+            series: [
+              {},
+              {
+                label: 'sin(t/10)',
+                stroke: 'blue',
+                points: { show: true, size: 5, fill: 'blue', stroke: 'blue' }
+              }
+            ],
+            scales: {
+              x: { time: true },
+            },
+            axes: [
+              { stroke: '#ccc' },
+              { stroke: '#ccc' },
+            ],
+            cursor: { focus: { prox: 16 } },
+          }, data, chartEl);
+        }
+
+        let uplot = createUplot();
+
+        // Resize handler to update chart width on window resize
+        window.addEventListener('resize', () => {
+          const newWidth = container.clientWidth;
+          uplot.setSize({ width: newWidth, height: 300 });
+        });
+
+        // Optional: adjust inner chart styles so it fills the container absolutely
+        const innerChart = chartEl.querySelector(':scope > *');
+        if (innerChart) {
+          innerChart.style.position = 'absolute';
+          innerChart.style.top = '0';
+          innerChart.style.left = '0';
+          innerChart.style.width = '100%';
+          innerChart.style.height = '100%';
+        }
+
+        // Simulate live update every 10 seconds
+        setInterval(() => {
+          if (xVals.length === MAX_POINTS) return;
+          const newTime = Math.floor(Date.now() / 1000);
+          const newVal = Math.sin(newTime / 10);
+
+          xVals.push(newTime);
+          yVals.push(newVal);
+
+          if (xVals.length > MAX_POINTS) {
+            xVals.shift();
+            yVals.shift();
+          }
+
+          uplot.setData([xVals, yVals]);
+
+        }, 10_000);
+      </script>
+
       <div class="chart-container">
-        <p>Code last updated: ${codeLastUpdated}</p>
-        <p>xVals: ${xVals}</p>
-        <p>yVals: ${yVals}</p>
-      </div>
+      <p>Code last updated: ${codeLastUpdated}</p>
+      <p>xVals: ${xVals}</p>
+      <p>yVals: ${yVals}</p>
+    </div>
     </body>
     </html>
  

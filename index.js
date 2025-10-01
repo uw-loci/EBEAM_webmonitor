@@ -1051,9 +1051,13 @@ try {
       <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
       <style>
         body {
-          background: #111;
-          color: #ccc;
-          font-family: sans-serif;
+          font-family: Arial, sans-serif;
+          text-align: center;
+          /* background: linear-gradient(-45deg, #001f3f, #003366, #005a9e); */
+          background: #0d1117;
+          background-size: 400% 400%;
+          color: white;
+          margin: 0;
         }
 
         .env-section {

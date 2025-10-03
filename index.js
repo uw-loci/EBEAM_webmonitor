@@ -1685,6 +1685,175 @@ try {
         <p>xVals: ${xVals}</p>
         <p>yVals: ${yVals}</p>
       </div>
+
+      <!-- Log Viewer -->
+      <div class="env-section">
+        <h3 class="dashboard-subtitle env-title">System Logs; Last Update: <span id="display-last-updated">${
+            data.displayLogLastModified
+              ? new Date(data.displayLogLastModified).toLocaleString("en-US", {
+                  hour12: true,
+                  timeZone: "America/Chicago"
+                })
+              : "N/A"
+        }</span></h3>
+        <button id="toggleButton" class="btn-toggle">Show Full Log</button>
+        <div id="fullContent" class="content-section">
+          <pre></pre>
+        </div>
+      </div>
+      <!-- Auto-refresh & Toggle Script -->
+      <script>
+
+         let savedState = sessionStorage.getItem('showingFull');
+         let showingFull = savedState === 'true';
+
+        // Toggle between preview/full log
+         const toggleButton = document.getElementById('toggleButton');
+         const fullSection = document.getElementById('fullContent');
+         const pre = fullSection.querySelector('pre')
+
+         if (showingFull) {
+          fetch('/raw').then(resp => resp.text()).then(text => {
+          pre.textContent = text;
+          fullSection.classList.add('active');
+          toggleButton.textContent = 'Collapse Log View';
+          });
+        }
+        
+        setInterval(async() => {
+          try {
+
+          const res = await fetch('/data');
+          const data = await res.json();
+
+          const interlockIds = ['sic-door', 'sic-water', 'sic-vacuum-power', 'sic-vacuum-pressure', 'sic-oil-low', 'sic-oil-high', 'sic-estop', 'sic-estopExt', 'all-interlocks', 'g9-output', 'hvolt'];
+          const vacuumIds = ['vac-indicator-0', 'vac-indicator-1', 'vac-indicator-2', 'vac-indicator-3', 'vac-indicator-4', 'vac-indicator-5', 'vac-indicator-6', 'vac-indicator-7'];
+
+          const statusDiv = document.getElementById('experiment-status');
+
+          const logLastModified = document.getElementById('log-last-modified');
+          const displayLastModified = document.getElementById('display-last-updated');
+
+          const dateObject1 = data.webMonitorLastModified? new Date(data.webMonitorLastModified) : null;
+          const dateObject2 = data.displayLogLastModified? new Date(data.displayLogLastModified) : null;
+
+          const clean_string_1 = dateObject1? dateObject1.toLocaleString("en-US", {
+            hour12: true,
+            timeZone: "America/Chicago"
+          }) : "N/A";
+
+          const clean_string_2 = dateObject2? dateObject2.toLocaleString("en-US", {
+            hour12: true,
+            timeZone: "America/Chicago"
+          }) : "N/A";
+
+          logLastModified.textContent = clean_string_1;
+          displayLastModified.textContent = clean_string_2;
+
+          const now = Date.now();
+
+          const THRESHOLD = 2 * 60 * 1000;
+
+          let experimentRunning = (now - dateObject1) <= THRESHOLD;
+
+          statusDiv.textContent = experimentRunning
+          ? 'Dashboard is running'
+          : 'Dashboard is not running';
+
+          statusDiv.classList.toggle('neon-success', experimentRunning);
+          statusDiv.classList.toggle('neon-warning', !experimentRunning);
+
+          interlockIds.forEach((id, i) => {
+            const elem = document.getElementById(id);
+            elem.style.backgroundColor = experimentRunning ? data.sicColors[i] : 'grey';
+          });
+
+          vacuumIds.forEach((id, i) => {
+            const elem = document.getElementById(id);
+            elem.style.backgroundColor = experimentRunning ? data.vacuumColors[i] : 'grey';
+          });
+
+
+
+          const pressureReadings = document.getElementById('pressureReadings');
+
+          const webMonitorLastModified = document.getElementById('log-last-modified');
+
+          const heaterCurrentA = document.getElementById('heaterCurrentA');
+          const heaterCurrentB = document.getElementById('heaterCurrentB');
+          const heaterCurrentC = document.getElementById('heaterCurrentC');
+
+          const heaterVoltageA = document.getElementById('heaterVoltageA');
+          const heaterVoltageB = document.getElementById('heaterVoltageB');
+          const heaterVoltageC = document.getElementById('heaterVoltageC');
+
+          const heaterTemperatureA = document.getElementById('heaterTemperatureA');
+          const heaterTemperatureB = document.getElementById('heaterTemperatureB');
+          const heaterTemperatureC = document.getElementById('heaterTemperatureC');
+
+          const siteLastUpdated = document.getElementById('site-last-updated');
+
+          const sensor1 = document.getElementById('sensor-1');
+          const sensor2 = document.getElementById('sensor-2');
+          const sensor3 = document.getElementById('sensor-3');
+          const sensor4 = document.getElementById('sensor-4');
+          const sensor5 = document.getElementById('sensor-5');
+          const sensor6 = document.getElementById('sensor-6');
+
+          heaterCurrentA.textContent = (data.heaterCurrent_A !== null && data.heaterCurrent_A !== undefined && experimentRunning? "Current: " + data.heaterCurrent_A : "Current: " + "--");
+          heaterCurrentB.textContent = (data.heaterCurrent_B !== null && data.heaterCurrent_B !== undefined && experimentRunning? "Current: " + data.heaterCurrent_B : "Current: " + "--");
+          heaterCurrentC.textContent = (data.heaterCurrent_C !== null && data.heaterCurrent_C !== undefined && experimentRunning? "Current: " + data.heaterCurrent_C : "Current: " + "--");
+
+          heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
+          heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
+          heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
+
+          heaterTemperatureA.textContent = (data.clamp_temperature_A !== null && data.clamp_temperature_A !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_A : "Clamp Temperature: " + "--");
+          heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_B : "Clamp Temperature: " + "--");
+          heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_C : "Clamp Temperature: " + "--");
+
+
+          const dateObj = new Date(data.siteLastUpdated);
+          const clean_string = dateObj.toLocaleString("en-US", {
+            hour12: true,
+            timeZone: "America/Chicago"
+          });
+          siteLastUpdated.textContent = clean_string;
+
+          pressureReadings.textContent = "Vacuum Indicators: " + String(data.pressure).replace("E", "e") + " mbar";
+          sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None" && !experimentRunning) ? '--' : data.temperatures["1"] + '°C';
+          sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None" && !experimentRunning) ? '--' : data.temperatures["2"] + '°C';
+          sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None" && !experimentRunning) ? '--' : data.temperatures["3"] + '°C';
+          sensor4.querySelector('.gauge-cover').textContent = (!data.temperatures["4"] || data.temperatures["4"] === "DISCONNECTED" || data.temperatures["4"] === "None" && !experimentRunning) ? '--' : data.temperatures["4"] + '°C';
+          sensor5.querySelector('.gauge-cover').textContent = (!data.temperatures["5"] || data.temperatures["5"] === "DISCONNECTED" || data.temperatures["5"] === "None" && !experimentRunning) ? '--' : data.temperatures["5"] + '°C';
+          sensor6.querySelector('.gauge-cover').textContent = (!data.temperatures["6"] || data.temperatures["6"] === "DISCONNECTED" || data.temperatures["6"] === "None" && !experimentRunning) ? '--' : data.temperatures["6"] + '°C';
+
+          
+
+          console.log(sensor1.textContent);
+          console.log(data.sicColors);
+          }
+          catch {
+          console.error('Failed to load the dashboard!')
+            }
+          }, 60000)
+     
+        toggleButton.addEventListener('click', async () => {
+          if (!showingFull) {
+            pre.textContent = ' Fetching file contents...';
+            fullSection.classList.add('active');
+            await fetch('/refresh-display');
+            const resp = await (await fetch('/raw')).text();
+            pre.textContent = resp;
+            toggleButton.textContent = 'Collapse Log View';
+          } else {
+            fullSection.classList.remove('active');
+            toggleButton.textContent = 'Show Full Log';
+          }
+          showingFull = !showingFull;
+          sessionStorage.setItem('showingFull', showingFull);
+        })
+      </script>
     </body>
     </html>
  

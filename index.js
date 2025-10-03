@@ -76,10 +76,11 @@ vacuumBits: null
 
 let xVals = [];
 let yVals = [];
+let maxChartDataPoints = 200; // Maximum number of points to display on the chart
 
 // Add a new sinusoidal data point using current time as x
-function addDataPoint() {
-  if (xVals.length < 10) {
+function addChartDataPoint() {
+  if (xVals.length < maxChartDataPoints) {
     const nowMs = Date.now();
     const tSec = Math.floor(nowMs / 1000);
     const y = Math.sin(tSec / 10); // simple sinusoid
@@ -688,20 +689,7 @@ async function fetchDisplayFileContents(){
  * - true: implicitly if successful (not used but possible)
  */
 async function fetchAndUpdateFile() {
-  addDataPoint();
-  // if (xVals.length < 20) {
-  //   const startTime = Date.now() / 1000;
-
-  //   // FIXME: Uncomment this
-  //   for (let i = 0; i < 5; i++) {
-  //     xVals.push(startTime + (i + 5) * 60); // 1-minute intervals
-  //     yVals.push(Math.sin((xVals.length + i + 5) / 50) + Math.random() * 0.5); // some variation
-  //   }
-  // }
-
-  // xVals.push(Date.now() / 1000);
-  // yVals.push(Math.sin(xVals.length / 50) + Math.random() * 0.3);
-
+  addChartDataPoint();
 
   let release; // used if you implement lock control (e.g. mutex/fmutex)
 
@@ -1420,8 +1408,16 @@ try {
           width: 100%; /* Make chart fill the container width */
           border: 2px solid blue;
         }
+        
+        .chart-title {
+          font-size: 20px;
+          font-weight: bold;
+          margin-bottom: 10px;
+          color: #ccc;
+        }
+
         .chart-info-text {
-          margin-top: 20px;
+          margin-top: 40px;
           font-size: 0.9em;
           color: #ccc;
           border: 1px dotted green;
@@ -1622,9 +1618,10 @@ try {
       </div>
 
       <div class="chart-container">
+        <div class="chart-title">Live Updating Chart: y = sin(t/10)</div>
         <div id="chart"></div>
         <div class="chart-info-text">
-          Auto-refreshes every ~10s. Max 50 points. New point added every 10s on server.
+          Auto-refreshes every ~10s. Max ${maxChartDataPoints} points. New point added every 10s on server.
         </div>
       </div>
 
@@ -1680,7 +1677,7 @@ try {
         }
       </script>
 
-      <div class="env-section">
+      <div class="env-section", style="overflow-y: auto;"->
         <p>Code last updated: ${codeLastUpdated}</p>
         <p>xVals: ${xVals}</p>
         <p>yVals: ${yVals}</p>

@@ -1622,7 +1622,7 @@ try {
         <div class="chart-title">Live Updating Chart: y = sin(t/10)</div>
         <div id="chart"></div>
         <div class="chart-info-text">
-          Max ${maxChartDataPoints} points. New point added every 60s.
+          Max ${maxChartDataPoints} points. New point added every 60s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
         </div>
       </div>
 
@@ -1692,8 +1692,10 @@ try {
 
       <div class="env-section", style="overflow-y: auto;"->
         <p>Code last updated: ${codeLastUpdated}</p>
-        <p>xVals: ${xVals}</p>
-        <p>yVals: ${yVals}</p>
+        /*
+          <p>xVals: ${xVals}</p>
+          <p>yVals: ${yVals}</p>
+        */
       </div>
 
       <!-- Log Viewer -->

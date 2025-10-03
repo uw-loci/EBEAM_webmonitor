@@ -76,7 +76,8 @@ vacuumBits: null
 
 let xVals = [];
 let yVals = [];
-let maxChartDataPoints = 200; // Maximum number of points to display on the chart
+// change to 4320 for 3 days of data at 1 point per minute
+let maxChartDataPoints = 4320; // Maximum number of points to display on the chart
 
 // Add a new sinusoidal data point using current time as x
 function addChartDataPoint() {
@@ -1621,7 +1622,7 @@ try {
         <div class="chart-title">Live Updating Chart: y = sin(t/10)</div>
         <div id="chart"></div>
         <div class="chart-info-text">
-          Auto-refreshes every ~10s. Max ${maxChartDataPoints} points. New point added every 10s on server.
+          Max ${maxChartDataPoints} points. New point added every 60s.
         </div>
       </div>
 
@@ -1654,7 +1655,14 @@ try {
               { stroke: '#ccc' },
               { stroke: '#ccc' },
             ],
-            cursor: { focus: { prox: 16 } },
+            cursor: {
+              focus: { prox: 16 },
+              drag: {
+                x: true,       // enable drag zoom on x-axis
+                y: false,      // no vertical zoom
+                setScale: true // update scale automatically on drag
+              },
+            },
           }, data, chartEl);
         }
 
@@ -1675,6 +1683,11 @@ try {
           innerChart.style.width = '100%';
           innerChart.style.height = '100%';
         }
+
+        // Reset zoom on double-click
+        chartEl.ondblclick = () => {
+          uplot.setScale('x', { min: null, max: null });
+        };
       </script>
 
       <div class="env-section", style="overflow-y: auto;"->

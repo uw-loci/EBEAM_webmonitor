@@ -76,8 +76,10 @@ vacuumBits: null
 
 let xVals = [];
 let yVals = [];
+let chartDataIntervalCount = 0; // Track how many 60-second intervals have passed
+let chartDataIntervalDuration = 2; // Default value for n minutes
 // change to 4320 for 3 days of data at 1 point per minute
-let maxChartDataPoints = 4320; // Maximum number of points to display on the chart
+let maxChartDataPoints = 4320 / chartDataIntervalDuration; // Maximum number of points to display on the chart
 
 // Add a new sinusoidal data point using current time as x
 function addChartDataPoint() {
@@ -690,7 +692,12 @@ async function fetchDisplayFileContents(){
  * - true: implicitly if successful (not used but possible)
  */
 async function fetchAndUpdateFile() {
-  addChartDataPoint();
+  chartDataIntervalCount++;
+  // Check if the required number of intervals have passed
+  if (chartDataIntervalCount >= chartDataIntervalDuration) {
+    addChartDataPoint();
+    chartDataIntervalCount = 0;   // Reset the counter
+  }
 
   let release; // used if you implement lock control (e.g. mutex/fmutex)
 
@@ -1622,7 +1629,7 @@ try {
         <div class="chart-title">Live Updating Chart: y = sin(t/10)</div>
         <div id="chart"></div>
         <div class="chart-info-text">
-          Max ${maxChartDataPoints} points. New point added every 60s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
+          Max ${maxChartDataPoints} points. New point added every ${60 * chartDataIntervalDuration}s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
         </div>
       </div>
 
@@ -1692,10 +1699,10 @@ try {
 
       <div class="env-section", style="overflow-y: auto;"->
         <p>Code last updated: ${codeLastUpdated}</p>
-        /*
+        <!--
           <p>xVals: ${xVals}</p>
           <p>yVals: ${yVals}</p>
-        */
+        -->
       </div>
 
       <!-- Log Viewer -->

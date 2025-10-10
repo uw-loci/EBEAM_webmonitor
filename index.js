@@ -87,7 +87,7 @@ let chartDataIntervalCount = 0; // Track how many 60-second intervals have passe
 let chartDataIntervalDuration = 1; // Default value for n minutes
 // change to 4320 for 3 days of data at 1 point per minute
 const MAX_CHART_DATA_POINTS = 2880 / chartDataIntervalDuration; // Maximum number of points to display on the chart
-const MAX_CHART_DISPLAY_POINTS = 4; // Maximum number of points to display on the chart
+const MAX_CHART_DISPLAY_POINTS = 256; // Maximum number of points to display on the chart
 
 // Add a new sinusoidal data point using current time as x
 function addChartDataPoint() {
@@ -1685,7 +1685,7 @@ try {
         <div class="chart-title">Live Updating Chart: y = sin(t/10)</div>
         <div id="chart"></div>
         <div class="chart-info-text">
-          Max ${MAX_CHART_DATA_POINTS} points. Current stride: ${lastUsedFactor}. New point added every ${60 * chartDataIntervalDuration}s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
+          Max ${MAX_CHART_DATA_POINTS} points. Current stride: ${lastUsedFactor} minutes. New point added every ${60 * chartDataIntervalDuration}s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
         </div>
       </div>
 

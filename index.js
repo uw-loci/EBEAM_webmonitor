@@ -74,24 +74,78 @@ temperatures: null,
 vacuumBits: null
 };
 
-let xVals = [];
-let yVals = [];
+const fullXVals = [];
+const fullYVals = [];
+const displayXVals = [];
+const displayYVals = [];
+
+// Downsampling state
+let lastUsedFactor = 1;
+let lastPermanentIndex = -1;
+  
 let chartDataIntervalCount = 0; // Track how many 60-second intervals have passed
-let chartDataIntervalDuration = 2; // Default value for n minutes
+let chartDataIntervalDuration = 1; // Default value for n minutes
 // change to 4320 for 3 days of data at 1 point per minute
-let maxChartDataPoints = 4320 / chartDataIntervalDuration; // Maximum number of points to display on the chart
+const MAX_CHART_DATA_POINTS = 2880 / chartDataIntervalDuration; // Maximum number of points to display on the chart
+const MAX_CHART_DISPLAY_POINTS = 4; // Maximum number of points to display on the chart
 
 // Add a new sinusoidal data point using current time as x
 function addChartDataPoint() {
-  if (xVals.length < maxChartDataPoints) {
-    const nowMs = Date.now();
-    const tSec = Math.floor(nowMs / 1000);
-    const y = Math.sin(tSec / 10); // simple sinusoid
+  
+  const nowMs = Date.now();
+  const tSec = Math.floor(nowMs / 1000);
+  const y = Math.sin(tSec / 10); // simple sinusoid
 
-    xVals.push(tSec);
-    yVals.push(y);
+  fullXVals.push(tSec);
+  fullYVals.push(y);
+
+  updateDisplayData();
+}
+
+// Simplified update function (no loop for multiple permanent points)
+function updateDisplayData() {
+  const len = fullXVals.length;
+
+  const predictedPoints = Math.ceil((len - 1) / lastUsedFactor) + 1;
+
+  if (predictedPoints > MAX_DISPLAY_POINTS) {
+    // Increase factor and reset
+    lastUsedFactor *= 2;
+    lastPermanentIndex = -1;
+    displayXVals.length = 0;
+    displayYVals.length = 0;
+
+    for (let i = 0; i < len - 1; i += lastUsedFactor) {
+      displayXVals.push(fullXVals[i]);
+      displayYVals.push(fullYVals[i]);
+      lastPermanentIndex = i;
+    }
+
+    // Add latest point
+    displayXVals.push(fullXVals[len - 1]);
+    displayYVals.push(fullYVals[len - 1]);
+
+  } else {
+    if (len - 1 === lastPermanentIndex + lastUsedFactor + 1) {
+      // Previous latest is now permanent
+      displayXVals.push(fullXVals[len - 1]);
+      displayYVals.push(fullYVals[len - 1]);
+      lastPermanentIndex = len - 2;
+
+    } else {
+      if (displayXVals.length > 0) {
+        // Update latest point in place
+        displayXVals[displayXVals.length - 1] = fullXVals[len - 1];
+        displayYVals[displayYVals.length - 1] = fullYVals[len - 1];
+      } else {
+        // First data point ever
+        displayXVals.push(fullXVals[len - 1]);
+        displayYVals.push(fullYVals[len - 1]);
+      }
+    }
   }
 }
+
 
 // Assume All Interlocks Start Red
 // const interlockStates = {
@@ -694,9 +748,11 @@ async function fetchDisplayFileContents(){
 async function fetchAndUpdateFile() {
   chartDataIntervalCount++;
   // Check if the required number of intervals have passed
-  if (chartDataIntervalCount >= chartDataIntervalDuration) {
-    addChartDataPoint();
-    chartDataIntervalCount = 0;   // Reset the counter
+  if (chartDataIntervalCount == chartDataIntervalDuration) {
+    if (fullXVals.length < MAX_CHART_DATA_POINTS) {
+      addChartDataPoint();
+      chartDataIntervalCount = 0;   // Reset the counter
+    }
   }
 
   let release; // used if you implement lock control (e.g. mutex/fmutex)
@@ -1629,15 +1685,13 @@ try {
         <div class="chart-title">Live Updating Chart: y = sin(t/10)</div>
         <div id="chart"></div>
         <div class="chart-info-text">
-          Max ${maxChartDataPoints} points. New point added every ${60 * chartDataIntervalDuration}s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
+          Max ${MAX_CHART_DATA_POINTS} points. Current stride: ${lastUsedFactor}. New point added every ${60 * chartDataIntervalDuration}s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
         </div>
       </div>
 
       <script>
-        const x = ${JSON.stringify(xVals)}; // Unix seconds
-        const y = ${JSON.stringify(yVals)};
-
-        const data = [x, y];
+        // Timestamp in Unix ms
+        const data = [${JSON.stringify(displayXVals)}, ${JSON.stringify(displayYVals)}];
 
         // Get container width dynamically
         const container = document.querySelector('.chart-container');
@@ -1700,8 +1754,8 @@ try {
       <div class="env-section", style="overflow-y: auto;"->
         <p>Code last updated: ${codeLastUpdated}</p>
         <!--
-          <p>xVals: ${xVals}</p>
-          <p>yVals: ${yVals}</p>
+          <p>xVals: ${fullXVals}</p>
+          <p>yVals: ${fullYVals}</p>
         -->
       </div>
 

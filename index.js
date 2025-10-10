@@ -108,7 +108,7 @@ function updateDisplayData() {
 
   const predictedPoints = Math.ceil((len - 1) / lastUsedFactor) + 1;
 
-  if (predictedPoints > MAX_DISPLAY_POINTS) {
+  if (predictedPoints > MAX_CHART_DISPLAY_POINTS) {
     // Increase factor and reset
     lastUsedFactor *= 2;
     lastPermanentIndex = -1;

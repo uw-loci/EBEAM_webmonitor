@@ -1685,7 +1685,7 @@ try {
         <div class="chart-title">Live Updating Chart: y = sin(t/10)</div>
         <div id="chart"></div>
         <div class="chart-info-text">
-          Max ${MAX_CHART_DATA_POINTS} calculated points. Max ${MAX_CHART_DISPLAY_POINTS} display points.Current stride: ${lastUsedFactor} minute(s). New point added every ${60 * chartDataIntervalDuration}s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
+          Max ${MAX_CHART_DATA_POINTS} calculated points. Max ${MAX_CHART_DISPLAY_POINTS} display points. # points displayed: ${displayXVals.length}. Current stride: ${lastUsedFactor} minute(s). New point added every ${60 * chartDataIntervalDuration}s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
         </div>
       </div>
 

@@ -34,6 +34,7 @@ const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const { debug } = require('console');
 //const axios = require('axios');
 const app = express();
 app.use(express.static(path.join(__dirname, 'assets')));
@@ -62,6 +63,7 @@ let experimentRunning = false;
 // Inactivity threshold for deciding if the experiment is "stale" (15 min in ms)
 const INACTIVE_THRESHOLD = 2 * 60 * 1000;
 let dataLines = null;
+let debugLogs = [];
 
 // variable Structure to store ALL the data extracted 
 let data = {
@@ -763,7 +765,11 @@ async function fetchAndUpdateFile() {
     const { dataFile, displayFile } = await getMostRecentFile();
 
     if (!dataFile){
+      debugLogs.push("No data file found!");
       console.log("No data file found!")
+    }
+    else{
+      debugLogs.push(`Data file found: ${dataFile.name}`);
     }
 
     let fileModifiedTime = null;
@@ -1766,11 +1772,14 @@ try {
       </div>
 
       <div class="env-section", style="max-height: 600px; overflow-y: auto;">
-        <h3>Raw Data Lines</h3>
+        <p>Raw Data Lines</p>
+       <pre id="debugLogs"></pre>
         <pre id="data-lines-container"></pre>
       </div>
 
       <script>
+        const debugLogsContainer = document.getElementById('debugLogs');
+        debugLogsContainer.textContent = ${debugLogs}.join('\n');
         const container = document.getElementById('data-lines-container');
         container.textContent = ${dataLines}.join('\n');
       </script>

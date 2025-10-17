@@ -61,17 +61,18 @@ let lastModifiedTime = null;
 let experimentRunning = false;
 // Inactivity threshold for deciding if the experiment is "stale" (15 min in ms)
 const INACTIVE_THRESHOLD = 2 * 60 * 1000;
+let dataLines = null;
 
 // variable Structure to store ALL the data extracted 
 let data = {
-pressure: null,
-pressureTimestamp: null,
-safetyOutputDataFlags: null,
-safetyInputDataFlags: null,
-safetyOutputStatusFlags: null,
-safetyInputStatusFlags: null,
-temperatures: null, 
-vacuumBits: null
+  pressure: null,
+  pressureTimestamp: null,
+  safetyOutputDataFlags: null,
+  safetyInputDataFlags: null,
+  safetyOutputStatusFlags: null,
+  safetyInputStatusFlags: null,
+  temperatures: null, 
+  vacuumBits: null
 };
 
 const fullXVals = [];
@@ -776,7 +777,9 @@ async function fetchAndUpdateFile() {
     console.log("YY", currentTime);
 
     // Step 2: Check experiment activity status
-    if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { // More than 15 minutes old?
+    // FIXME: Currently disabled for testing
+    // if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { // More than 15 minutes old?
+    if (currentTime === currentTime) {
       experimentRunning = false;
 
       // Reset data to nulls — consistent fallback structure
@@ -803,10 +806,11 @@ async function fetchAndUpdateFile() {
       experimentRunning = true;
     }
 
-    if (lastModifiedTime === dataFile.modifiedTime) {
-      console.log("No new updates. Using cached data.");
-      return false;
-    }
+    // FIXME: uncomment this block after testing
+    // if (lastModifiedTime === dataFile.modifiedTime) {
+    //   console.log("No new updates. Using cached data.");
+    //   return false;
+    // }
 
     console.log("Fetching new file...");
     let dataExtractionLines = null;
@@ -817,28 +821,30 @@ async function fetchAndUpdateFile() {
         return false;
       }
       dataExtractionLines = dataExtractionLines.reverse();
+      dataLines = dataExtractionLines.slice(0, 100); // TODO: just added this
     } catch (e) {
       console.error("WebMonitor file failed:", e);
     }
     
     // TODO: Need to add experimentRunning check
-    const extractPromise = extractData(dataExtractionLines); // Parse data from logs
-    const [extractionResult] = await Promise.allSettled([
-      extractPromise,
-    ]);
+    // FIXME: uncomment this block after testing
+    // const extractPromise = extractData(dataExtractionLines); // Parse data from logs
+    // const [extractionResult] = await Promise.allSettled([
+    //   extractPromise,
+    // ]);
 
-    if (extractionResult.status === 'fulfilled') {
-      data.webMonitorLastModified = dataFile.modifiedTime;
-      //TEMP CHANGE: Uncomment
-      // data.displayLogLastModified = displayFile.modifiedTime;
-      console.log("Extraction complete:", data);
-    } else {
-      console.error("Extraction failed:", extractionResult.reason);
-    }
+    // if (extractionResult.status === 'fulfilled') {
+    //   data.webMonitorLastModified = dataFile.modifiedTime;
+    //   //TEMP CHANGE: Uncomment
+    //   // data.displayLogLastModified = displayFile.modifiedTime;
+    //   console.log("Extraction complete:", data);
+    // } else {
+    //   console.error("Extraction failed:", extractionResult.reason);
+    // }
 
-    if (dataFile && dataFile.modifiedTime) {
-      lastModifiedTime = new Date(dataFile.modifiedTime).getTime();
-    }
+    // if (dataFile && dataFile.modifiedTime) {
+    //   lastModifiedTime = new Date(dataFile.modifiedTime).getTime();
+    // }
 
   } catch (err) {
     // Catch-all error handling for the fetch/extract/write process
@@ -1751,13 +1757,23 @@ try {
         };
       </script>
 
-      <div class="env-section", style="overflow-y: auto;"->
+      <div class="env-section", style="overflow-y: auto;">
         <p>Code last updated: ${codeLastUpdated}</p>
         <!--
           <p>xVals: ${fullXVals}</p>
           <p>yVals: ${fullYVals}</p>
         -->
       </div>
+
+      <div class="env-section", style="max-height: 600px; overflow-y: auto;">
+        <h3>Raw Data Lines</h3>
+        <pre id="data-lines-container"></pre>
+      </div>
+
+      <script>
+        const container = document.getElementById('data-lines-container');
+        container.textContent = ${dataLines}.join('\n');
+      </script>
 
       <!-- Log Viewer -->
       <div class="env-section">

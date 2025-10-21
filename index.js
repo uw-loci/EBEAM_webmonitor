@@ -329,6 +329,7 @@ async function getMostRecentFile() {
 
     const files = res.data.files;
     console.log("Latest files seen:", files.map(f => f.name));
+    debugLogs.push(`Latest files seen: ${files.map(f => f.name).join(', ')}`);
 
 
     // let dataFile = files[1];
@@ -1771,14 +1772,12 @@ try {
         -->
       </div>
 
-      <!--
       <div class="env-section", style="max-height: 600px; overflow-y: auto;">
 
-        <p>Raw Data Lines</p>
-       <pre id="debugLogs"></pre>
+        <p>Raw Data Lines 2</p>
+        <pre id="debugLogs"></pre>
         <pre id="data-lines-container"></pre>
       </div>
-      -->
 
       <script>
         const debugLogsContainer = document.getElementById('debugLogs');

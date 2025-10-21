@@ -329,7 +329,7 @@ async function getMostRecentFile() {
 
     const files = res.data.files;
     console.log("Latest files seen:", files.map(f => f.name));
-    debugLogs.push(`Latest files seen: ${files.map(f => f.name).join(', ')}`);
+    // debugLogs.push(`Latest files seen: ${files.map(f => f.name).join(', ')}`);
 
 
     // let dataFile = files[1];
@@ -766,11 +766,7 @@ async function fetchAndUpdateFile() {
     const { dataFile, displayFile } = await getMostRecentFile();
 
     if (!dataFile){
-      debugLogs.push("No data file found!");
       console.log("No data file found!")
-    }
-    else{
-      debugLogs.push(`Data file found: ${dataFile.name}`);
     }
 
     let fileModifiedTime = null;
@@ -1773,7 +1769,7 @@ try {
       </div>
 
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
-        <p>Raw Data Lines 6 debugLogs length: <span id="debug-length"></span></p>
+        <p>Raw Data Lines 7 debugLogs length: <span id="debug-length"></span></p>
         <p id="debug-preview"></p>
         <pre id="debugLogs"></pre>
         <pre id="data-lines-container"></pre>

@@ -1772,19 +1772,23 @@ try {
         -->
       </div>
 
-      <div class="env-section", style="max-height: 600px; overflow-y: auto;">
-
-        <p>Raw Data Lines 3 debugLogs length: ${debugLogs.length}</p>
-        <p>${debugLogs.slice(-10).join('<br>')}</p>
+      <div class="env-section" style="max-height: 600px; overflow-y: auto;">
+        <p>Raw Data Lines 5 debugLogs length: <span id="debug-length"></span></p>
+        <p id="debug-preview"></p>
         <pre id="debugLogs"></pre>
         <pre id="data-lines-container"></pre>
       </div>
 
       <script>
-        const debugLogsContainer = document.getElementById('debugLogs');
-        debugLogsContainer.textContent = ${debugLogs}.join('\n');
-        const container = document.getElementById('data-lines-container');
-        container.textContent = ${dataLines}.join('\n');
+        // Safely embed the Node.js arrays
+        const debugLogs = <%- JSON.stringify(debugLogs) %>;
+        const dataLines = <%- JSON.stringify(dataLines) %>;
+
+        // Update DOM with log data
+        document.getElementById('debug-length').textContent = debugLogs.length;
+        document.getElementById('debug-preview').innerHTML = debugLogs.slice(-10).join('<br>');
+        document.getElementById('debugLogs').textContent = debugLogs.join('\n');
+        document.getElementById('data-lines-container').textContent = dataLines.join('\n');
       </script>
 
       <!-- Log Viewer -->

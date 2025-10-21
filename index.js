@@ -1775,6 +1775,7 @@ try {
       <div class="env-section", style="max-height: 600px; overflow-y: auto;">
 
         <p>Raw Data Lines 3 debugLogs length: ${debugLogs.length}</p>
+        <p>${debugLogs.slice(-10).join('<br>')}</p>
         <pre id="debugLogs"></pre>
         <pre id="data-lines-container"></pre>
       </div>

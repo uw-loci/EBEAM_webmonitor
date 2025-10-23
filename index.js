@@ -65,6 +65,69 @@ const INACTIVE_THRESHOLD = 2 * 60 * 1000;
 let dataLines = null;
 let debugLogs = [];
 
+let sampleDataLines = [];
+
+const baseStatus = {
+  safetyOutputDataFlags: [1, 1, 1, 0, 0, 0, 1],
+  safetyInputDataFlags: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+  safetyOutputStatusFlags: [1, 1, 1, 1, 1, 1, 1],
+  safetyInputStatusFlags: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  temperatures: {
+    "1": "20.42",
+    "2": "19.93",
+    "3": "23.82",
+    "4": "20.81",
+    "5": "27.03",
+    "6": "20.66"
+  },
+  vacuumBits: "11010101",
+  "Cathode A - Heater Current:": null,
+  "Cathode B - Heater Current:": null,
+  "Cathode C - Heater Current:": null,
+  "Cathode A - Heater Voltage:": null,
+  "Cathode B - Heater Voltage:": null,
+  "Cathode C - Heater Voltage:": null,
+  clamp_temperature_A: null,
+  clamp_temperature_B: null,
+  clamp_temperature_C: null
+};
+
+// Helper: Get current timestamp in "YYYY-MM-DD HH:mm:ss"
+function getTimestamp() {
+  const now = new Date();
+  return now.toISOString().replace('T', ' ').substring(0, 19);
+}
+
+// Helper: Generate random pressure between 7.60e-8 and 1.20e+3
+function randomPressure() {
+  const min = 7.60e-8;
+  const max = 1.20e+3;
+  const pressure = Math.random() * (max - min) + min;
+  return pressure.toExponential(2);
+}
+
+// Generate a single log line
+function generateLogLine() {
+  return {
+    timestamp: getTimestamp(),
+    status: {
+      pressure: randomPressure(),
+      ...baseStatus
+    }
+  };
+}
+
+// Add 2 lines every minute
+function addLogs() {
+  if (sampleDataLines.length < 10) {
+    for (let i = 0; i < 2; i++) {
+      const line = generateLogLine();
+      sampleDataLines.push(line);
+    }
+  }
+}
+
+
 // variable Structure to store ALL the data extracted 
 let data = {
   pressure: null,
@@ -816,8 +879,9 @@ async function fetchAndUpdateFile() {
     }
     
     // TODO: Need to add experimentRunning check
-    // FIXME: uncomment this block after testing
-    const extractPromise = extractData(dataExtractionLines); // Parse data from logs
+    // FIXME: changes dataExtractionLines to real lines rather than sample data lines for testing
+    // const extractPromise = extractData(dataExtractionLines); // Parse data from logs
+    const extractPromise = extractData(sampleDataLines); // Parse data from logs
     const [extractionResult] = await Promise.allSettled([
       extractPromise,
     ]);
@@ -1777,6 +1841,21 @@ try {
         <p>Data extracted</span></p>
         <pre>${JSON.stringify(data, null, 2)}</pre>
       </div>
+
+      <div class="env-section" style="max-height: 600px; overflow-y: auto;">
+        <p>Sample Data Lines length: <span id="sample-data-length"></span></p>
+        <p id="sample-preview"></p>
+        <pre id="sample-data-lines"></pre>
+      </div>
+
+      <script>
+        // Injecting local variables into the frontend JavaScript
+        const sampleDataLines = ${JSON.stringify(sampleDataLines)};
+        // Populate the DOM elements with the data
+        document.getElementById('sample-data-length').textContent = debugLogs.length;
+        document.getElementById('sample-preview').innerHTML = debugLogs.slice(-10).join('<br>');
+        document.getElementById('sample-data-lines').textContent = sampleDataLines.join('\\n');
+      </script>
 
       <!-- Log Viewer -->
       <div class="env-section">

@@ -817,23 +817,23 @@ async function fetchAndUpdateFile() {
     
     // TODO: Need to add experimentRunning check
     // FIXME: uncomment this block after testing
-    // const extractPromise = extractData(dataExtractionLines); // Parse data from logs
-    // const [extractionResult] = await Promise.allSettled([
-    //   extractPromise,
-    // ]);
+    const extractPromise = extractData(dataExtractionLines); // Parse data from logs
+    const [extractionResult] = await Promise.allSettled([
+      extractPromise,
+    ]);
 
-    // if (extractionResult.status === 'fulfilled') {
-    //   data.webMonitorLastModified = dataFile.modifiedTime;
-    //   //TEMP CHANGE: Uncomment
-    //   // data.displayLogLastModified = displayFile.modifiedTime;
-    //   console.log("Extraction complete:", data);
-    // } else {
-    //   console.error("Extraction failed:", extractionResult.reason);
-    // }
+    if (extractionResult.status === 'fulfilled') {
+      data.webMonitorLastModified = dataFile.modifiedTime;
+      //TEMP CHANGE: Uncomment
+      // data.displayLogLastModified = displayFile.modifiedTime;
+      console.log("Extraction complete:", data);
+    } else {
+      console.error("Extraction failed:", extractionResult.reason);
+    }
 
-    // if (dataFile && dataFile.modifiedTime) {
-    //   lastModifiedTime = new Date(dataFile.modifiedTime).getTime();
-    // }
+    if (dataFile && dataFile.modifiedTime) {
+      lastModifiedTime = new Date(dataFile.modifiedTime).getTime();
+    }
 
   } catch (err) {
     // Catch-all error handling for the fetch/extract/write process
@@ -1772,6 +1772,11 @@ try {
         document.getElementById('debugLogs').textContent = debugLogs.join('\\n');
         document.getElementById('data-lines-container').textContent = dataLines.slice(0, 10).join('\\n');
       </script>
+
+      <div class="env-section" style="max-height: 200px; overflow-y: auto;">
+        <p>Data extracted</span></p>
+        <pre>${JSON.stringify(data, null, 2)}</pre>
+      </div>
 
       <!-- Log Viewer -->
       <div class="env-section">

@@ -880,9 +880,9 @@ async function fetchAndUpdateFile() {
     
     // TODO: Need to add experimentRunning check
     // FIXME: changes dataExtractionLines to real lines rather than sample data lines for testing
-    addLogs(); // Simulate adding logs for testing
-    // const extractPromise = extractData(dataExtractionLines); // Parse data from logs
-    const extractPromise = extractData(sampleDataLines); // Parse data from logs
+    //addLogs(); // Simulate adding logs for testing
+    const extractPromise = extractData(dataExtractionLines); // Parse data from logs
+    //const extractPromise = extractData(sampleDataLines); // Parse data from logs
     const [extractionResult] = await Promise.allSettled([
       extractPromise,
     ]);
@@ -1855,7 +1855,9 @@ try {
         // Populate the DOM elements with the data
         document.getElementById('sample-data-length').textContent = debugLogs.length;
         document.getElementById('sample-preview').innerHTML = debugLogs.slice(-10).join('<br>');
-        document.getElementById('sample-data-lines').textContent = sampleDataLines.join('\\n');
+        document.getElementById('sample-data-lines').textContent = sampleDataLines
+              .map(line => JSON.stringify(line))
+              .join('\n');
       </script>
 
       <!-- Log Viewer -->

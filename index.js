@@ -880,6 +880,7 @@ async function fetchAndUpdateFile() {
     
     // TODO: Need to add experimentRunning check
     // FIXME: changes dataExtractionLines to real lines rather than sample data lines for testing
+    addLogs(); // Simulate adding logs for testing
     // const extractPromise = extractData(dataExtractionLines); // Parse data from logs
     const extractPromise = extractData(sampleDataLines); // Parse data from logs
     const [extractionResult] = await Promise.allSettled([

@@ -880,9 +880,9 @@ async function fetchAndUpdateFile() {
     
     // TODO: Need to add experimentRunning check
     // FIXME: changes dataExtractionLines to real lines rather than sample data lines for testing
-    //addLogs(); // Simulate adding logs for testing
-    const extractPromise = extractData(dataExtractionLines); // Parse data from logs
-    //const extractPromise = extractData(sampleDataLines); // Parse data from logs
+    addLogs(); // Simulate adding logs for testing
+    //const extractPromise = extractData(dataExtractionLines); // Parse data from logs
+    const extractPromise = extractData(sampleDataLines); // Parse data from logs
     const [extractionResult] = await Promise.allSettled([
       extractPromise,
     ]);
@@ -1845,7 +1845,7 @@ try {
 
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
         <p>Sample Data Lines length: <span id="sample-data-length"></span></p>
-        <p id="sample-preview"></p>
+        <pre id="sample-preview"></pre>
         <pre id="sample-data-lines"></pre>
       </div>
 
@@ -1853,11 +1853,11 @@ try {
         // Injecting local variables into the frontend JavaScript
         const sampleDataLines = ${JSON.stringify(sampleDataLines)};
         // Populate the DOM elements with the data
-        document.getElementById('sample-data-length').textContent = debugLogs.length;
-        document.getElementById('sample-preview').innerHTML = debugLogs.slice(-10).join('<br>');
-        document.getElementById('sample-data-lines').textContent = sampleDataLines
-              .map(line => JSON.stringify(line))
-              .join('\n');
+        document.getElementById('sample-data-length').textContent = sampleDataLines.length;
+        document.getElementById('sample-preview').innerHTML = sampleDataLines
+        .slice(-10)
+        .map(line => JSON.stringify(line))
+        .join('<br>');
       </script>
 
       <!-- Log Viewer -->

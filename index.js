@@ -140,6 +140,30 @@ let data = {
   vacuumBits: null
 };
 
+function createGraphObj(options = {}) {
+  return {
+    fullXVals: options.fullXVals || [],
+    fullYVals: options.fullYVals || [],
+    displayXVals: options.displayXVals || [],
+    displayYVals: options.displayYVals || [],
+    maxDisplayPoints: options.maxDisplayPoints ?? 1000,
+    lastUsedFactor: options.lastUsedFactor ?? 1,
+    lastPermanentIndex: options.lastPermanentIndex ?? -1,
+    chartDataIntervalCount: options.chartDataIntervalCount ?? 0,
+  };
+}
+
+let pressureGraph = {
+  fullXVals: [],
+  fullYVals: [],
+  displayXVals: [],
+  displayYVals: [],
+  lastUsedFactor: 1,
+  lastPermanentIndex: -1,
+  chartDataIntervalCount: 0,
+  
+};
+
 const fullXVals = [];
 const fullYVals = [];
 const displayXVals = [];
@@ -169,44 +193,44 @@ function addChartDataPoint() {
 }
 
 // Simplified update function (no loop for multiple permanent points)
-function updateDisplayData() {
-  const len = fullXVals.length;
+function updateDisplayData(graph) {
+  const len = graph.fullXVals.length;
 
-  const predictedPoints = Math.ceil((len - 1) / lastUsedFactor) + 1;
+  const predictedPoints = Math.ceil((len - 1) / graph.lastUsedFactor) + 1;
 
-  if (predictedPoints > MAX_CHART_DISPLAY_POINTS) {
+  if (predictedPoints > graph.maxDisplayPoints) {
     // Increase factor and reset
-    lastUsedFactor *= 2;
-    lastPermanentIndex = -1;
-    displayXVals.length = 0;
-    displayYVals.length = 0;
+    graph.lastUsedFactor *= 2;
+    graph.lastPermanentIndex = -1;
+    graph.displayXVals.length = 0;
+    graph.displayYVals.length = 0;
 
-    for (let i = 0; i < len - 1; i += lastUsedFactor) {
-      displayXVals.push(fullXVals[i]);
-      displayYVals.push(fullYVals[i]);
-      lastPermanentIndex = i;
+    for (let i = 0; i < len - 1; i += graph.lastUsedFactor) {
+      graph.displayXVals.push(fullXVals[i]);
+      graph.displayYVals.push(fullYVals[i]);
+      graph.lastPermanentIndex = i;
     }
 
     // Add latest point
-    displayXVals.push(fullXVals[len - 1]);
-    displayYVals.push(fullYVals[len - 1]);
+    graph.displayXVals.push(fullXVals[len - 1]);
+    graph.displayYVals.push(fullYVals[len - 1]);
 
   } else {
-    if (len - 1 === lastPermanentIndex + lastUsedFactor + 1) {
+    if (len - 1 === graph.lastPermanentIndex + graph.lastUsedFactor + 1) {
       // Previous latest is now permanent
-      displayXVals.push(fullXVals[len - 1]);
-      displayYVals.push(fullYVals[len - 1]);
-      lastPermanentIndex = len - 2;
+      graph.displayXVals.push(fullXVals[len - 1]);
+      graph.displayYVals.push(fullYVals[len - 1]);
+      graph.lastPermanentIndex = len - 2;
 
     } else {
-      if (displayXVals.length > 0) {
+      if (graph.displayXVals.length > 0) {
         // Update latest point in place
-        displayXVals[displayXVals.length - 1] = fullXVals[len - 1];
-        displayYVals[displayYVals.length - 1] = fullYVals[len - 1];
+        graph.displayXVals[graph.displayXVals.length - 1] = graph.fullXVals[len - 1];
+        graph.displayYVals[graph.displayYVals.length - 1] = graph.fullYVals[len - 1];
       } else {
         // First data point ever
-        displayXVals.push(fullXVals[len - 1]);
-        displayYVals.push(fullYVals[len - 1]);
+        graph.displayXVals.push(graph.fullXVals[len - 1]);
+        graph.displayYVals.push(graph.fullYVals[len - 1]);
       }
     }
   }
@@ -883,13 +907,17 @@ async function fetchAndUpdateFile() {
     addLogs(); // Simulate adding logs for testing
     //const extractPromise = extractData(dataExtractionLines); // Parse data from logs
     const extractPromise = extractData(sampleDataLines); // Parse data from logs
+    
     const [extractionResult] = await Promise.allSettled([
       extractPromise,
     ]);
 
+    pressureGraph.fullXVals.push(data.pressureTimestamp);
+    pressureGraph.fullYVals.push(data.pressure ? parseFloat(data.pressure) : null);
+
     if (extractionResult.status === 'fulfilled') {
       data.webMonitorLastModified = dataFile.modifiedTime;
-      //TEMP CHANGE: Uncomment
+      // FIXME: TEMP CHANGE: Uncomment
       // data.displayLogLastModified = displayFile.modifiedTime;
       console.log("Extraction complete:", data);
     } else {
@@ -1843,6 +1871,7 @@ try {
         <pre>${JSON.stringify(data, null, 2)}</pre>
       </div>
 
+      <!-- FIXME: Commented out sample data lines section
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
         <p>Sample Data Lines length: <span id="sample-data-length"></span></p>
         <pre id="sample-preview"></pre>
@@ -1859,6 +1888,7 @@ try {
         .map(line => JSON.stringify(line))
         .join('<br>');
       </script>
+      -->
 
       <!-- Log Viewer -->
       <div class="env-section">

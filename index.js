@@ -146,50 +146,46 @@ function createGraphObj(options = {}) {
     fullYVals: options.fullYVals || [],
     displayXVals: options.displayXVals || [],
     displayYVals: options.displayYVals || [],
-    maxDisplayPoints: options.maxDisplayPoints ?? 1000,
+    maxDataPoints: options.maxDataPoints ?? 1000, // change later when experiment is running
+    maxDisplayPoints: options.maxDisplayPoints ?? 256,
     lastUsedFactor: options.lastUsedFactor ?? 1,
     lastPermanentIndex: options.lastPermanentIndex ?? -1,
     chartDataIntervalCount: options.chartDataIntervalCount ?? 0,
+    chartDataIntervalDuration: options.chartDataIntervalDuration ?? 1,
   };
 }
 
-let pressureGraph = {
-  fullXVals: [],
-  fullYVals: [],
-  displayXVals: [],
-  displayYVals: [],
-  lastUsedFactor: 1,
-  lastPermanentIndex: -1,
-  chartDataIntervalCount: 0,
-  
-};
+let pressureGraph = createGraphObj();
+let sampleGraph = createGraphObj();
 
-const fullXVals = [];
-const fullYVals = [];
-const displayXVals = [];
-const displayYVals = [];
 
-// Downsampling state
-let lastUsedFactor = 1;
-let lastPermanentIndex = -1;
+
+// const fullXVals = [];
+// const fullYVals = [];
+// const displayXVals = [];
+// const displayYVals = [];
+
+// // Downsampling state
+// let lastUsedFactor = 1;
+// let lastPermanentIndex = -1;
   
-let chartDataIntervalCount = 0; // Track how many 60-second intervals have passed
-let chartDataIntervalDuration = 1; // Default value for n minutes
-// change to 4320 for 3 days of data at 1 point per minute
-const MAX_CHART_DATA_POINTS = 2880 / chartDataIntervalDuration; // Maximum number of points to display on the chart
-const MAX_CHART_DISPLAY_POINTS = 256; // Maximum number of points to display on the chart
+// let chartDataIntervalCount = 0; // Track how many 60-second intervals have passed
+// let chartDataIntervalDuration = 1; // Default value for n minutes
+// // change to 4320 for 3 days of data at 1 point per minute
+// const MAX_CHART_DATA_POINTS = 2880 / chartDataIntervalDuration; // Maximum number of points to display on the chart
+// const MAX_CHART_DISPLAY_POINTS = 256; // Maximum number of points to display on the chart
 
 // Add a new sinusoidal data point using current time as x
-function addChartDataPoint() {
+function addSampleChartDataPoint() {
   
   const nowMs = Date.now();
   const tSec = Math.floor(nowMs / 1000);
   const y = Math.sin(tSec / 10); // simple sinusoid
 
-  fullXVals.push(tSec);
-  fullYVals.push(y);
+  sampleGraph.fullXVals.push(tSec);
+  sampleGraph.fullYVals.push(y);
 
-  updateDisplayData();
+  updateDisplayData(sampleGraph);
 }
 
 // Simplified update function (no loop for multiple permanent points)
@@ -206,20 +202,20 @@ function updateDisplayData(graph) {
     graph.displayYVals.length = 0;
 
     for (let i = 0; i < len - 1; i += graph.lastUsedFactor) {
-      graph.displayXVals.push(fullXVals[i]);
-      graph.displayYVals.push(fullYVals[i]);
+      graph.displayXVals.push(graph.fullXVals[i]);
+      graph.displayYVals.push(graph.fullYVals[i]);
       graph.lastPermanentIndex = i;
     }
 
     // Add latest point
-    graph.displayXVals.push(fullXVals[len - 1]);
-    graph.displayYVals.push(fullYVals[len - 1]);
+    graph.displayXVals.push(graph.fullXVals[len - 1]);
+    graph.displayYVals.push(graph.fullYVals[len - 1]);
 
   } else {
     if (len - 1 === graph.lastPermanentIndex + graph.lastUsedFactor + 1) {
       // Previous latest is now permanent
-      graph.displayXVals.push(fullXVals[len - 1]);
-      graph.displayYVals.push(fullYVals[len - 1]);
+      graph.displayXVals.push(graph.fullXVals[len - 1]);
+      graph.displayYVals.push(graph.fullYVals[len - 1]);
       graph.lastPermanentIndex = len - 2;
 
     } else {
@@ -823,12 +819,12 @@ async function fetchDisplayFileContents(){
  * - true: implicitly if successful (not used but possible)
  */
 async function fetchAndUpdateFile() {
-  chartDataIntervalCount++;
+  sampleGraph.chartDataIntervalCount++;
   // Check if the required number of intervals have passed
-  if (chartDataIntervalCount == chartDataIntervalDuration) {
-    if (fullXVals.length < MAX_CHART_DATA_POINTS) {
-      addChartDataPoint();
-      chartDataIntervalCount = 0;   // Reset the counter
+  if (sampleGraph.chartDataIntervalCount == sampleGraph.chartDataIntervalDuration) {
+    if (sampleGraph.fullXVals.length < sampleGraph.maxDataPoints) {
+      addSampleChartDataPoint();
+      sampleGraph.chartDataIntervalCount = 0;   // Reset the counter
     }
   }
 
@@ -1773,13 +1769,13 @@ try {
         <div class="chart-title">Live Updating Chart: y = sin(t/10)</div>
         <div id="chart"></div>
         <div class="chart-info-text">
-          Max ${MAX_CHART_DATA_POINTS} calculated points. Max ${MAX_CHART_DISPLAY_POINTS} display points. # points displayed: ${displayXVals.length}. Current stride: ${lastUsedFactor} minute(s). New point added every ${60 * chartDataIntervalDuration}s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
+          Max ${sampleGraph.maxDataPoints} calculated points. Max ${sampleGraph.maxDisplayPoints} display points. # points displayed: ${sampleGraph.displayXVals.length}. Current stride: ${sampleGraph.lastUsedFactor} minute(s). New point added every ${60 * sampleGraph.chartDataIntervalDuration}s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
         </div>
       </div>
 
       <script>
         // Timestamp in Unix ms
-        const data = [${JSON.stringify(displayXVals)}, ${JSON.stringify(displayYVals)}];
+        const data = [${JSON.stringify(sampleGraph.displayXVals)}, ${JSON.stringify(sampleGraph.displayYVals)}];
 
         // Get container width dynamically
         const container = document.querySelector('.chart-container');
@@ -1842,8 +1838,8 @@ try {
       <div class="env-section", style="overflow-y: auto;">
         <p>Code last updated: ${codeLastUpdated}</p>
         <!--
-          <p>xVals: ${fullXVals}</p>
-          <p>yVals: ${fullYVals}</p>
+          <p>xVals: ${sampleGraph.fullXVals}</p>
+          <p>yVals: ${sampleGraph.fullYVals}</p>
         -->
       </div>
 

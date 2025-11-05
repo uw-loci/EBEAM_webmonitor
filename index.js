@@ -1779,7 +1779,8 @@ try {
 
 
 
-      <div id="chart-root"></div>
+      <div id="chart-root-1"></div>
+      <div id="chart-root-2"></div>
                 
       <script>
         /**
@@ -1878,22 +1879,15 @@ try {
           return [x, y];
         }
 
-        const charts = [
-          {
-            title: "Sine Wave (t/10)",
-            data: makeSineData(10),
-            seriesLabel: "sin(t/10)"
-          },
-          {
-            title: "Sine Wave (t/20)",
-            data: makeSineData(20),
-            seriesLabel: "sin(t/20)"
-          }
+        const chartConfigs = [
+          { containerId: 'chart-root-1', title: 'Chart 1', data: makeSineData(10), seriesLabel: "sin(t/10)" },
+          { containerId: 'chart-root-2', title: 'Chart 2', data: makeSineData(20), seriesLabel: "sin(t/20)" }
         ];
 
-        // Create all charts in the page
-        const root = document.getElementById('chart-root');
-        charts.forEach(cfg => createLiveUplotChart(root, cfg));
+        chartConfigs.forEach(cfg => {
+          const container = document.getElementById(cfg.containerId);
+          createLiveUplotChart(container, cfg);
+        });
       </script>
 
       <div class="chart-container">

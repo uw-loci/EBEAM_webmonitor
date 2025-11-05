@@ -1880,7 +1880,8 @@ try {
         }
 
         const chartConfigs = [
-          { containerId: 'chart-root-1', title: 'Chart 1', data: makeSineData(10), seriesLabel: "sin(t/10)" },
+          { containerId: 'chart-root-1', title: 'Live Update Chart 1', data: [${JSON.stringify(sampleGraph.displayXVals)}, ${JSON.stringify(sampleGraph.displayYVals)}], seriesLabel: "sin(t/10)",
+            maxDataPoints: ${sampleGraph.maxDataPoints}, maxDisplayPoints: ${sampleGraph.maxDisplayPoints}, displayXVals: ${JSON.stringify(sampleGraph.displayXVals)}, lastUsedFactor: ${sampleGraph.lastUsedFactor}, chartDataIntervalDuration: ${sampleGraph.chartDataIntervalDuration} },
           { containerId: 'chart-root-2', title: 'Chart 2', data: makeSineData(20), seriesLabel: "sin(t/20)" }
         ];
 

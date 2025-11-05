@@ -1882,7 +1882,9 @@ try {
         const chartConfigs = [
           { containerId: 'chart-root-1', title: 'Live Update Chart 1', data: [${JSON.stringify(sampleGraph.displayXVals)}, ${JSON.stringify(sampleGraph.displayYVals)}], seriesLabel: "sin(t/10)",
             maxDataPoints: ${sampleGraph.maxDataPoints}, maxDisplayPoints: ${sampleGraph.maxDisplayPoints}, displayXVals: ${JSON.stringify(sampleGraph.displayXVals)}, lastUsedFactor: ${sampleGraph.lastUsedFactor}, chartDataIntervalDuration: ${sampleGraph.chartDataIntervalDuration} },
-          { containerId: 'chart-root-2', title: 'Chart 2', data: makeSineData(20), seriesLabel: "sin(t/20)" }
+          { containerId: 'chart-root-2', title: 'Chart 2', data: makeSineData(20), seriesLabel: "sin(t/20)" },
+          { containerId: 'chart-root-3', title: 'Live Update Chart 3', data: [${JSON.stringify(pressureGraph.displayXVals)}, ${JSON.stringify(pressureGraph.displayYVals)}], seriesLabel: "sin(t/20)",
+            maxDataPoints: ${pressureGraph.maxDataPoints}, maxDisplayPoints: ${pressureGraph.maxDisplayPoints}, displayXVals: ${JSON.stringify(pressureGraph.displayXVals)}, lastUsedFactor: ${pressureGraph.lastUsedFactor}, chartDataIntervalDuration: ${pressureGraph.chartDataIntervalDuration} },
         ];
 
         chartConfigs.forEach(cfg => {
@@ -1891,75 +1893,6 @@ try {
         });
       </script>
 
-      <div class="chart-container">
-        <div class="chart-title">Live Updating Chart: y = sin(t/10)</div>
-        <div class="chart"></div>
-        <div class="chart-info-text">
-          Max ${sampleGraph.maxDataPoints} calculated points. Max ${sampleGraph.maxDisplayPoints} display points. # points displayed: ${sampleGraph.displayXVals.length}. Current stride: ${sampleGraph.lastUsedFactor} minute(s). New point added every ${60 * sampleGraph.chartDataIntervalDuration}s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
-        </div>
-      </div>
-
-      <script>
-        // Timestamp in Unix ms
-        const data = [${JSON.stringify(sampleGraph.displayXVals)}, ${JSON.stringify(sampleGraph.displayYVals)}];
-
-        // Get container width dynamically
-        const container = document.querySelector('.chart-container');
-        const chartEl = document.getElementById('chart');
-
-        function createUplot() {
-          return new uPlot({
-            width: container.clientWidth,  // dynamic width based on container
-            height: 300,
-            series: [
-              {},
-              {
-                label: 'sin(t/10)',
-                stroke: 'blue',
-                points: { show: true, size: 5, fill: 'blue', stroke: 'blue' }
-              }
-            ],
-            scales: {
-              x: { time: true },
-            },
-            axes: [
-              { stroke: '#ccc' },
-              { stroke: '#ccc' },
-            ],
-            cursor: {
-              focus: { prox: 16 },
-              drag: {
-                x: true,       // enable drag zoom on x-axis
-                y: false,      // no vertical zoom
-                setScale: true // update scale automatically on drag
-              },
-            },
-          }, data, chartEl);
-        }
-
-        let uplot = createUplot();
-
-        // Resize handler to update chart width on window resize
-        window.addEventListener('resize', () => {
-          const newWidth = container.clientWidth;
-          uplot.setSize({ width: newWidth, height: 300 });
-        });
-
-        // Optional: adjust inner chart styles so it fills the container absolutely
-        const innerChart = chartEl.querySelector(':scope > *');
-        if (innerChart) {
-          innerChart.style.position = 'absolute';
-          innerChart.style.top = '0';
-          innerChart.style.left = '0';
-          innerChart.style.width = '100%';
-          innerChart.style.height = '100%';
-        }
-
-        // Reset zoom on double-click
-        chartEl.ondblclick = () => {
-          uplot.setScale('x', { min: null, max: null });
-        };
-      </script>
 
       <div class="env-section", style="overflow-y: auto;">
         <p>Code last updated: ${codeLastUpdated}</p>

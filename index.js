@@ -910,6 +910,7 @@ async function fetchAndUpdateFile() {
 
     pressureGraph.fullXVals.push(data.pressureTimestamp);
     pressureGraph.fullYVals.push(data.pressure ? parseFloat(data.pressure) : null);
+    updateDisplayData(pressureGraph);
 
     if (extractionResult.status === 'fulfilled') {
       data.webMonitorLastModified = dataFile.modifiedTime;
@@ -1550,7 +1551,8 @@ try {
           overflow-y: auto;
           border: 2px dashed red;
         }
-        #chart {
+
+        .chart {
           position: relative;
           height: 300px;
           width: 100%; /* Make chart fill the container width */
@@ -1765,9 +1767,138 @@ try {
         </div>
       </div>
 
+
+
+
+
+
+
+
+
+
+
+
+
+      <div id="chart-root"></div>
+                
+      <script>
+        /**
+         * Creates a reusable uPlot chart section with zoom, resize, and debug info.
+         * Works for multiple charts on the same page (uses classes, not IDs).
+         * 
+         * @param {HTMLElement|string} container - Parent element or selector.
+         * @param {Object} config - Chart configuration and data.
+         */
+        function createLiveUplotChart(container, config) {
+          if (typeof container === 'string') container = document.querySelector(container);
+
+          const {
+            title = "Live Updating Chart",
+            data = [[], []],
+            seriesLabel = "Series",
+            maxDataPoints = 1000,
+            maxDisplayPoints = 100,
+            displayXVals = [],
+            lastUsedFactor = 1,
+            chartDataIntervalDuration = 1,
+          } = config;
+
+          // Create container HTML
+          const wrapper = document.createElement('div');
+          wrapper.className = 'chart-container';
+          wrapper.innerHTML = \`
+            <div class="chart-title">\${title}</div>
+            <div class="chart"></div>
+            <div class="chart-info-text">
+              Max \${maxDataPoints} calculated points. Max \${maxDisplayPoints} display points. 
+              # points displayed: \${displayXVals.length}. 
+              Current stride: \${lastUsedFactor} minute(s). 
+              New point added every \${60 * chartDataIntervalDuration}s. 
+              Double-click to reset zoom. Drag horizontally to zoom in.
+            </div>
+          \`;
+          container.appendChild(wrapper);
+
+          const chartEl = wrapper.querySelector('.chart');
+
+          // Create the uPlot chart
+          const uplot = new uPlot({
+            width: wrapper.clientWidth,
+            height: 300,
+            series: [
+              {},
+              {
+                label: seriesLabel,
+                stroke: 'blue',
+                points: { show: true, size: 5, fill: 'blue', stroke: 'blue' }
+              }
+            ],
+            scales: { x: { time: true } },
+            axes: [{ stroke: '#ccc' }, { stroke: '#ccc' }],
+            cursor: {
+              focus: { prox: 16 },
+              drag: {
+                x: true,
+                y: false,
+                setScale: true
+              },
+            },
+          }, data, chartEl);
+
+          // Resize dynamically
+          window.addEventListener('resize', () => {
+            const newWidth = wrapper.clientWidth;
+            uplot.setSize({ width: newWidth, height: 300 });
+          });
+
+          // Fill parent
+          const innerChart = chartEl.querySelector(':scope > *');
+          if (innerChart) {
+            innerChart.style.position = 'absolute';
+            innerChart.style.top = '0';
+            innerChart.style.left = '0';
+            innerChart.style.width = '100%';
+            innerChart.style.height = '100%';
+          }
+
+          // Reset zoom on double-click
+          chartEl.ondblclick = () => {
+            uplot.setScale('x', { min: null, max: null });
+          };
+
+          return uplot;
+        }
+
+        // ✅ Example usage: create multiple charts
+        const now = Date.now();
+
+        function makeSineData(freq = 10, len = 100) {
+          const x = Array.from({ length: len }, (_, i) => now + i * 60000);
+          const y = x.map((_, i) => Math.sin(i / freq));
+          return [x, y];
+        }
+
+        const charts = [
+          {
+            title: "Sine Wave (t/10)",
+            data: makeSineData(10),
+            seriesLabel: "sin(t/10)"
+          },
+          {
+            title: "Sine Wave (t/20)",
+            data: makeSineData(20),
+            seriesLabel: "sin(t/20)"
+          }
+        ];
+
+        // Create all charts in the page
+        const root = document.getElementById('chart-root');
+        charts.forEach(cfg => createLiveUplotChart(root, cfg));
+      </script>
+
       <div class="chart-container">
         <div class="chart-title">Live Updating Chart: y = sin(t/10)</div>
-        <div id="chart"></div>
+        <div class="chart"></div>
         <div class="chart-info-text">
           Max ${sampleGraph.maxDataPoints} calculated points. Max ${sampleGraph.maxDisplayPoints} display points. # points displayed: ${sampleGraph.displayXVals.length}. Current stride: ${sampleGraph.lastUsedFactor} minute(s). New point added every ${60 * sampleGraph.chartDataIntervalDuration}s. Double-click to reset zoom. Drag horizontally over desired window area to zoom in.
         </div>

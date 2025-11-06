@@ -583,8 +583,6 @@ async function extractData(lines){
     for (let i = 0; i < lines.length; i++){
       const line = lines[i]
 
-      extractLines.push(line);
-
       let jsonData;
       
       try {
@@ -609,69 +607,71 @@ async function extractData(lines){
       //   }
       // }
 
-      if (jsonData.status?.pressure != null && data.pressure === null) {
-        data.pressure          = jsonData.status.pressure;
+      const status = jsonData.status || {};
+
+      if (status.pressure != null && data.pressure === null) {
+        data.pressure          = parseFloat(status.pressure);
         data.pressureTimestamp = jsonData.timestamp;
       }
-      if (jsonData.status?.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
-        data.safetyOutputDataFlags = jsonData.status.safetyOutputDataFlags;
+      if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
+        data.safetyOutputDataFlags = status.safetyOutputDataFlags;
       }
-      if (jsonData.status?.safetyInputDataFlags && data.safetyInputDataFlags === null) {
-        data.safetyInputDataFlags = jsonData.status.safetyInputDataFlags;
+      if (status.safetyInputDataFlags && data.safetyInputDataFlags === null) {
+        data.safetyInputDataFlags = status.safetyInputDataFlags;
       }
-      if (jsonData.status?.safetyOutputStatusFlags && data.safetyOutputStatusFlags === null) {
-        data.safetyOutputStatusFlags = jsonData.status.safetyOutputStatusFlags;
+      if (status.safetyOutputStatusFlags && data.safetyOutputStatusFlags === null) {
+        data.safetyOutputStatusFlags = status.safetyOutputStatusFlags;
       }
-      if (jsonData.status?.safetyInputStatusFlags && data.safetyInputStatusFlags === null) {
-        data.safetyInputStatusFlags = jsonData.status.safetyInputStatusFlags;
+      if (status.safetyInputStatusFlags && data.safetyInputStatusFlags === null) {
+        data.safetyInputStatusFlags = status.safetyInputStatusFlags;
       }
-      if (jsonData.status?.temperatures && data.temperatures === null) {
-        data.temperatures = jsonData.status.temperatures;
+      if (status.temperatures && data.temperatures === null) {
+        data.temperatures = status.temperatures;
       }
-      if (jsonData.status?.vacuumBits && data.vacuumBits === null) {
-        if (typeof jsonData.status.vacuumBits === 'string') {
-          data.vacuumBits = jsonData.status.vacuumBits
+      if (status.vacuumBits && data.vacuumBits === null) {
+        if (typeof status.vacuumBits === 'string') {
+          data.vacuumBits = status.vacuumBits
             .split('')
             .map(bit => bit === '1');
         } else {
-          data.vacuumBits = jsonData.status.vacuumBits;
+          data.vacuumBits = status.vacuumBits;
         }
       }
 
-      if (jsonData.status["Cathode A - Heater Current:"] !== null) {
-        data.heaterCurrent_A = jsonData.status["Cathode A - Heater Current: "];
+      if (status["Cathode A - Heater Current:"] != null) {
+        data.heaterCurrent_A = status["Cathode A - Heater Current: "];
       }
 
-      if (jsonData.status["Cathode B - Heater Current:"] !== null) {
-        data.heaterCurrent_B = jsonData.status["Cathode B - Heater Current: "];
+      if (status["Cathode B - Heater Current:"] != null) {
+        data.heaterCurrent_B = status["Cathode B - Heater Current: "];
       }
 
-      if (jsonData.status["Cathode C - Heater Current:"] !== null) {
-        data.heaterCurrent_C = jsonData.status["Cathode C - Heater Current: "];
+      if (status["Cathode C - Heater Current:"] != null) {
+        data.heaterCurrent_C = status["Cathode C - Heater Current: "];
       }
 
-      if (jsonData.status["Cathode A - Heater Voltage:"] !== null) {
-        data.heaterVoltage_A = jsonData.status["Cathode A - Heater Voltage: "];
+      if (status["Cathode A - Heater Voltage:"] != null) {
+        data.heaterVoltage_A = status["Cathode A - Heater Voltage: "];
       }
 
-      if (jsonData.status["Cathode B - Heater Voltage:"] !== null) {
-        data.heaterVoltage_B = jsonData.status["Cathode B - Heater Voltage: "];
+      if (status["Cathode B - Heater Voltage:"] != null) {
+        data.heaterVoltage_B = status["Cathode B - Heater Voltage: "];
       }
 
-      if (jsonData.status["Cathode C - Heater Voltage:"] !== null) {
-        data.heaterVoltage_C = jsonData.status["Cathode C - Heater Voltage: "];
+      if (status["Cathode C - Heater Voltage:"] != null) {
+        data.heaterVoltage_C = status["Cathode C - Heater Voltage: "];
       }
 
-      if (jsonData.status["clamp_temperature_A"] !== null) {
-        data.clamp_temperature_A = jsonData.status["clamp_temperature_A"];
+      if (status["clamp_temperature_A"] != null) {
+        data.clamp_temperature_A = status["clamp_temperature_A"];
       }
 
-      if (jsonData.status["clamp_temperature_B"] !== null) {
-        data.clamp_temperature_B = jsonData.status["clamp_temperature_B"];
+      if (status["clamp_temperature_B"] != null) {
+        data.clamp_temperature_B = status["clamp_temperature_B"];
       }
 
-      if (jsonData.status["clamp_temperature_C"] !== null) {
-        data.clamp_temperature_C = jsonData.status["clamp_temperature_C"];
+      if (status["clamp_temperature_C"] != null) {
+        data.clamp_temperature_C = status["clamp_temperature_C"];
       }
 
 

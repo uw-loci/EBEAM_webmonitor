@@ -574,7 +574,7 @@ async function extractData(lines){
       heaterVoltage_C: null,
       clamp_temperature_A: null,
       clamp_temperature_B: null,
-      clamp_temperature_C: "test"
+      clamp_temperature_C: new Date().toISOString()
     };
 
     let firstTimestamp = null;
@@ -599,15 +599,15 @@ async function extractData(lines){
         firstTimestamp = new Date(jsonData.timestamp);
       }
 
-      if (firstTimestamp && jsonData.timestamp) {
-        const currentTimestamp = new Date(jsonData.timestamp);
-        const elapsedSeconds = (currentTimestamp - firstTimestamp) / 1000;
+      // if (firstTimestamp && jsonData.timestamp) {
+      //   const currentTimestamp = new Date(jsonData.timestamp);
+      //   const elapsedSeconds = (currentTimestamp - firstTimestamp) / 1000;
 
-        if (elapsedSeconds > 60) {
-          console.log("Reached 1-minute window. Stopping.");
-          break;
-        }
-      }
+      //   if (elapsedSeconds > 60) {
+      //     console.log("Reached 1-minute window. Stopping.");
+      //     break;
+      //   }
+      // }
 
       if (jsonData.status?.pressure != null && data.pressure === null) {
         data.pressure          = jsonData.status.pressure;

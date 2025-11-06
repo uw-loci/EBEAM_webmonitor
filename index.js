@@ -572,7 +572,7 @@ async function extractData(lines){
       heaterVoltage_C: null,
       clamp_temperature_A: null,
       clamp_temperature_B: null,
-      clamp_temperature_C: null
+      clamp_temperature_C: "test"
     };
 
     let firstTimestamp = null;
@@ -673,6 +673,7 @@ async function extractData(lines){
 
       // If all fields are filled, stop early to save processing time
       if(Object.values(data).every(value => value != null)) {
+        data.clamp_temperature_C = "full";
         console.log(" All data fields found within 1 hour. Exiting early.");
         return true;
       }

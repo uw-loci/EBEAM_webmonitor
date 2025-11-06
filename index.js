@@ -67,6 +67,8 @@ let debugLogs = [];
 
 let sampleDataLines = [];
 
+let extractLines = [];
+
 const baseStatus = {
   safetyOutputDataFlags: [1, 1, 1, 0, 0, 0, 1],
   safetyInputDataFlags: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
@@ -580,6 +582,9 @@ async function extractData(lines){
     // Loop through each line in the log file
     for (let i = 0; i < lines.length; i++){
       const line = lines[i]
+
+      extractLines.push(line);
+
       let jsonData;
       
       try {
@@ -1925,6 +1930,7 @@ try {
       <div class="env-section" style="max-height: 200px; overflow-y: auto;">
         <p>Data extracted</span></p>
         <pre>${JSON.stringify(data, null, 2)}</pre>
+        <pre>${JSON.stringify(extractLines)}</pre>
       </div>
 
       <!-- FIXME: Commented out sample data lines section

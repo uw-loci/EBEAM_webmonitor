@@ -909,16 +909,16 @@ async function fetchAndUpdateFile() {
     
     // TODO: Need to add experimentRunning check
     // FIXME: changes dataExtractionLines to real lines rather than sample data lines for testing
-    //addLogs(); // Simulate adding logs for testing
-    const extractPromise = extractData(dataExtractionLines); // Parse data from logs
-    //const extractPromise = extractData(sampleDataLines); // Parse data from logs
+    addLogs(); // Simulate adding logs for testing
+    //const extractPromise = extractData(dataExtractionLines); // Parse data from logs
+    const extractPromise = extractData(sampleDataLines); // Parse data from logs
     
     const [extractionResult] = await Promise.allSettled([
       extractPromise,
     ]);
 
     pressureGraph.fullXVals.push(data.pressureTimestamp);
-    extractLines.push(`${data.pressureTimestamp}, ${data.pressure}`);
+    extractLines.push(`${data.pressureTimestamp}, ${data.pressure}, from graph: ${pressureGraph.fullXVals[pressureGraph.fullXVals.length -1]}, ${pressureGraph.fullYVals[pressureGraph.fullYVals.length -1]}`);
     pressureGraph.fullYVals.push(data.pressure ? parseFloat(data.pressure) : null);
     updateDisplayData(pressureGraph);
 
@@ -1913,6 +1913,7 @@ try {
         -->
       </div>
 
+      <!--
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
         <p>Raw Data Lines 7 debugLogs length: <span id="debug-length"></span></p>
         <p id="debug-preview"></p>
@@ -1931,6 +1932,7 @@ try {
         document.getElementById('debugLogs').textContent = debugLogs.join('\\n');
         document.getElementById('data-lines-container').textContent = dataLines.slice(0, 10).join('\\n');
       </script>
+      -->
 
       <div class="env-section" style="max-height: 200px; overflow-y: auto;">
         <p>Data extracted</span></p>

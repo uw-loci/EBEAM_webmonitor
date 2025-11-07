@@ -1791,6 +1791,7 @@ try {
 
       <div id="chart-root-1"></div>
       <div id="chart-root-2"></div>
+      <div id="chart-root-3"></div>
                 
       <script>
         /**

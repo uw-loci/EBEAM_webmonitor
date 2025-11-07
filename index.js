@@ -555,10 +555,11 @@ async function fetchFileContents(fileId) {
 
 async function extractData(lines){
   // FIXME: how is extraction constrained to only fresh data
-
+  extractLines = lines; // store for debugging
+  
   try{
     data = {
-      pressure: null,
+      pressure: 0,
       pressureTimestamp: null,
       safetyInputDataFlags: null,
       safetyOutputDataFlags: null,
@@ -590,6 +591,7 @@ async function extractData(lines){
         jsonData = JSON.parse(line);
       } catch (e) {
         console.log(`Error parsing JSON at line ${i}:`, line, e);
+        data.pressure += 1;
         continue; // Skip to the next line if JSON parsing fails
       }
       
@@ -609,11 +611,10 @@ async function extractData(lines){
 
       const status = jsonData.status || {};
 
-      data.pressure = 2;
+      
 
       if (status.pressure != null && data.pressure === null) {
         data.pressure          = parseFloat(status.pressure);
-        data.pressure = 3;
         data.pressureTimestamp = jsonData.timestamp;
       }
       if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {

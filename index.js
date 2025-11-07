@@ -124,7 +124,7 @@ function addLogs() {
   if (sampleDataLines.length < 10) {
     for (let i = 0; i < 2; i++) {
       const line = generateLogLine();
-      sampleDataLines.push(line);
+      sampleDataLines.push(JSON.stringify(line));
     }
   }
 }
@@ -556,7 +556,7 @@ async function fetchFileContents(fileId) {
 async function extractData(lines){
   // FIXME: how is extraction constrained to only fresh data
   extractLines = lines; // store for debugging
-  
+
   try{
     data = {
       pressure: 0,

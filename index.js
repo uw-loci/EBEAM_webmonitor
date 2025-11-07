@@ -609,8 +609,11 @@ async function extractData(lines){
 
       const status = jsonData.status || {};
 
+      data.pressure = 2;
+
       if (status.pressure != null && data.pressure === null) {
         data.pressure          = parseFloat(status.pressure);
+        data.pressure = 3;
         data.pressureTimestamp = jsonData.timestamp;
       }
       if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {

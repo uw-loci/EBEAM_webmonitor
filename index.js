@@ -1940,7 +1940,7 @@ try {
         <pre>${JSON.stringify(extractLines)}</pre>
       </div>
 
-      <!-- FIXME: Commented out sample data lines section
+      FIXME: Commented out sample data lines section
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
         <p>Sample Data Lines length: <span id="sample-data-length"></span></p>
         <pre id="sample-preview"></pre>
@@ -1957,7 +1957,6 @@ try {
         .map(line => JSON.stringify(line))
         .join('<br>');
       </script>
-      -->
 
       <!-- Log Viewer -->
       <div class="env-section">

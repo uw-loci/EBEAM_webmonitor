@@ -1944,17 +1944,36 @@ try {
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
         <p>Sample Data Lines length: <span id="sample-data-length"></span></p>
         <pre id="sample-preview"></pre>
-        <pre id="sample-data-lines"></pre>
       </div>
 
       <script>
         // Injecting local variables into the frontend JavaScript
-        const sampleDataLines = ${JSON.stringify(sampleDataLines)};
+        const sampleDataLines = ${sampleDataLines};
         // Populate the DOM elements with the data
         document.getElementById('sample-data-length').textContent = sampleDataLines.length;
         document.getElementById('sample-preview').innerHTML = sampleDataLines
         .slice(-10)
-        .map(line => line)
+        .map(line => JSON.stringify(line))
+        .join('<br>');
+      </script>
+
+      <div class="env-section" style="max-height: 600px; overflow-y: auto;">
+        <p>Pressure Vals Array length: <span id="pressure-vals-length"></span></p>
+        <pre id="pressure-Xvals"></pre>
+        <pre id="pressure-Yvals"></pre>
+      </div>
+
+      <script>
+        // Injecting local variables into the frontend JavaScript
+        const pressureXVals = ${pressureGraph.displayXVals};
+        const pressureYVals = ${pressureGraph.displayYVals};
+        // Populate the DOM elements with the data
+        document.getElementById('pressure-Xvals').innerHTML = sampleDataLines
+        .slice(-10)
+        .join('<br>');
+
+        document.getElementById('pressure-Yvals').innerHTML = sampleDataLines
+        .slice(-10)
         .join('<br>');
       </script>
 

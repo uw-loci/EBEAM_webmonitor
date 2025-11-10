@@ -1965,8 +1965,8 @@ try {
 
       <script>
         // Injecting local variables into the frontend JavaScript
-        const pressureXVals = ${pressureGraph.displayXVals};
-        const pressureYVals = ${pressureGraph.displayYVals};
+        const pressureXVals = ${pressureGraph.fullXVals};
+        const pressureYVals = ${pressureGraph.fullYVals};
         // Populate the DOM elements with the data
         document.getElementById('pressure-Xvals').innerHTML = sampleDataLines
         .slice(-10)

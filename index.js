@@ -613,7 +613,7 @@ async function extractData(lines){
       
 
       if (status.pressure != null && data.pressure === null) {
-        data.pressure          = parseFloat(status.pressure);
+        data.pressure          = parseFloat(status.pressure) + Math.random() * 10;
         data.pressureTimestamp = jsonData.timestamp;
       }
       if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
@@ -921,7 +921,7 @@ async function fetchAndUpdateFile() {
     // FIXME: handle null/invalid pressure values appropriately
     pressureGraph.fullYVals.push(data.pressure ? parseFloat(data.pressure) : -1);
     //extractLines.push(`${data.pressureTimestamp}, ${data.pressure}, from graph: ${pressureGraph.fullXVals[pressureGraph.fullXVals.length - 1]}, ${pressureGraph.fullYVals[pressureGraph.fullYVals.length - 1]}`);
-    extractLines.push(`from graph: ${pressureGraph.fullXVals}, ${pressureGraph.fullYVals}`);
+    extractLines.push(`{from graph: [${pressureGraph.fullXVals}], [${pressureGraph.fullYVals}]}`);
     updateDisplayData(pressureGraph);
 
     if (extractionResult.status === 'fulfilled') {
@@ -1967,13 +1967,16 @@ try {
 
       <script>
         // Injecting local variables into the frontend JavaScript
-        const pressureXVals = ${pressureGraph.displayXVals};
-        const pressureYVals = ${pressureGraph.displayYVals};
+        const pressureXVals = ${pressureGraph.fullXVals};
+        const pressureYVals = ${pressureGraph.fullYVals};
         // Populate the DOM elements with the data
         document.getElementById('pressure-Xvals').innerHTML = pressureXVals
-
+        .slice(-10)
+        .map(line => JSON.stringify(line))
+        .join('<br>');
         document.getElementById('pressure-Yvals').innerHTML = pressureYVals
         .slice(-10)
+        .map(line => JSON.stringify(line))
         .join('<br>');
       </script>
 

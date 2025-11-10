@@ -613,7 +613,7 @@ async function extractData(lines){
       
 
       if (status.pressure != null && data.pressure === null) {
-        data.pressure          = parseFloat(status.pressure) + Math.random() * 10;
+        data.pressure          = parseInt(status.pressure) + Math.random() * 10;
         data.pressureTimestamp = jsonData.timestamp;
       }
       if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
@@ -919,7 +919,7 @@ async function fetchAndUpdateFile() {
 
     pressureGraph.fullXVals.push(data.pressureTimestamp);
     // FIXME: handle null/invalid pressure values appropriately
-    pressureGraph.fullYVals.push(data.pressure ? parseFloat(data.pressure) : -1);
+    pressureGraph.fullYVals.push(data.pressure ? parseInt(data.pressure) : -1);
     //extractLines.push(`${data.pressureTimestamp}, ${data.pressure}, from graph: ${pressureGraph.fullXVals[pressureGraph.fullXVals.length - 1]}, ${pressureGraph.fullYVals[pressureGraph.fullYVals.length - 1]}`);
     extractLines.push(`{from graph: [${pressureGraph.fullXVals}], [${pressureGraph.fullYVals}]}`);
     updateDisplayData(pressureGraph);
@@ -1960,24 +1960,21 @@ try {
       </script>
 
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
-        <p>Pressure full Vals Array length: <span id="pressure-vals-length"></span></p>
-        <pre id="pressure-Xvals"></pre>
-        <pre id="pressure-Yvals"></pre>
+        <div id="xOutput"></div>
+        <div id="yOutput"></div>
       </div>
 
       <script>
         // Injecting local variables into the frontend JavaScript
         const pressureXVals = ${pressureGraph.fullXVals};
         const pressureYVals = ${pressureGraph.fullYVals};
-        // Populate the DOM elements with the data
-        document.getElementById('pressure-Xvals').innerHTML = pressureXVals
-        .slice(-10)
-        .map(line => JSON.stringify(line))
-        .join('<br>');
-        document.getElementById('pressure-Yvals').innerHTML = pressureYVals
-        .slice(-10)
-        .map(line => JSON.stringify(line))
-        .join('<br>');
+        document.getElementById("xOutput").innerHTML = \`
+          <p><strong>xVals:</strong> [ \${pressureXVals.join(", ")} ]</p>
+        \`;
+
+        document.getElementById("yOutput").innerHTML = \`
+          <p><strong>yVals:</strong> [ \${pressureYVals.join(", ")} ]</p>
+        \`;
       </script>
 
       <!-- Log Viewer -->

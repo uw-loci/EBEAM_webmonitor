@@ -1958,21 +1958,21 @@ try {
       </script>
 
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
-        <p>Pressure Vals Array length: <span id="pressure-vals-length"></span></p>
+        <p>Pressure full Vals Array length: <span id="pressure-vals-length"></span></p>
         <pre id="pressure-Xvals"></pre>
         <pre id="pressure-Yvals"></pre>
       </div>
 
       <script>
         // Injecting local variables into the frontend JavaScript
-        const pressureXVals = ${pressureGraph.fullXVals};
+        const pressureXVals = ${pressureGraph.displayYVals};
         const pressureYVals = ${pressureGraph.fullYVals};
         // Populate the DOM elements with the data
-        document.getElementById('pressure-Xvals').innerHTML = sampleDataLines
+        document.getElementById('pressure-Xvals').innerHTML = pressureXVals
         .slice(-10)
         .join('<br>');
 
-        document.getElementById('pressure-Yvals').innerHTML = sampleDataLines
+        document.getElementById('pressure-Yvals').innerHTML = pressureYVals
         .slice(-10)
         .join('<br>');
       </script>

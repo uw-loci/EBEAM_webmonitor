@@ -918,8 +918,8 @@ async function fetchAndUpdateFile() {
     ]);
 
     pressureGraph.fullXVals.push(data.pressureTimestamp);
-    extractLines.push(`${data.pressureTimestamp}, ${data.pressure}, from graph: ${pressureGraph.fullXVals[pressureGraph.fullXVals.length -1]}, ${pressureGraph.fullYVals[pressureGraph.fullYVals.length -1]}`);
     pressureGraph.fullYVals.push(data.pressure ? parseFloat(data.pressure) : null);
+    extractLines.push(`${data.pressureTimestamp}, ${data.pressure}, from graph: ${pressureGraph.fullXVals[pressureGraph.fullXVals.length - 1]}, ${pressureGraph.fullYVals[pressureGraph.fullYVals.length - 1]}`);
     updateDisplayData(pressureGraph);
 
     if (extractionResult.status === 'fulfilled') {

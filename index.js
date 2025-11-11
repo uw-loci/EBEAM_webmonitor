@@ -615,7 +615,7 @@ async function extractData(lines){
 
       if (status.pressure != null && data.pressure === null) {
         data.pressure          = parseInt(status.pressure) + Math.random() * 10;
-        timestamps.push(new Date(jsonData.timestamp.replace(" ", "T")));
+        timestamps.push(jsonData.timestamp);
         data.pressureTimestamp = new Date(jsonData.timestamp.replace(" ", "T")).getTime();
       }
       if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
@@ -1947,19 +1947,15 @@ try {
 
       <!-- FIXME: Commented out sample data lines section for now -->
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
-        <p>Sample Data Lines length: <span id="sample-data-length"></span></p>
-        <pre id="sample-preview"></pre>
+        <p>Sample Data Lines length: ${sampleDataLines.length}</p>
+        <pre id="sample-data-lines"></pre>
       </div>
 
       <script>
         // Injecting local variables into the frontend JavaScript
         const sampleDataLines = ${sampleDataLines};
         // Populate the DOM elements with the data
-        document.getElementById('sample-data-length').textContent = sampleDataLines.length;
-        document.getElementById('sample-preview').innerHTML = sampleDataLines
-        .slice(-10)
-        .map(line => JSON.stringify(line))
-        .join('<br>');
+        document.getElementById('sample-data-lines').textContent = sampleDataLines.join('<br>');
       </script>
 
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">

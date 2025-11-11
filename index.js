@@ -34,7 +34,7 @@ const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const { debug } = require('console');
+const { debug, time } = require('console');
 //const axios = require('axios');
 const app = express();
 app.use(express.static(path.join(__dirname, 'assets')));
@@ -98,7 +98,6 @@ const baseStatus = {
 // Helper: Get current timestamp in "YYYY-MM-DD HH:mm:ss"
 function getTimestamp() {
   const now = new Date();
-  timestamps.push(now.toISOString().replace('T', ' ').substring(0, 19));
   return now.toISOString().replace('T', ' ').substring(0, 19);
 }
 
@@ -124,7 +123,7 @@ function generateLogLine() {
 // Add 2 lines every minute
 function addLogs() {
   if (sampleDataLines.length < 10) {
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 1; i++) {
       const line = generateLogLine();
       sampleDataLines.push(JSON.stringify(line));
     }
@@ -616,6 +615,7 @@ async function extractData(lines){
 
       if (status.pressure != null && data.pressure === null) {
         data.pressure          = parseInt(status.pressure) + Math.random() * 10;
+        timestamps.push(new Date(jsonData.timestamp.replace(" ", "T")));
         data.pressureTimestamp = new Date(jsonData.timestamp.replace(" ", "T")).getTime();
       }
       if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {

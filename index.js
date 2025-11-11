@@ -66,6 +66,7 @@ let dataLines = null;
 let debugLogs = [];
 
 let sampleDataLines = [];
+let timestamps = [];
 
 let extractLines = [];
 
@@ -97,6 +98,7 @@ const baseStatus = {
 // Helper: Get current timestamp in "YYYY-MM-DD HH:mm:ss"
 function getTimestamp() {
   const now = new Date();
+  timestamps.push(now.toISOString().replace('T', ' ').substring(0, 19));
   return now.toISOString().replace('T', ' ').substring(0, 19);
 }
 
@@ -921,7 +923,7 @@ async function fetchAndUpdateFile() {
     // FIXME: handle null/invalid pressure values appropriately
     pressureGraph.fullYVals.push(data.pressure ? parseInt(data.pressure) : -1);
     //extractLines.push(`${data.pressureTimestamp}, ${data.pressure}, from graph: ${pressureGraph.fullXVals[pressureGraph.fullXVals.length - 1]}, ${pressureGraph.fullYVals[pressureGraph.fullYVals.length - 1]}`);
-    extractLines.push(`{from graph: [${pressureGraph.fullXVals}], [${pressureGraph.fullYVals}]}`);
+    //extractLines.push(`{from graph: [${pressureGraph.fullXVals}], [${pressureGraph.fullYVals}]}`);
     updateDisplayData(pressureGraph);
 
     if (extractionResult.status === 'fulfilled') {
@@ -1939,6 +1941,7 @@ try {
       <div class="env-section" style="max-height: 200px; overflow-y: auto;">
         <p>Data extracted</span></p>
         <pre>${JSON.stringify(data, null, 2)}</pre>
+        <pre>${JSON.stringify(timestamps)}</pre>
         <pre>${JSON.stringify(extractLines)}</pre>
       </div>
 

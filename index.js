@@ -616,7 +616,7 @@ async function extractData(lines){
       if (status.pressure != null && data.pressure === null) {
         data.pressure          = parseInt(status.pressure) + Math.random() * 10;
         timestamps.push(jsonData.timestamp);
-        data.pressureTimestamp = new Date(jsonData.timestamp.replace(" ", "T")).getTime();
+        data.pressureTimestamp = new Date(jsonData.timestamp.replace(" ", "T") + "Z").getTime();
       }
       if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
         data.safetyOutputDataFlags = status.safetyOutputDataFlags;
@@ -1898,7 +1898,7 @@ try {
           { containerId: 'chart-root-1', title: 'Live Update Sin Graph', data: [${JSON.stringify(sampleGraph.displayXVals)}, ${JSON.stringify(sampleGraph.displayYVals)}], seriesLabel: "sin(t/10)",
             maxDataPoints: ${sampleGraph.maxDataPoints}, maxDisplayPoints: ${sampleGraph.maxDisplayPoints}, displayXVals: ${JSON.stringify(sampleGraph.displayXVals)}, lastUsedFactor: ${sampleGraph.lastUsedFactor}, chartDataIntervalDuration: ${sampleGraph.chartDataIntervalDuration} },
           { containerId: 'chart-root-2', title: 'Sample Sin Graph', data: makeSineData(20), seriesLabel: "sin(t/20)" },
-          { containerId: 'chart-root-3', title: 'Pressure Graph', data: [${JSON.stringify(pressureGraph.fullXVals)}, ${JSON.stringify(pressureGraph.fullYVals)}], seriesLabel: "sin(t/20)",
+          { containerId: 'chart-root-3', title: 'Pressure Graph', data: [${JSON.stringify(pressureGraph.fullXVals)}, ${JSON.stringify(pressureGraph.fullYVals)}], seriesLabel: "pressure (mbar)",
             maxDataPoints: ${pressureGraph.maxDataPoints}, maxDisplayPoints: ${pressureGraph.maxDisplayPoints}, displayXVals: ${JSON.stringify(pressureGraph.displayXVals)}, lastUsedFactor: ${pressureGraph.lastUsedFactor}, chartDataIntervalDuration: ${pressureGraph.chartDataIntervalDuration} },
         ];
 

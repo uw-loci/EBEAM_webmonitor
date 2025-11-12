@@ -616,7 +616,7 @@ async function extractData(lines){
       if (status.pressure != null && data.pressure === null) {
         data.pressure          = parseInt(status.pressure) + Math.random() * 10;
         timestamps.push(`${jsonData.timestamp}, ${new Date(jsonData.timestamp.replace(" ", "T"))}, ${new Date(jsonData.timestamp.replace(" ", "T")).getTime()}`);
-        data.pressureTimestamp = new Date(jsonData.timestamp.replace(" ", "T") + "Z").getTime();
+        data.pressureTimestamp = new Date(jsonData.timestamp.replace(" ", "T")).getTime();
       }
       if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
         data.safetyOutputDataFlags = status.safetyOutputDataFlags;

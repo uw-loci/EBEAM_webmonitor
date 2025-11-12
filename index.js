@@ -125,7 +125,7 @@ function addLogs() {
   if (sampleDataLines.length < 10) {
     for (let i = 0; i < 1; i++) {
       const line = generateLogLine();
-      sampleDataLines.push(JSON.stringify(line));
+      sampleDataLines.unshift(JSON.stringify(line));
     }
   }
 }
@@ -584,7 +584,7 @@ async function extractData(lines){
     // Loop through each line in the log file
     for (let i = 0; i < lines.length; i++){
       const line = lines[i]
-      timestamps.push(line);
+      // timestamps.push(line);
       let jsonData;
       
       try {

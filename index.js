@@ -1948,14 +1948,17 @@ try {
       <!-- FIXME: Commented out sample data lines section for now -->
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
         <p>Sample Data Lines length: ${sampleDataLines.length}</p>
-        <pre id="sample-data-lines"></pre>
+        <p>${sampleDataLines}</p>
+        <div id="output"></div>
+        <p>End</p>
       </div>
 
       <script>
         // Injecting local variables into the frontend JavaScript
         const sampleDataLines = ${sampleDataLines};
         // Populate the DOM elements with the data
-        document.getElementById('sample-data-lines').textContent = sampleDataLines.join('<br>');
+        document.getElementById("output").innerHTML = sampleDataLines.join("<br>");
+        // document.getElementById('sample-data-lines').textContent = sampleDataLines.join('<br>');
       </script>
 
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">

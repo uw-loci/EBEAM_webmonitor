@@ -615,7 +615,7 @@ async function extractData(lines){
 
       if (status.pressure != null && data.pressure === null) {
         data.pressure          = parseInt(status.pressure) + Math.random() * 10;
-        timestamps.push(jsonData.timestamp);
+        timestamps.push(`${jsonData.timestamp}, ${new Date(jsonData.timestamp.replace(" ", "T") + "Z")}`);
         data.pressureTimestamp = new Date(jsonData.timestamp.replace(" ", "T") + "Z").getTime();
       }
       if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
@@ -1948,17 +1948,16 @@ try {
       <!-- FIXME: Commented out sample data lines section for now -->
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
         <p>Sample Data Lines length: ${sampleDataLines.length}</p>
-        <p>${timestamps}</p>
         <div id="output"></div>
         <p>End</p>
       </div>
 
       <script>
         // Injecting local variables into the frontend JavaScript
-        const sampleDataLines = ${sampleDataLines};
+        const sampleDataLines = ${timestamps};
         // Populate the DOM elements with the data
-        //document.getElementById("output").innerHTML = sampleDataLines.join("<br>");
-        // document.getElementById('sample-data-lines').textContent = sampleDataLines.join('<br>');
+        document.getElementById("output").innerHTML = sampleDataLines.join("<br>");
+        //document.getElementById('sample-data-lines').textContent = sampleDataLines.join('<br>');
       </script>
 
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">

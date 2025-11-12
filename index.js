@@ -584,7 +584,7 @@ async function extractData(lines){
     // Loop through each line in the log file
     for (let i = 0; i < lines.length; i++){
       const line = lines[i]
-
+      timestamps.push(line);
       let jsonData;
       
       try {
@@ -615,7 +615,7 @@ async function extractData(lines){
 
       if (status.pressure != null && data.pressure === null) {
         data.pressure          = parseInt(status.pressure) + Math.random() * 10;
-        timestamps.push(jsonData.timestamp);
+        //timestamps.push(jsonData.timestamp);
         data.pressureTimestamp = new Date(jsonData.timestamp.replace(" ", "T")).getTime();
       }
       if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
@@ -1948,7 +1948,7 @@ try {
       <!-- FIXME: Commented out sample data lines section for now -->
       <div class="env-section" style="max-height: 600px; overflow-y: auto;">
         <p>Sample Data Lines length: ${sampleDataLines.length}</p>
-        <p>${sampleDataLines}</p>
+        <p>${timestamps}</p>
         <div id="output"></div>
         <p>End</p>
       </div>
@@ -1957,7 +1957,7 @@ try {
         // Injecting local variables into the frontend JavaScript
         const sampleDataLines = ${sampleDataLines};
         // Populate the DOM elements with the data
-        document.getElementById("output").innerHTML = sampleDataLines.join("<br>");
+        //document.getElementById("output").innerHTML = sampleDataLines.join("<br>");
         // document.getElementById('sample-data-lines').textContent = sampleDataLines.join('<br>');
       </script>
 

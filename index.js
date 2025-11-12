@@ -1895,10 +1895,10 @@ try {
         }
 
         const chartConfigs = [
-          { containerId: 'chart-root-1', title: 'Live Update Chart 1', data: [${JSON.stringify(sampleGraph.displayXVals)}, ${JSON.stringify(sampleGraph.displayYVals)}], seriesLabel: "sin(t/10)",
+          { containerId: 'chart-root-1', title: 'Live Update Sin Graph', data: [${JSON.stringify(sampleGraph.displayXVals)}, ${JSON.stringify(sampleGraph.displayYVals)}], seriesLabel: "sin(t/10)",
             maxDataPoints: ${sampleGraph.maxDataPoints}, maxDisplayPoints: ${sampleGraph.maxDisplayPoints}, displayXVals: ${JSON.stringify(sampleGraph.displayXVals)}, lastUsedFactor: ${sampleGraph.lastUsedFactor}, chartDataIntervalDuration: ${sampleGraph.chartDataIntervalDuration} },
-          { containerId: 'chart-root-2', title: 'Chart 2', data: makeSineData(20), seriesLabel: "sin(t/20)" },
-          { containerId: 'chart-root-3', title: 'Live Update Chart 3', data: [${JSON.stringify(pressureGraph.fullXVals)}, ${JSON.stringify(pressureGraph.fullYVals)}], seriesLabel: "sin(t/20)",
+          { containerId: 'chart-root-2', title: 'Sample Sin Graph', data: makeSineData(20), seriesLabel: "sin(t/20)" },
+          { containerId: 'chart-root-3', title: 'Pressure Graph', data: [${JSON.stringify(pressureGraph.fullXVals)}, ${JSON.stringify(pressureGraph.fullYVals)}], seriesLabel: "sin(t/20)",
             maxDataPoints: ${pressureGraph.maxDataPoints}, maxDisplayPoints: ${pressureGraph.maxDisplayPoints}, displayXVals: ${JSON.stringify(pressureGraph.displayXVals)}, lastUsedFactor: ${pressureGraph.lastUsedFactor}, chartDataIntervalDuration: ${pressureGraph.chartDataIntervalDuration} },
         ];
 

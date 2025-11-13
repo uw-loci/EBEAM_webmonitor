@@ -576,7 +576,7 @@ async function extractData(lines){
       heaterVoltage_C: null,
       clamp_temperature_A: null,
       clamp_temperature_B: null,
-      clamp_temperature_C: new Date().toISOString()
+      clamp_temperature_C: null
     };
 
     let firstTimestamp = null;
@@ -599,6 +599,7 @@ async function extractData(lines){
         firstTimestamp = new Date(jsonData.timestamp);
       }
 
+      // FIXME: Remember to uncomment this later
       // if (firstTimestamp && jsonData.timestamp) {
       //   const currentTimestamp = new Date(jsonData.timestamp);
       //   const elapsedSeconds = (currentTimestamp - firstTimestamp) / 1000;
@@ -614,8 +615,8 @@ async function extractData(lines){
       
 
       if (status.pressure != null && data.pressure === null) {
-        data.pressure          = parseInt(status.pressure) + Math.random() * 10;
-        timestamps.push(`${jsonData.timestamp}, ${new Date(jsonData.timestamp.replace(" ", "T"))}, ${new Date(jsonData.timestamp.replace(" ", "T")).getTime()}`);
+        data.pressure          = parseFloat(status.pressure);
+        //timestamps.push(`${jsonData.timestamp}, ${new Date(jsonData.timestamp.replace(" ", "T"))}, ${new Date(jsonData.timestamp.replace(" ", "T")).getTime()}`);
         data.pressureTimestamp = new Date(jsonData.timestamp.replace(" ", "T")).getTime() / 1000;
       }
       if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
@@ -921,7 +922,7 @@ async function fetchAndUpdateFile() {
 
     pressureGraph.fullXVals.push(data.pressureTimestamp);
     // FIXME: handle null/invalid pressure values appropriately
-    pressureGraph.fullYVals.push(data.pressure ? parseInt(data.pressure) : -1);
+    pressureGraph.fullYVals.push(data.pressure ? data.pressure : 0);
     //extractLines.push(`${data.pressureTimestamp}, ${data.pressure}, from graph: ${pressureGraph.fullXVals[pressureGraph.fullXVals.length - 1]}, ${pressureGraph.fullYVals[pressureGraph.fullYVals.length - 1]}`);
     //extractLines.push(`{from graph: [${pressureGraph.fullXVals}], [${pressureGraph.fullYVals}]}`);
     updateDisplayData(pressureGraph);
@@ -1897,8 +1898,8 @@ try {
         const chartConfigs = [
           { containerId: 'chart-root-1', title: 'Live Update Sin Graph', data: [${JSON.stringify(sampleGraph.displayXVals)}, ${JSON.stringify(sampleGraph.displayYVals)}], seriesLabel: "sin(t/10)",
             maxDataPoints: ${sampleGraph.maxDataPoints}, maxDisplayPoints: ${sampleGraph.maxDisplayPoints}, displayXVals: ${JSON.stringify(sampleGraph.displayXVals)}, lastUsedFactor: ${sampleGraph.lastUsedFactor}, chartDataIntervalDuration: ${sampleGraph.chartDataIntervalDuration} },
-          { containerId: 'chart-root-2', title: 'Sample Sin Graph', data: makeSineData(20), seriesLabel: "sin(t/20)" },
-          { containerId: 'chart-root-3', title: 'Pressure Graph', data: [${JSON.stringify(pressureGraph.fullXVals)}, ${JSON.stringify(pressureGraph.fullYVals)}], seriesLabel: "pressure (mbar)",
+          // { containerId: 'chart-root-2', title: 'Sample Sin Graph', data: makeSineData(20), seriesLabel: "sin(t/20)" },
+          { containerId: 'chart-root-3', title: 'Live Update Pressure Graph', data: [${JSON.stringify(pressureGraph.fullXVals)}, ${JSON.stringify(pressureGraph.fullYVals)}], seriesLabel: "pressure (mbar)",
             maxDataPoints: ${pressureGraph.maxDataPoints}, maxDisplayPoints: ${pressureGraph.maxDisplayPoints}, displayXVals: ${JSON.stringify(pressureGraph.displayXVals)}, lastUsedFactor: ${pressureGraph.lastUsedFactor}, chartDataIntervalDuration: ${pressureGraph.chartDataIntervalDuration} },
         ];
 
@@ -1941,42 +1942,8 @@ try {
       <div class="env-section" style="max-height: 200px; overflow-y: auto;">
         <p>Data extracted</span></p>
         <pre>${JSON.stringify(data, null, 2)}</pre>
-        <pre>${JSON.stringify(timestamps)}</pre>
         <pre>${JSON.stringify(extractLines)}</pre>
       </div>
-
-      <!-- FIXME: Commented out sample data lines section for now -->
-      <div class="env-section" style="max-height: 600px; overflow-y: auto;">
-        <p>Sample Data Lines length: ${sampleDataLines.length}</p>
-        <div id="output"></div>
-        <p>End</p>
-      </div>
-
-      <script>
-        // Injecting local variables into the frontend JavaScript
-        const sampleDataLines = ${timestamps};
-        // Populate the DOM elements with the data
-        document.getElementById("output").innerHTML = sampleDataLines.join("<br>");
-        //document.getElementById('sample-data-lines').textContent = sampleDataLines.join('<br>');
-      </script>
-
-      <div class="env-section" style="max-height: 600px; overflow-y: auto;">
-        <div id="xOutput"></div>
-        <div id="yOutput"></div>
-      </div>
-
-      <script>
-        // Injecting local variables into the frontend JavaScript
-        const pressureXVals = ${pressureGraph.fullXVals};
-        const pressureYVals = ${pressureGraph.fullYVals};
-        document.getElementById("xOutput").innerHTML = \`
-          <p><strong>xVals:</strong> [ \${pressureXVals.join(", ")} ]</p>
-        \`;
-
-        document.getElementById("yOutput").innerHTML = \`
-          <p><strong>yVals:</strong> [ \${pressureYVals.join(", ")} ]</p>
-        \`;
-      </script>
 
       <!-- Log Viewer -->
       <div class="env-section">

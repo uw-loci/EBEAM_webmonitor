@@ -1846,6 +1846,10 @@ try {
               {},
               {
                 label: seriesLabel,
+                value: (u, v) => {
+                  if (v == null) return "";
+                  return v.toExponential(4);   // scientific notation with 4 digits
+                },
                 stroke: 'blue',
                 points: { show: true, size: 5, fill: 'blue', stroke: 'blue' }
               }

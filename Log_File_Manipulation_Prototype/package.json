@@ -1,0 +1,26 @@
+{
+  "name": "ebeam-log-monitor",
+  "version": "1.0.0",
+  "description": "Efficient log file monitoring system with incremental Google Drive sync and reversed log display",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node --no-warnings server.mjs",
+    "dev": "node --no-warnings server.mjs",
+    "clean": "pkill -f 'node.*server.mjs' 2>/dev/null || true",
+    "read-doc": "node readGoogleDoc.mjs"
+  },
+  "keywords": [
+    "log-monitor",
+    "google-drive",
+    "incremental-sync"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@googleapis/docs": "^8.1.1",
+    "@googleapis/drive": "^19.2.0",
+    "express": "^4.18.2",
+    "fs-extra": "^11.3.2",
+    "google-auth-library": "^9.15.1"
+  }
+}

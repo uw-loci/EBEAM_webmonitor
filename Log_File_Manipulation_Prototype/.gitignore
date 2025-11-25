@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Log files and data
+data/
+*.log
+*.txt
+
+# Environment variables and secrets
+.env
+*.json
+!package.json
+!package-lock.json
+
+# Service account credentials (NEVER commit these!)
+*-credentials.json
+service-account*.json
+google-credentials.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Local configuration
+config.local.js
+
+

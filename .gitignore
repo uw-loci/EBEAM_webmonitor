@@ -4,3 +4,5 @@ reversed.txt
 tmp/
 extractData.js
 debug_index.js
+.DS_Store
+eslint.config.js

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Multiple Live uPlot Charts</title>
+  <link rel="stylesheet" href="https://unpkg.com/uplot/dist/uPlot.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 30px;
+    }
+    .chart-container {
+      position: relative;
+      margin-bottom: 40px;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 16px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .chart-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .chart-info-text {
+      font-size: 13px;
+      color: #555;
+      margin-top: 10px;
+    }
+    .chart {
+      height: 300px;
+      position: relative;
+    }
+    .env-section {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div id="chart-root"></div>
+
+  <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
+  <script>
+    /**
+     * Creates a reusable uPlot chart section with zoom, resize, and debug info.
+     * Works for multiple charts on the same page (uses classes, not IDs).
+     * 
+     * @param {HTMLElement|string} container - Parent element or selector.
+     * @param {Object} config - Chart configuration and data.
+     */
+    function createLiveUplotChart(container, config) {
+      if (typeof container === 'string') container = document.querySelector(container);
+
+      const {
+        title = "Live Updating Chart",
+        data = [[], []],
+        seriesLabel = "Series",
+        maxDataPoints = 1000,
+        maxDisplayPoints = 100,
+        displayXVals = [],
+        lastUsedFactor = 1,
+        chartDataIntervalDuration = 1,
+      } = config;
+
+      // Create container HTML
+      const wrapper = document.createElement('div');
+      wrapper.className = 'chart-container';
+      wrapper.innerHTML = `
+        <div class="chart-title">${title}</div>
+        <div class="chart"></div>
+        <div class="chart-info-text">
+          Max ${maxDataPoints} calculated points. Max ${maxDisplayPoints} display points. 
+          # points displayed: ${displayXVals.length}. 
+          Current stride: ${lastUsedFactor} minute(s). 
+          New point added every ${60 * chartDataIntervalDuration}s. 
+          Double-click to reset zoom. Drag horizontally to zoom in.
+        </div>
+      `;
+      container.appendChild(wrapper);
+
+      const chartEl = wrapper.querySelector('.chart');
+
+      // Create the uPlot chart
+      const uplot = new uPlot({
+        width: wrapper.clientWidth,
+        height: 300,
+        series: [
+          {},
+          {
+            label: seriesLabel,
+            stroke: 'blue',
+            points: { show: true, size: 5, fill: 'blue', stroke: 'blue' }
+          }
+        ],
+        scales: { x: { time: true } },
+        axes: [{ stroke: '#ccc' }, { stroke: '#ccc' }],
+        cursor: {
+          focus: { prox: 16 },
+          drag: {
+            x: true,
+            y: false,
+            setScale: true
+          },
+        },
+      }, data, chartEl);
+
+      // Resize dynamically
+      window.addEventListener('resize', () => {
+        const newWidth = wrapper.clientWidth;
+        uplot.setSize({ width: newWidth, height: 300 });
+      });
+
+      // Fill parent
+      const innerChart = chartEl.querySelector(':scope > *');
+      if (innerChart) {
+        innerChart.style.position = 'absolute';
+        innerChart.style.top = '0';
+        innerChart.style.left = '0';
+        innerChart.style.width = '100%';
+        innerChart.style.height = '100%';
+      }
+
+      // Reset zoom on double-click
+      chartEl.ondblclick = () => {
+        uplot.setScale('x', { min: null, max: null });
+      };
+
+      return uplot;
+    }
+
+    // ✅ Example usage: create multiple charts
+    const now = Date.now();
+
+    function makeSineData(freq = 10, len = 100) {
+      const x = Array.from({ length: len }, (_, i) => now + i * 60000);
+      const y = x.map((_, i) => Math.sin(i / freq));
+      return [x, y];
+    }
+
+    const charts = [
+      {
+        title: "Sine Wave (t/10)",
+        data: makeSineData(10),
+        seriesLabel: "sin(t/10)"
+      },
+      {
+        title: "Sine Wave (t/20)",
+        data: makeSineData(20),
+        seriesLabel: "sin(t/20)"
+      }
+    ];
+
+    // Create all charts in the page
+    const root = document.getElementById('chart-root');
+    charts.forEach(cfg => createLiveUplotChart(root, cfg));
+  </script>
+</body>
+</html>

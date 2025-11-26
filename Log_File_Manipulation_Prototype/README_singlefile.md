@@ -6,7 +6,8 @@ A standalone Node.js script that automatically synchronizes log files from Googl
 
 `singlefile.js` is a self-contained script that:
 - Authenticates with Google Drive API using service account credentials
-- Monitors a specific Google Drive file for changes
+- Monitors a Google Drive file for changes (either a specific file or the latest file in a folder)
+- Automatically finds the latest modified file in a folder (if folder ID is provided)
 - Downloads only new data (incremental sync) to minimize bandwidth
 - Maintains a local copy of the log file
 - Creates and maintains a reversed version of the log (newest entries first)
@@ -15,6 +16,8 @@ A standalone Node.js script that automatically synchronizes log files from Googl
 ## Features
 
 - ✅ **Standalone Operation**: All logic in one file, no external module dependencies
+- ✅ **Folder-Based Selection**: Automatically finds the latest modified file in a Google Drive folder
+- ✅ **Direct File Support**: Can also use a specific file ID (backward compatible)
 - ✅ **Incremental Sync**: Only downloads new data since last sync
 - ✅ **Automatic Reversal**: Maintains a reversed log file for newest-first display
 - ✅ **Periodic Updates**: Automatically syncs every 60 seconds
@@ -39,7 +42,9 @@ npm install fs-extra google-auth-library
 1. **Google Cloud Project**: Create a project in Google Cloud Console
 2. **Enable Drive API**: Enable the Google Drive API for your project
 3. **Service Account**: Create a service account and download the JSON key file
-4. **File Sharing**: Share the Google Drive file with the service account email address
+4. **File/Folder Sharing**: 
+   - If using a folder: Share the Google Drive folder with the service account email address
+   - If using a direct file: Share the Google Drive file with the service account email address
 
 ## Installation
 
@@ -61,12 +66,23 @@ npm install fs-extra google-auth-library
 
 Configuration is embedded directly in `singlefile.js`. Edit the `config` object (lines 22-45) to customize:
 
-### Google Drive File ID
+### Google Drive Folder ID (Recommended)
 ```javascript
-googleDriveFileId: process.env.GOOGLE_DRIVE_FILE_ID || 'YOUR_FILE_ID_HERE'
+googleDriveFolderId: process.env.GOOGLE_DRIVE_FOLDER_ID || 'YOUR_FOLDER_ID_HERE'
+```
+- Set via environment variable `GOOGLE_DRIVE_FOLDER_ID`, or
+- Edit the default value in the config object
+- **Behavior**: The script will automatically find and sync the latest modified file in this folder
+- **Priority**: If folder ID is provided, it takes precedence over file ID
+
+### Google Drive File ID (Alternative)
+```javascript
+googleDriveFileId: process.env.GOOGLE_DRIVE_FILE_ID || null
 ```
 - Set via environment variable `GOOGLE_DRIVE_FILE_ID`, or
 - Edit the default value in the config object
+- **Behavior**: Syncs a specific file directly (backward compatible)
+- **Use Case**: When you want to sync a specific file rather than the latest in a folder
 
 ### Credentials Path
 ```javascript
@@ -116,7 +132,10 @@ Press `Ctrl+C` to gracefully stop the script. The script will:
 You can override configuration using environment variables:
 
 ```bash
-# Set Google Drive File ID
+# Option 1: Use folder ID (recommended - finds latest file automatically)
+export GOOGLE_DRIVE_FOLDER_ID="your-folder-id-here"
+
+# Option 2: Use direct file ID (for specific file)
 export GOOGLE_DRIVE_FILE_ID="your-file-id-here"
 
 # Set credentials path
@@ -126,15 +145,19 @@ export GOOGLE_APPLICATION_CREDENTIALS="/path/to/credentials.json"
 node singlefile.js
 ```
 
+**Note**: If both `GOOGLE_DRIVE_FOLDER_ID` and `GOOGLE_DRIVE_FILE_ID` are set, the folder ID takes precedence.
+
 ## How It Works
 
 ### 1. Initialization
 - Loads configuration (embedded or from environment)
 - Authenticates with Google Drive using service account credentials
 - Obtains and validates access token
+- **If folder ID is provided**: Lists files in the folder and finds the latest modified file
+- **If file ID is provided**: Uses that file directly
 
 ### 2. Initial Sync
-- Gets remote file size from Google Drive
+- Gets remote file size from Google Drive (using the found/configured file)
 - Compares with local file size
 - Downloads any new data (incremental)
 - Appends new data to local log file
@@ -171,13 +194,21 @@ The script provides detailed logging with prefixes:
 - `[LogReverser]` - Log reversal operations
 - `[Sync]` - Main sync cycle operations
 
-Example output:
+Example output (using folder ID):
 ```
 [Sync] ========================================
 [Sync] Initializing EBEAM Log Monitor...
 [Sync] ========================================
+[Sync] Configuration:
+[Sync]   - Folder ID: 1m7DSuDg87jxYum1pYE-3w2PRo8Qqozou (will find latest file)
 [DriveSync] Using credentials from config: ~/credentials.json
 [DriveSync] Access token obtained successfully
+[DriveSync] Google Drive API initialized successfully
+[DriveSync] Using folder ID to find latest file: 1m7DSuDg87jxYum1pYE-3w2PRo8Qqozou
+[DriveSync] Listing files in folder: 1m7DSuDg87jxYum1pYE-3w2PRo8Qqozou
+[DriveSync] Found 3 files in folder
+[DriveSync] Latest modified file: log_2024_11_25.txt (ID: abc123..., Modified: 2024-11-25T18:30:00.000Z)
+[DriveSync] Current file ID set to: abc123...
 [Sync] Google Drive API initialization completed in 1028ms
 [Sync] Performing initial sync...
 [DriveSync] Starting incremental sync...
@@ -215,9 +246,20 @@ Example output:
 
 ### Sync Not Working
 - Check console logs for error messages
-- Verify the Google Drive file ID is correct
+- Verify the Google Drive folder ID or file ID is correct
+- If using folder ID: Ensure the folder contains files and the service account has access
+- If using file ID: Ensure the file exists and the service account has read access
 - Ensure the file on Google Drive is being updated
-- Check that the service account has read access to the file
+- Check that the service account has read access to the folder/file
+
+### Folder/File Not Found Errors
+**Error**: "No files found in folder"
+- **Solution**: Verify the folder ID is correct
+- **Solution**: Ensure the folder contains at least one file (not just subfolders)
+- **Solution**: Check that the service account has access to the folder
+
+**Error**: "Either googleDriveFolderId or googleDriveFileId must be provided"
+- **Solution**: Set either `GOOGLE_DRIVE_FOLDER_ID` or `GOOGLE_DRIVE_FILE_ID` in config or environment
 
 ## Advanced Configuration
 
@@ -238,6 +280,12 @@ reversedLogFile: '/var/log/ebeam/live_log_reversed.txt'
 ### Using Environment Variables
 For production deployments, use environment variables:
 ```bash
+# Option 1: Use folder (recommended)
+export GOOGLE_DRIVE_FOLDER_ID="your-folder-id"
+export GOOGLE_APPLICATION_CREDENTIALS="/secure/path/to/creds.json"
+node singlefile.js
+
+# Option 2: Use specific file
 export GOOGLE_DRIVE_FILE_ID="your-file-id"
 export GOOGLE_APPLICATION_CREDENTIALS="/secure/path/to/creds.json"
 node singlefile.js
@@ -253,9 +301,11 @@ node singlefile.js
 ## Limitations
 
 - **Single File**: Monitors one Google Drive file at a time
+- **File Selection**: When using folder ID, the file is selected once on startup. If a new file becomes the latest, restart the script to switch to it
 - **Read-Only**: Only downloads/syncs - does not upload changes
 - **No Conflict Resolution**: Assumes Google Drive is the source of truth
 - **Memory**: For very large files, ensure sufficient memory for buffering
+- **Folder Contents**: Only files (not subfolders) are considered when finding the latest file
 
 ## Performance
 
@@ -277,6 +327,13 @@ For issues or questions:
 4. Ensure all dependencies are installed correctly
 
 ## Changelog
+
+### Version 1.1
+- **NEW**: Folder-based file selection - automatically finds the latest modified file in a Google Drive folder
+- **NEW**: Support for both folder ID and direct file ID (backward compatible)
+- **NEW**: Automatic file discovery on startup
+- Improved URL encoding for API requests
+- Enhanced logging for file selection process
 
 ### Version 1.0
 - Initial standalone version

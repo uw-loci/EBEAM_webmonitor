@@ -20,8 +20,13 @@ function expandPath(filePath) {
 }
 
 const config = {
-  // Google Drive File ID of the log file
-  googleDriveFileId: process.env.GOOGLE_DRIVE_FILE_ID || '113U8T4O7fN2onSeOTudNTQCxZ7g2Xjgd',
+  // Google Drive Folder ID to search for the latest modified file
+  // Set GOOGLE_DRIVE_FOLDER_ID environment variable or edit the default value below
+  googleDriveFolderId: process.env.GOOGLE_DRIVE_FOLDER_ID || '1m7DSuDg87jxYum1pYE-3w2PRo8Qqozou',
+  
+  // Alternative: Direct file ID (if you want to use a specific file instead of folder)
+  // If both are set, folder ID takes precedence
+  googleDriveFileId: process.env.GOOGLE_DRIVE_FILE_ID || null,
   
   // Google Drive API credentials
   // You can use service account credentials or OAuth2
@@ -55,6 +60,7 @@ class DriveSync {
     this.authClient = null;
     this.token = null;
     this.initialized = false;
+    this.currentFileId = null; // Dynamically found file ID
   }
 
   /**
@@ -122,6 +128,9 @@ class DriveSync {
       
       this.initialized = true;
       console.log('[DriveSync] Google Drive API initialized successfully');
+      
+      // Find and set the file ID after authentication
+      await this.findAndSetFileId();
     } catch (error) {
       console.error('[DriveSync] Failed to initialize Google Drive API:', {
         message: error.message,
@@ -218,6 +227,110 @@ class DriveSync {
   }
 
   /**
+   * List files in a Google Drive folder
+   * @param {string} folderId - Google Drive folder ID
+   * @returns {Promise<Array>} Array of file objects
+   */
+  async listFilesInFolder(folderId) {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    try {
+      console.log(`[DriveSync] Listing files in folder: ${folderId}`);
+      
+      // Build query to get files in folder (not subfolders)
+      // mimeType != 'application/vnd.google-apps.folder' excludes folders
+      const query = `'${folderId}' in parents and trashed=false and mimeType!='application/vnd.google-apps.folder'`;
+      
+      // Build query parameters properly
+      const params = new URLSearchParams({
+        q: query,
+        fields: 'files(id,name,modifiedTime,size)',
+        orderBy: 'modifiedTime desc'
+      });
+      
+      const path = `/drive/v3/files?${params.toString()}`;
+      
+      const response = await this.makeRequest(path);
+
+      if (!response.data || !response.data.files) {
+        console.error('[DriveSync] Invalid response from Drive API:', {
+          folderId: folderId,
+          responseData: response.data
+        });
+        throw new Error('Invalid response from Google Drive API: files array missing');
+      }
+
+      const files = response.data.files;
+      console.log(`[DriveSync] Found ${files.length} files in folder`);
+      return files;
+    } catch (error) {
+      console.error('[DriveSync] Error listing files in folder:', {
+        message: error.message,
+        statusCode: error.statusCode,
+        folderId: folderId,
+        response: error.response,
+        stack: error.stack
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Find the latest modified file in a folder
+   * @param {string} folderId - Google Drive folder ID
+   * @returns {Promise<string>} File ID of the latest modified file
+   */
+  async findLatestFileInFolder(folderId) {
+    try {
+      const files = await this.listFilesInFolder(folderId);
+      
+      if (files.length === 0) {
+        throw new Error(`No files found in folder: ${folderId}`);
+      }
+
+      // Files are already sorted by modifiedTime desc from the API query
+      // So the first file is the latest modified
+      const latestFile = files[0];
+      
+      console.log(`[DriveSync] Latest modified file: ${latestFile.name} (ID: ${latestFile.id}, Modified: ${latestFile.modifiedTime})`);
+      return latestFile.id;
+    } catch (error) {
+      console.error('[DriveSync] Error finding latest file in folder:', {
+        message: error.message,
+        folderId: folderId,
+        stack: error.stack
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Find and set the current file ID
+   * Uses folder ID if provided, otherwise falls back to direct file ID
+   * Note: This finds the file once on initialization. If a new file becomes
+   * the latest in the folder, restart the script to switch to it.
+   */
+  async findAndSetFileId() {
+    // If folder ID is provided, find the latest file in that folder
+    if (this.config.googleDriveFolderId && this.config.googleDriveFolderId !== 'YOUR_FOLDER_ID_HERE') {
+      console.log(`[DriveSync] Using folder ID to find latest file: ${this.config.googleDriveFolderId}`);
+      this.currentFileId = await this.findLatestFileInFolder(this.config.googleDriveFolderId);
+    }
+    // Otherwise, use direct file ID if provided
+    else if (this.config.googleDriveFileId) {
+      console.log(`[DriveSync] Using direct file ID: ${this.config.googleDriveFileId}`);
+      this.currentFileId = this.config.googleDriveFileId;
+    }
+    else {
+      throw new Error('Either googleDriveFolderId or googleDriveFileId must be provided in config');
+    }
+    
+    console.log(`[DriveSync] Current file ID set to: ${this.currentFileId}`);
+  }
+
+  /**
    * Get the current size of the file on Google Drive
    */
   async getRemoteFileSize() {
@@ -225,8 +338,12 @@ class DriveSync {
       await this.initialize();
     }
 
+    if (!this.currentFileId) {
+      await this.findAndSetFileId();
+    }
+
     try {
-      const fileId = this.config.googleDriveFileId;
+      const fileId = this.currentFileId;
       console.log(`[DriveSync] Getting remote file size for file ID: ${fileId}`);
       
       const path = `/drive/v3/files/${fileId}?fields=size`;
@@ -255,7 +372,7 @@ class DriveSync {
       console.error('[DriveSync] Error getting remote file size:', {
         message: error.message,
         statusCode: error.statusCode,
-        fileId: this.config.googleDriveFileId,
+        fileId: this.currentFileId,
         response: error.response,
         stack: error.stack
       });
@@ -271,8 +388,12 @@ class DriveSync {
       await this.initialize();
     }
 
+    if (!this.currentFileId) {
+      await this.findAndSetFileId();
+    }
+
     try {
-      const fileId = this.config.googleDriveFileId;
+      const fileId = this.currentFileId;
       const rangeHeader = `bytes=${startByte}-${endByte}`;
       const expectedSize = endByte - startByte + 1;
       
@@ -349,7 +470,7 @@ class DriveSync {
       console.error('[DriveSync] Error downloading range:', {
         message: error.message,
         statusCode: error.statusCode,
-        fileId: this.config.googleDriveFileId,
+        fileId: this.currentFileId,
         startByte: startByte,
         endByte: endByte,
         range: `bytes=${startByte}-${endByte}`,
@@ -473,7 +594,7 @@ class DriveSync {
         statusCode: error.statusCode,
         duration: totalDuration,
         localFile: this.config.localLogFile,
-        fileId: this.config.googleDriveFileId,
+        fileId: this.currentFileId,
         stack: error.stack
       });
       throw error;
@@ -715,7 +836,13 @@ async function initialize() {
     console.log('[Sync] Initializing EBEAM Log Monitor...');
     console.log('[Sync] ========================================');
     console.log('[Sync] Configuration:');
-    console.log(`[Sync]   - File ID: ${config.googleDriveFileId}`);
+    if (config.googleDriveFolderId && config.googleDriveFolderId !== 'YOUR_FOLDER_ID_HERE') {
+      console.log(`[Sync]   - Folder ID: ${config.googleDriveFolderId} (will find latest file)`);
+    } else if (config.googleDriveFileId) {
+      console.log(`[Sync]   - File ID: ${config.googleDriveFileId}`);
+    } else {
+      console.log(`[Sync]   - WARNING: No folder ID or file ID configured!`);
+    }
     console.log(`[Sync]   - Local Log: ${config.localLogFile}`);
     console.log(`[Sync]   - Reversed Log: ${config.reversedLogFile}`);
     console.log(`[Sync]   - Update Interval: ${config.updateInterval}ms (${config.updateInterval / 1000}s)`);

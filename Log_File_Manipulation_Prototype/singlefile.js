@@ -42,6 +42,9 @@ const config = {
   localLogFile: './data/live_log.txt',
   reversedLogFile: './data/live_log_reversed.txt',
   
+  // State persistence file for tracking current file ID
+  syncStateFile: './data/sync_state.json',
+  
   // Update interval in milliseconds (default: 1 minute)
   updateInterval: 60000,
   
@@ -50,12 +53,107 @@ const config = {
 };
 
 // ============================================================================
+// FileStateManager - State persistence for tracking current file ID
+// ============================================================================
+
+class FileStateManager {
+  constructor(config) {
+    this.config = config;
+    this.stateFile = config.syncStateFile;
+  }
+
+  /**
+   * Load persisted state from file
+   * @returns {Promise<Object|null>} State object or null if file doesn't exist
+   */
+  async loadState() {
+    try {
+      const statePath = this.stateFile;
+      const stateDir = path.dirname(statePath);
+      
+      // Ensure directory exists
+      await fs.ensureDir(stateDir);
+      
+      // Try to read state file
+      const stateContent = await fs.readFile(statePath, 'utf8');
+      const state = JSON.parse(stateContent);
+      
+      // Validate state structure
+      if (!state || typeof state !== 'object') {
+        console.warn('[FileStateManager] Invalid state structure, ignoring');
+        return null;
+      }
+      
+      if (!state.currentFileId || typeof state.currentFileId !== 'string') {
+        console.warn('[FileStateManager] Missing or invalid currentFileId in state, ignoring');
+        return null;
+      }
+      
+      console.log(`[FileStateManager] Loaded state: currentFileId=${state.currentFileId}, lastChecked=${state.lastChecked || 'N/A'}`);
+      return state;
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        console.log('[FileStateManager] State file does not exist, will create new state');
+        return null;
+      }
+      
+      // Handle JSON parse errors
+      if (error instanceof SyntaxError) {
+        console.warn('[FileStateManager] State file contains invalid JSON, ignoring:', error.message);
+        return null;
+      }
+      
+      console.error('[FileStateManager] Error loading state:', {
+        message: error.message,
+        code: error.code,
+        stateFile: this.stateFile,
+        stack: error.stack
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Save state to file
+   * @param {string} fileId - Current file ID
+   * @returns {Promise<void>}
+   */
+  async saveState(fileId) {
+    try {
+      const statePath = this.stateFile;
+      const stateDir = path.dirname(statePath);
+      
+      // Ensure directory exists
+      await fs.ensureDir(stateDir);
+      
+      const state = {
+        currentFileId: fileId,
+        lastChecked: new Date().toISOString()
+      };
+      
+      await fs.writeFile(statePath, JSON.stringify(state, null, 2), 'utf8');
+      console.log(`[FileStateManager] Saved state: currentFileId=${fileId}`);
+    } catch (error) {
+      console.error('[FileStateManager] Error saving state:', {
+        message: error.message,
+        code: error.code,
+        stateFile: this.stateFile,
+        fileId: fileId,
+        stack: error.stack
+      });
+      throw error;
+    }
+  }
+}
+
+// ============================================================================
 // DriveSync - Google Drive synchronization logic
 // ============================================================================
 
 class DriveSync {
-  constructor(config) {
+  constructor(config, stateManager) {
     this.config = config;
+    this.stateManager = stateManager;
     this.auth = null;
     this.authClient = null;
     this.token = null;
@@ -280,7 +378,7 @@ class DriveSync {
   /**
    * Find the latest modified file in a folder
    * @param {string} folderId - Google Drive folder ID
-   * @returns {Promise<string>} File ID of the latest modified file
+   * @returns {Promise<Object>} Object with id, name, and modifiedTime of latest file
    */
   async findLatestFileInFolder(folderId) {
     try {
@@ -295,7 +393,11 @@ class DriveSync {
       const latestFile = files[0];
       
       console.log(`[DriveSync] Latest modified file: ${latestFile.name} (ID: ${latestFile.id}, Modified: ${latestFile.modifiedTime})`);
-      return latestFile.id;
+      return {
+        id: latestFile.id,
+        name: latestFile.name,
+        modifiedTime: latestFile.modifiedTime
+      };
     } catch (error) {
       console.error('[DriveSync] Error finding latest file in folder:', {
         message: error.message,
@@ -307,16 +409,118 @@ class DriveSync {
   }
 
   /**
+   * Check if a new file has become the latest in the folder
+   * @returns {Promise<Object>} Object with hasNewFile, newFileId, newFileName, oldFileId
+   */
+  async checkForNewFile() {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    try {
+      // Only check if we're using folder-based sync
+      if (!this.config.googleDriveFolderId || this.config.googleDriveFolderId === 'YOUR_FOLDER_ID_HERE') {
+        // Using direct file ID, no need to check for new files
+        return { hasNewFile: false, newFileId: null, newFileName: null, oldFileId: null };
+      }
+
+      if (!this.currentFileId) {
+        console.log('[DriveSync] No current file ID set, cannot check for new file');
+        return { hasNewFile: false, newFileId: null, newFileName: null, oldFileId: null };
+      }
+
+      console.log(`[DriveSync] Checking for new file in folder: ${this.config.googleDriveFolderId}`);
+      const latestFile = await this.findLatestFileInFolder(this.config.googleDriveFolderId);
+      
+      if (latestFile.id !== this.currentFileId) {
+        console.log(`[DriveSync] New file detected! Old: ${this.currentFileId}, New: ${latestFile.id} (${latestFile.name})`);
+        return {
+          hasNewFile: true,
+          newFileId: latestFile.id,
+          newFileName: latestFile.name,
+          oldFileId: this.currentFileId
+        };
+      }
+
+      console.log(`[DriveSync] No new file detected, still syncing: ${this.currentFileId}`);
+      return { hasNewFile: false, newFileId: null, newFileName: null, oldFileId: null };
+    } catch (error) {
+      console.error('[DriveSync] Error checking for new file:', {
+        message: error.message,
+        stack: error.stack
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Switch to a new file ID
+   * @param {string} newFileId - New file ID to switch to
+   * @param {string} newFileName - New file name (for logging)
+   * @returns {Promise<void>}
+   */
+  async switchToNewFile(newFileId, newFileName) {
+    try {
+      const oldFileId = this.currentFileId;
+      this.currentFileId = newFileId;
+      
+      // Persist the new file ID
+      if (this.stateManager) {
+        await this.stateManager.saveState(newFileId);
+      }
+      
+      console.log(`[DriveSync] Switched to new file: ${newFileName} (ID: ${newFileId}, was: ${oldFileId})`);
+    } catch (error) {
+      console.error('[DriveSync] Error switching to new file:', {
+        message: error.message,
+        newFileId: newFileId,
+        newFileName: newFileName,
+        stack: error.stack
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Find and set the current file ID
-   * Uses folder ID if provided, otherwise falls back to direct file ID
-   * Note: This finds the file once on initialization. If a new file becomes
-   * the latest in the folder, restart the script to switch to it.
+   * Uses persisted state if available, otherwise finds latest file in folder or uses direct file ID
    */
   async findAndSetFileId() {
+    // Try to load persisted state first
+    if (this.stateManager) {
+      const state = await this.stateManager.loadState();
+      if (state && state.currentFileId) {
+        console.log(`[DriveSync] Loaded file ID from persisted state: ${state.currentFileId}`);
+        this.currentFileId = state.currentFileId;
+        
+        // Validate that we still need to find the file (for folder-based sync)
+        // If using folder ID, we'll verify it's still valid during sync
+        if (this.config.googleDriveFolderId && this.config.googleDriveFolderId !== 'YOUR_FOLDER_ID_HERE') {
+          // For folder-based sync, we'll check for new files during sync cycles
+          // For now, just use the persisted ID
+          console.log(`[DriveSync] Using persisted file ID, will check for new files during sync`);
+          return;
+        } else if (this.config.googleDriveFileId) {
+          // For direct file ID, use it if it matches persisted state
+          if (this.currentFileId === this.config.googleDriveFileId) {
+            console.log(`[DriveSync] Persisted file ID matches config file ID`);
+            return;
+          } else {
+            console.log(`[DriveSync] Persisted file ID differs from config, using config file ID`);
+            this.currentFileId = this.config.googleDriveFileId;
+            await this.stateManager.saveState(this.currentFileId);
+            return;
+          }
+        }
+      }
+    }
+    
+    // No persisted state or invalid state, find file ID
     // If folder ID is provided, find the latest file in that folder
     if (this.config.googleDriveFolderId && this.config.googleDriveFolderId !== 'YOUR_FOLDER_ID_HERE') {
       console.log(`[DriveSync] Using folder ID to find latest file: ${this.config.googleDriveFolderId}`);
-      this.currentFileId = await this.findLatestFileInFolder(this.config.googleDriveFolderId);
+      const latestFile = await this.findLatestFileInFolder(this.config.googleDriveFolderId);
+      this.currentFileId = latestFile.id;
     }
     // Otherwise, use direct file ID if provided
     else if (this.config.googleDriveFileId) {
@@ -325,6 +529,11 @@ class DriveSync {
     }
     else {
       throw new Error('Either googleDriveFolderId or googleDriveFileId must be provided in config');
+    }
+    
+    // Save the file ID to state
+    if (this.stateManager && this.currentFileId) {
+      await this.stateManager.saveState(this.currentFileId);
     }
     
     console.log(`[DriveSync] Current file ID set to: ${this.currentFileId}`);
@@ -766,11 +975,148 @@ class LogReverser {
 }
 
 // ============================================================================
+// FileArchiver - Archive old log files when switching to new file
+// ============================================================================
+
+class FileArchiver {
+  constructor(config) {
+    this.config = config;
+  }
+
+  /**
+   * Generate archive filename with timestamp and file ID
+   * @param {string} baseName - Base filename (e.g., 'live_log' or 'live_log_reversed')
+   * @param {string} fileId - File ID to include in name
+   * @returns {string} Archive filename
+   */
+  generateArchiveFilename(baseName, fileId) {
+    const now = new Date();
+    const timestamp = now.toISOString()
+      .replace(/T/, '_')
+      .replace(/:/g, '-')
+      .replace(/\..+/, '');
+    
+    // Truncate file ID to first 20 characters for readability
+    const shortFileId = fileId.substring(0, 20);
+    
+    return `${baseName}_${timestamp}_${shortFileId}.txt`;
+  }
+
+  /**
+   * Archive old log files when switching to a new file
+   * @param {string} oldFileId - File ID of the old file being replaced
+   * @returns {Promise<void>}
+   */
+  async archiveFiles(oldFileId) {
+    const archiveStartTime = Date.now();
+    try {
+      console.log(`[FileArchiver] Starting archive process for old file ID: ${oldFileId}`);
+      
+      const dataDir = path.dirname(this.config.localLogFile);
+      await fs.ensureDir(dataDir);
+      
+      // Archive live_log.txt
+      const liveLogPath = this.config.localLogFile;
+      const liveLogArchiveName = this.generateArchiveFilename('live_log', oldFileId);
+      const liveLogArchivePath = path.join(dataDir, liveLogArchiveName);
+      
+      try {
+        const liveLogExists = await fs.pathExists(liveLogPath);
+        if (liveLogExists) {
+          await fs.move(liveLogPath, liveLogArchivePath, { overwrite: false });
+          console.log(`[FileArchiver] Archived live_log.txt to: ${liveLogArchiveName}`);
+        } else {
+          console.log(`[FileArchiver] live_log.txt does not exist, skipping archive`);
+        }
+      } catch (error) {
+        if (error.code === 'EEXIST') {
+          console.warn(`[FileArchiver] Archive file already exists: ${liveLogArchiveName}, skipping`);
+        } else {
+          console.error('[FileArchiver] Error archiving live_log.txt:', {
+            message: error.message,
+            code: error.code,
+            stack: error.stack
+          });
+          // Continue with other archives even if this fails
+        }
+      }
+      
+      // Archive live_log_reversed.txt
+      const reversedLogPath = this.config.reversedLogFile;
+      const reversedLogArchiveName = this.generateArchiveFilename('live_log_reversed', oldFileId);
+      const reversedLogArchivePath = path.join(dataDir, reversedLogArchiveName);
+      
+      try {
+        const reversedLogExists = await fs.pathExists(reversedLogPath);
+        if (reversedLogExists) {
+          await fs.move(reversedLogPath, reversedLogArchivePath, { overwrite: false });
+          console.log(`[FileArchiver] Archived live_log_reversed.txt to: ${reversedLogArchiveName}`);
+        } else {
+          console.log(`[FileArchiver] live_log_reversed.txt does not exist, skipping archive`);
+        }
+      } catch (error) {
+        if (error.code === 'EEXIST') {
+          console.warn(`[FileArchiver] Archive file already exists: ${reversedLogArchiveName}, skipping`);
+        } else {
+          console.error('[FileArchiver] Error archiving live_log_reversed.txt:', {
+            message: error.message,
+            code: error.code,
+            stack: error.stack
+          });
+          // Continue even if this fails
+        }
+      }
+      
+      // Create new empty files for the new log file
+      try {
+        await fs.ensureDir(dataDir);
+        await fs.writeFile(liveLogPath, '', 'utf8');
+        console.log(`[FileArchiver] Created new empty live_log.txt`);
+      } catch (error) {
+        console.error('[FileArchiver] Error creating new live_log.txt:', {
+          message: error.message,
+          code: error.code,
+          stack: error.stack
+        });
+        throw error; // This is critical, so throw
+      }
+      
+      try {
+        await fs.writeFile(reversedLogPath, '', 'utf8');
+        console.log(`[FileArchiver] Created new empty live_log_reversed.txt`);
+      } catch (error) {
+        console.error('[FileArchiver] Error creating new live_log_reversed.txt:', {
+          message: error.message,
+          code: error.code,
+          stack: error.stack
+        });
+        throw error; // This is critical, so throw
+      }
+      
+      const archiveDuration = Date.now() - archiveStartTime;
+      console.log(`[FileArchiver] Archive process completed successfully in ${archiveDuration}ms`);
+    } catch (error) {
+      const archiveDuration = Date.now() - archiveStartTime;
+      console.error('[FileArchiver] Error during archive process:', {
+        message: error.message,
+        code: error.code,
+        oldFileId: oldFileId,
+        duration: archiveDuration,
+        stack: error.stack
+      });
+      throw error;
+    }
+  }
+}
+
+// ============================================================================
 // Main sync logic
 // ============================================================================
 
 // Initialize components
-const driveSync = new DriveSync(config);
+const stateManager = new FileStateManager(config);
+const fileArchiver = new FileArchiver(config);
+const driveSync = new DriveSync(config, stateManager);
 const logReverser = new LogReverser(config);
 
 // Sync state
@@ -791,6 +1137,38 @@ async function performSync() {
   
   try {
     console.log('[Sync] Starting sync cycle...');
+    
+    // Step 0: Check for new file in folder (before syncing)
+    const checkStartTime = Date.now();
+    const fileCheckResult = await driveSync.checkForNewFile();
+    const checkDuration = Date.now() - checkStartTime;
+    console.log(`[Sync] File check completed in ${checkDuration}ms`);
+    
+    if (fileCheckResult.hasNewFile) {
+      console.log(`[Sync] New file detected: ${fileCheckResult.newFileName} (ID: ${fileCheckResult.newFileId})`);
+      console.log(`[Sync] Archiving old files and switching to new file...`);
+      
+      try {
+        // Archive old files
+        const archiveStartTime = Date.now();
+        await fileArchiver.archiveFiles(fileCheckResult.oldFileId);
+        const archiveDuration = Date.now() - archiveStartTime;
+        console.log(`[Sync] Archive completed in ${archiveDuration}ms`);
+        
+        // Switch to new file
+        await driveSync.switchToNewFile(fileCheckResult.newFileId, fileCheckResult.newFileName);
+        console.log(`[Sync] Successfully switched to new file: ${fileCheckResult.newFileName}`);
+      } catch (error) {
+        console.error('[Sync] Error during file switch:', {
+          message: error.message,
+          code: error.code,
+          newFileId: fileCheckResult.newFileId,
+          oldFileId: fileCheckResult.oldFileId,
+          stack: error.stack
+        });
+        throw error; // Don't proceed with sync if file switch failed
+      }
+    }
     
     // Step 1: Download incremental changes
     const downloadStartTime = Date.now();
@@ -845,6 +1223,7 @@ async function initialize() {
     }
     console.log(`[Sync]   - Local Log: ${config.localLogFile}`);
     console.log(`[Sync]   - Reversed Log: ${config.reversedLogFile}`);
+    console.log(`[Sync]   - State File: ${config.syncStateFile}`);
     console.log(`[Sync]   - Update Interval: ${config.updateInterval}ms (${config.updateInterval / 1000}s)`);
     // Show credentials source
     let credsSource = 'none';
@@ -859,6 +1238,11 @@ async function initialize() {
     console.log(`[Sync]   - Credentials Source: ${credsSource}`);
     console.log(`[Sync]   - Credentials Path: ${credsPath}`);
     console.log('[Sync] ========================================');
+    
+    // Ensure state file directory exists
+    const stateFileDir = path.dirname(config.syncStateFile);
+    await fs.ensureDir(stateFileDir);
+    console.log(`[Sync] State file directory ensured: ${stateFileDir}`);
     
     // Initialize Google Drive API
     const driveInitStartTime = Date.now();
@@ -943,5 +1327,7 @@ module.exports = {
   performSync,
   initialize,
   driveSync,
-  logReverser
+  logReverser,
+  stateManager,
+  fileArchiver
 };

@@ -61,7 +61,7 @@ const drive = google.drive({ version: 'v3', auth: API_KEY });
 let lastModifiedTime = null;
 let experimentRunning = false;
 // Inactivity threshold for deciding if the experiment is "stale" (15 min in ms)
-const INACTIVE_THRESHOLD = 2 * 60 * 1000;
+const INACTIVE_THRESHOLD = 7 * 24 * 60 * 60 * 1000;
 let dataLines = null;
 let debugLogs = [];
 
@@ -516,18 +516,16 @@ async function fetchFileContents(fileId) {
 
     } catch (err) {
       console.log(`Retry ${4 - retries}: ${err.message}`);
-      return false
+      // return false  // TESTING CODE - DISABLED FOR PRODUCTION
 
-      // TEMP CHANGE: Uncomment this chunk after fixing fetch issues with data file
-      // retries--;
-
-      // if (retries === 0) {
-      //   // Out of retries – bubble the error up
-      //   throw err;
-      // }
-
-      // // Simple back-off (2 sec) before the next attempt
-      // await new Promise(res => setTimeout(res, 2000));
+      // Retry logic with backoff
+      retries--;
+      if (retries === 0) {
+        // Out of retries – bubble the error up
+        throw err;
+      }
+      // Simple back-off (2 sec) before the next attempt
+      await new Promise(res => setTimeout(res, 2000));
     }
   }
 }
@@ -645,27 +643,27 @@ async function extractData(lines){
       }
 
       if (status["Cathode A - Heater Current:"] != null) {
-        data.heaterCurrent_A = status["Cathode A - Heater Current: "];
+        data.heaterCurrent_A = status["Cathode A - Heater Current:"];
       }
 
       if (status["Cathode B - Heater Current:"] != null) {
-        data.heaterCurrent_B = status["Cathode B - Heater Current: "];
+        data.heaterCurrent_B = status["Cathode B - Heater Current:"];
       }
 
       if (status["Cathode C - Heater Current:"] != null) {
-        data.heaterCurrent_C = status["Cathode C - Heater Current: "];
+        data.heaterCurrent_C = status["Cathode C - Heater Current:"];
       }
 
       if (status["Cathode A - Heater Voltage:"] != null) {
-        data.heaterVoltage_A = status["Cathode A - Heater Voltage: "];
+        data.heaterVoltage_A = status["Cathode A - Heater Voltage:"];
       }
 
       if (status["Cathode B - Heater Voltage:"] != null) {
-        data.heaterVoltage_B = status["Cathode B - Heater Voltage: "];
+        data.heaterVoltage_B = status["Cathode B - Heater Voltage:"];
       }
 
       if (status["Cathode C - Heater Voltage:"] != null) {
-        data.heaterVoltage_C = status["Cathode C - Heater Voltage: "];
+        data.heaterVoltage_C = status["Cathode C - Heater Voltage:"];
       }
 
       if (status["clamp_temperature_A"] != null) {
@@ -857,13 +855,12 @@ async function fetchAndUpdateFile() {
 
     const currentTime = Date.now(); // Get current time in ms
 
-    console.log("XX", fileModifiedTime);
-    console.log("YY", currentTime);
+    // console.log("XX", fileModifiedTime);  // DEBUG
+    // console.log("YY", currentTime);  // DEBUG
 
     // Step 2: Check experiment activity status
-    // FIXME: Currently disabled for testing
-    // if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { // More than 15 minutes old?
-    if (currentTime === currentTime) {
+    if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { // More than 15 minutes old?
+    // if (currentTime === currentTime) { // TESTING CODE - always true tautology
       experimentRunning = false;
 
       // Reset data to nulls — consistent fallback structure
@@ -890,11 +887,11 @@ async function fetchAndUpdateFile() {
       experimentRunning = true;
     }
 
-    // FIXME: uncomment this block after testing
-    // if (lastModifiedTime === dataFile.modifiedTime) {
-    //   console.log("No new updates. Using cached data.");
-    //   return false;
-    // }
+    // Cache check - skip processing if file unchanged
+    if (lastModifiedTime === new Date(dataFile.modifiedTime).getTime()) {
+      console.log("No new updates. Using cached data.");
+      return false;
+    }
 
     console.log("Fetching new file...");
     let dataExtractionLines = null;
@@ -912,9 +909,9 @@ async function fetchAndUpdateFile() {
     
     // TODO: Need to add experimentRunning check
     // FIXME: changes dataExtractionLines to real lines rather than sample data lines for testing
-    addLogs(); // Simulate adding logs for testing
-    //const extractPromise = extractData(dataExtractionLines); // Parse data from logs
-    const extractPromise = extractData(sampleDataLines); // Parse data from logs
+    // addLogs(); // Simulate adding logs for testing - DISABLED FOR PRODUCTION
+    const extractPromise = extractData(dataExtractionLines); // Parse data from logs
+    // const extractPromise = extractData(sampleDataLines); // Parse data from logs - TESTING CODE
     
     const [extractionResult] = await Promise.allSettled([
       extractPromise,
@@ -929,8 +926,8 @@ async function fetchAndUpdateFile() {
 
     if (extractionResult.status === 'fulfilled') {
       data.webMonitorLastModified = dataFile.modifiedTime;
-      // FIXME: TEMP CHANGE: Uncomment
-      // data.displayLogLastModified = displayFile.modifiedTime;
+      // Display file timestamp tracking
+      data.displayLogLastModified = displayFile ? displayFile.modifiedTime : null;
       console.log("Extraction complete:", data);
     } else {
       console.error("Extraction failed:", extractionResult.reason);

@@ -4,7 +4,7 @@ services:
   - type: web
     name: ebeam-webmonitor
     env: node
-    branch: main  # or whatever branch your code lives on
+    branch: refactor/basic-prod-state
     buildCommand: "npm install"
     startCommand: "npm start"
     plan: free

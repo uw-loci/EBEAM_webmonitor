@@ -1593,7 +1593,7 @@ try {
           Dashboard is ${!experimentRunning ? 'not ' : ''}running
         </div>
         <!-- Title & Subtitle -->
-        <h2 class="dashboard-title">E-beam Web Monitor</h2>
+        <h2 class="dashboard-title">E-Beam Web Monitor</h2>
         <p class="dashboard-subtitle">
           <strong>Web Monitor Log Last Modified:</strong> <span id="log-last-modified">${fileModified}</span> | 
           <strong>Site Last Updated:</strong> <span id="site-last-updated">${currentTime}</span>

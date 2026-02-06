@@ -61,7 +61,7 @@ const drive = google.drive({ version: 'v3', auth: API_KEY });
 let lastModifiedTime = null;
 let experimentRunning = false;
 // Inactivity threshold for deciding if the experiment is "stale" (15 min in ms)
-const INACTIVE_THRESHOLD = 7 * 24 * 60 * 60 * 1000;
+const INACTIVE_THRESHOLD = 3 * 60 * 1000; // 3 minutes
 let dataLines = null;
 let debugLogs = [];
 
@@ -553,10 +553,8 @@ async function fetchFileContents(fileId) {
  */
 
 async function extractData(lines){
-  // FIXME: how is extraction constrained to only fresh data
-  // extractLines = lines; // store for debugging
-
-  try{
+  try {
+    // Initialize data with null defaults
     data = {
       pressure: null,
       pressureTimestamp: null,
@@ -577,122 +575,97 @@ async function extractData(lines){
       clamp_temperature_C: null
     };
 
-    let firstTimestamp = null;
-
-    // Loop through each line in the log file
-    for (let i = 0; i < lines.length; i++){
-      const line = lines[i]
-      // timestamps.push(line);
-      let jsonData;
-      
-      try {
-        // Parse the JSON object from the line
-        jsonData = JSON.parse(line);
-      } catch (e) {
-        console.log(`Error parsing JSON at line ${i}:`, line, e);
-        continue; // Skip to the next line if JSON parsing fails
+    // Find the last non-empty line (most recent entry)
+    let lastLine = null;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i] && lines[i].trim()) {
+        lastLine = lines[i];
+        break;
       }
-      
-      if (firstTimestamp === null && jsonData.timestamp) {
-        firstTimestamp = new Date(jsonData.timestamp);
-      }
-
-      // FIXME: Remember to uncomment this later
-      // if (firstTimestamp && jsonData.timestamp) {
-      //   const currentTimestamp = new Date(jsonData.timestamp);
-      //   const elapsedSeconds = (currentTimestamp - firstTimestamp) / 1000;
-
-      //   if (elapsedSeconds > 60) {
-      //     console.log("Reached 1-minute window. Stopping.");
-      //     break;
-      //   }
-      // }
-
-      const status = jsonData.status || {};
-
-      
-
-      if (status.pressure != null && data.pressure === null) {
-        data.pressure          = parseFloat(status.pressure);
-        //timestamps.push(`${jsonData.timestamp}, ${new Date(jsonData.timestamp.replace(" ", "T"))}, ${new Date(jsonData.timestamp.replace(" ", "T")).getTime()}`);
-        data.pressureTimestamp = new Date(jsonData.timestamp.replace(" ", "T")).getTime() / 1000;
-      }
-      if (status.safetyOutputDataFlags && data.safetyOutputDataFlags === null) {
-        data.safetyOutputDataFlags = status.safetyOutputDataFlags;
-      }
-      if (status.safetyInputDataFlags && data.safetyInputDataFlags === null) {
-        data.safetyInputDataFlags = status.safetyInputDataFlags;
-      }
-      if (status.safetyOutputStatusFlags && data.safetyOutputStatusFlags === null) {
-        data.safetyOutputStatusFlags = status.safetyOutputStatusFlags;
-      }
-      if (status.safetyInputStatusFlags && data.safetyInputStatusFlags === null) {
-        data.safetyInputStatusFlags = status.safetyInputStatusFlags;
-      }
-      if (status.temperatures && data.temperatures === null) {
-        data.temperatures = status.temperatures;
-      }
-      if (status.vacuumBits && data.vacuumBits === null) {
-        if (typeof status.vacuumBits === 'string') {
-          data.vacuumBits = status.vacuumBits
-            .split('')
-            .map(bit => bit === '1');
-        } else {
-          data.vacuumBits = status.vacuumBits;
-        }
-      }
-
-      if (status["Cathode A - Heater Current:"] != null) {
-        data.heaterCurrent_A = status["Cathode A - Heater Current:"];
-      }
-
-      if (status["Cathode B - Heater Current:"] != null) {
-        data.heaterCurrent_B = status["Cathode B - Heater Current:"];
-      }
-
-      if (status["Cathode C - Heater Current:"] != null) {
-        data.heaterCurrent_C = status["Cathode C - Heater Current:"];
-      }
-
-      if (status["Cathode A - Heater Voltage:"] != null) {
-        data.heaterVoltage_A = status["Cathode A - Heater Voltage:"];
-      }
-
-      if (status["Cathode B - Heater Voltage:"] != null) {
-        data.heaterVoltage_B = status["Cathode B - Heater Voltage:"];
-      }
-
-      if (status["Cathode C - Heater Voltage:"] != null) {
-        data.heaterVoltage_C = status["Cathode C - Heater Voltage:"];
-      }
-
-      if (status["clamp_temperature_A"] != null) {
-        data.clamp_temperature_A = status["clamp_temperature_A"];
-      }
-
-      if (status["clamp_temperature_B"] != null) {
-        data.clamp_temperature_B = status["clamp_temperature_B"];
-      }
-
-      if (status["clamp_temperature_C"] != null) {
-        data.clamp_temperature_C = status["clamp_temperature_C"];
-      }
-
-
-
-      // If all fields are filled, stop early to save processing time
-      if(Object.values(data).every(value => value != null)) {
-        data.clamp_temperature_C = "full";
-        console.log(" All data fields found within 1 hour. Exiting early.");
-        return true;
-      }
-
     }
-    
-    return true; // success
+
+    if (!lastLine) {
+      console.log("No valid lines found in log file");
+      return true;
+    }
+
+    // Parse the most recent entry
+    let jsonData;
+    try {
+      jsonData = JSON.parse(lastLine);
+    } catch (e) {
+      console.log("Error parsing last line as JSON:", lastLine, e);
+      return false;
+    }
+
+    const status = jsonData.status || {};
+
+    // Extract all values from this single entry
+    if (status.pressure != null) {
+      data.pressure = parseFloat(status.pressure);
+      data.pressureTimestamp = new Date(jsonData.timestamp.replace(" ", "T")).getTime() / 1000;
+    }
+
+    if (status.safetyOutputDataFlags) {
+      data.safetyOutputDataFlags = status.safetyOutputDataFlags;
+    }
+    if (status.safetyInputDataFlags) {
+      data.safetyInputDataFlags = status.safetyInputDataFlags;
+    }
+    if (status.safetyOutputStatusFlags) {
+      data.safetyOutputStatusFlags = status.safetyOutputStatusFlags;
+    }
+    if (status.safetyInputStatusFlags) {
+      data.safetyInputStatusFlags = status.safetyInputStatusFlags;
+    }
+    if (status.temperatures) {
+      data.temperatures = status.temperatures;
+    }
+    if (status.vacuumBits) {
+      if (typeof status.vacuumBits === 'string') {
+        data.vacuumBits = status.vacuumBits.split('').map(bit => bit === '1');
+      } else {
+        data.vacuumBits = status.vacuumBits;
+      }
+    }
+
+    // Heater currents
+    if (status["Cathode A - Heater Current:"] != null) {
+      data.heaterCurrent_A = status["Cathode A - Heater Current:"];
+    }
+    if (status["Cathode B - Heater Current:"] != null) {
+      data.heaterCurrent_B = status["Cathode B - Heater Current:"];
+    }
+    if (status["Cathode C - Heater Current:"] != null) {
+      data.heaterCurrent_C = status["Cathode C - Heater Current:"];
+    }
+
+    // Heater voltages
+    if (status["Cathode A - Heater Voltage:"] != null) {
+      data.heaterVoltage_A = status["Cathode A - Heater Voltage:"];
+    }
+    if (status["Cathode B - Heater Voltage:"] != null) {
+      data.heaterVoltage_B = status["Cathode B - Heater Voltage:"];
+    }
+    if (status["Cathode C - Heater Voltage:"] != null) {
+      data.heaterVoltage_C = status["Cathode C - Heater Voltage:"];
+    }
+
+    // Clamp temperatures
+    if (status["clamp_temperature_A"] != null) {
+      data.clamp_temperature_A = status["clamp_temperature_A"];
+    }
+    if (status["clamp_temperature_B"] != null) {
+      data.clamp_temperature_B = status["clamp_temperature_B"];
+    }
+    if (status["clamp_temperature_C"] != null) {
+      data.clamp_temperature_C = status["clamp_temperature_C"];
+    }
+
+    return true;
   } catch(e) {
     console.log("Error: ", e);
-    throw new Error("extraction failed: pattern not found: ", e); // rethrow with message
+    throw new Error("extraction failed: " + e.message);
   }
 }
 
@@ -859,7 +832,7 @@ async function fetchAndUpdateFile() {
     // console.log("YY", currentTime);  // DEBUG
 
     // Step 2: Check experiment activity status
-    if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { // More than 15 minutes old?
+    if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { // More than 3 minutes old?
     // if (currentTime === currentTime) { // TESTING CODE - always true tautology
       experimentRunning = false;
 

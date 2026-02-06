@@ -575,9 +575,9 @@ async function extractData(lines){
       clamp_temperature_C: null
     };
 
-    // Find the last non-empty line (most recent entry)
+    // Find the first non-empty line (most recent entry - array is pre-reversed)
     let lastLine = null;
-    for (let i = lines.length - 1; i >= 0; i--) {
+    for (let i = 0; i < lines.length; i++) {
       if (lines[i] && lines[i].trim()) {
         lastLine = lines[i];
         break;
@@ -599,6 +599,10 @@ async function extractData(lines){
     }
 
     const status = jsonData.status || {};
+
+    // Debug: log raw parsed data from most recent entry
+    console.log("Last line timestamp:", jsonData.timestamp);
+    console.log("Raw status from file:", status);
 
     // Extract all values from this single entry
     if (status.pressure != null) {

@@ -3,15 +3,21 @@
 //
 //  Description:
 //  -------------
-//  Express.js server to monitor log files from Google Drive in real-time,
-//  reverse their contents, extract structured experimental data (pressure,
-//  interlocks, temperature, etc.), and serve it via API endpoints and a
-//  futuristic web dashboard (with Glassmorphism styling).
+//  E-Beam Web Monitor Server
+//
+//  Fetches experimental data from Supabase database and serves
+//  a real-time web dashboard for monitoring E-beam operations.
+//
+//  Data Sources:
+//  - Real-time experimental data: Supabase (beam_logs table)
+//  - Display logs: Google Drive (for historical system logs)
+//
+//  Polling Interval: 60 seconds
 //
 //  Responsibilities:
 //  -------------
-//  - Polls Google Drive for the latest log file
-//  - Extracts and parses log entries (pressure, flags, temps, etc.)
+//  - Queries Supabase for the latest experimental data
+//  - Polls Google Drive for display log files
 //  - Infers interlock statuses and vacuum system state
 //  - Serves data via JSON and a responsive HTML frontend
 //  - Automatically refreshes UI and supports raw file viewing
@@ -40,13 +46,26 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'assets')));
 require('dotenv').config();
 
+// Initialize Supabase client
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient(
+  process.env.SUPABASE_API_URL,
+  process.env.SUPABASE_API_KEY
+);
+
 // Credentials; find them in env file (ASK Brandon about it or any of the authors)
 const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const PORT = process.env.PORT || 3000;
-// check credentials are in var and assume they are ture.
+
+// Validate environment variables
 if (!FOLDER_ID || !API_KEY) {
-  console.error( "Missing FOLDER_ID or API_KEY in environment variables. Exiting...");
+  console.error("Missing FOLDER_ID or API_KEY in environment variables. Exiting...");
+  process.exit(1);
+}
+
+if (!process.env.SUPABASE_API_URL || !process.env.SUPABASE_API_KEY) {
+  console.error("Missing SUPABASE_API_URL or SUPABASE_API_KEY in environment variables. Exiting...");
   process.exit(1);
 }
 
@@ -59,9 +78,11 @@ const drive = google.drive({ version: 'v3', auth: API_KEY });
 
 //// Global variables
 let lastModifiedTime = null;
+let webMonitorLastModified = null; // Tracks Supabase timestamp
+let displayLogLastModified = null; // Tracks Google Drive display file
 let experimentRunning = false;
 // Inactivity threshold for deciding if the experiment is "stale" (15 min in ms)
-const INACTIVE_THRESHOLD = 2 * 60 * 1000;
+const INACTIVE_THRESHOLD = 15 * 60 * 1000;
 let dataLines = null;
 let debugLogs = [];
 
@@ -390,6 +411,92 @@ function secondsSinceMidnightChicago() {
 // }
 
 /**
+ * Fetches the most recent entry from Supabase beam_logs table
+ * @returns {Object|null} Most recent log entry or null if error/no data
+ */
+async function fetchLatestSupabaseEntry() {
+  try {
+    const { data, error } = await supabase
+      .from('beam_logs')
+      .select('experiment_time, log_data')
+      .order('experiment_time', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Supabase query error:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      console.log('No data found in Supabase table');
+      return null;
+    }
+
+    return data[0];
+  } catch (err) {
+    console.error('Error fetching from Supabase:', err);
+    return null;
+  }
+}
+
+/**
+ * Maps Supabase log_data JSON to the application's data object format
+ * @param {Object} logData - The log_data JSON from Supabase
+ * @returns {Object} Mapped data object
+ */
+function mapSupabaseDataToAppFormat(logData) {
+  if (!logData) return null;
+
+  return {
+    pressure: logData.pressure || null,
+    pressureTimestamp: logData.pressureTimestamp || null,
+    safetyInputDataFlags: logData.safetyInputDataFlags || null,
+    safetyOutputDataFlags: logData.safetyOutputDataFlags || null,
+    safetyInputStatusFlags: logData.safetyInputStatusFlags || null,
+    safetyOutputStatusFlags: logData.safetyOutputStatusFlags || null,
+    temperatures: logData.temperatures || null,
+    vacuumBits: logData.vacuumBits || null,
+    heaterCurrent_A: logData.heaterCurrent_A || null,
+    heaterCurrent_B: logData.heaterCurrent_B || null,
+    heaterCurrent_C: logData.heaterCurrent_C || null,
+    heaterVoltage_A: logData.heaterVoltage_A || null,
+    heaterVoltage_B: logData.heaterVoltage_B || null,
+    heaterVoltage_C: logData.heaterVoltage_C || null,
+    clamp_temperature_A: logData.clamp_temperature_A || null,
+    clamp_temperature_B: logData.clamp_temperature_B || null,
+    clamp_temperature_C: logData.clamp_temperature_C || null
+  };
+}
+
+/**
+ * Helper function to reset data when experiment is inactive
+ */
+function resetData() {
+  data = {
+    pressure: null,
+    pressureTimestamp: null,
+    safetyOutputDataFlags: null,
+    safetyInputDataFlags: null,
+    safetyOutputStatusFlags: null,
+    safetyInputStatusFlags: null,
+    temperatures: null,
+    vacuumBits: null,
+    heaterCurrent_A: null,
+    heaterCurrent_B: null,
+    heaterCurrent_C: null,
+    heaterVoltage_A: null,
+    heaterVoltage_B: null,
+    heaterVoltage_C: null,
+    clamp_temperature_A: null,
+    clamp_temperature_B: null,
+    clamp_temperature_C: null
+  };
+}
+
+/**
+ * OBSOLETE - Now using Supabase instead of Google Drive for data files
+ * Kept for reference during transition period
+ *
  * Fetch the single most-recent plain-text log file in the Drive folder.
  *
  * Steps:
@@ -397,7 +504,7 @@ function secondsSinceMidnightChicago() {
  *      - Folder constraint:  `'${LOG_FOLDER_ID}' in parents`
  *      - File type filter:   `mimeType='text/plain'`
  * 2) Sort descending by `modifiedTime` so index 0 is newest.
- * 3) Return that file’s `{ id, name, modifiedTime }`.
+ * 3) Return that file's `{ id, name, modifiedTime }`.
  *
  * On any error (API or empty list) we log it and return `null`
  * so the caller can decide whether to retry or mark the experiment inactive.
@@ -443,7 +550,7 @@ async function getMostRecentFile() {
       if (dataFile) break;
     }
     return {dataFile, displayFile};
-  
+
   } catch (err) {
     console.error(`Google Drive API Error: ${err.message}`);
     return {dataFile: null, displayFile: null};
@@ -451,6 +558,9 @@ async function getMostRecentFile() {
 }
 
 /**
+ * OBSOLETE - Now using Supabase instead of Google Drive for data files
+ * Still used for display logs, but not for main data extraction
+ *
  * Stream-downloads a text file from Google Drive and returns its lines.
  *
  * Why streaming?
@@ -534,22 +644,25 @@ async function fetchFileContents(fileId) {
 
 
 /**
+ * OBSOLETE - Now using Supabase structured data instead of parsing text logs
+ * Data is already structured in Supabase, no extraction needed
+ *
  * Parses log lines and extracts key experimental values.
  * This function is responsible for scanning log entries and pulling out:
  * - Pressure and timestamp
  * - Safety output/input data flags
  * - Temperature values
  * - Vacuum state bits (VTRX)
- * 
- * The extraction process is constrained to only consider "fresh" data, i.e., 
+ *
+ * The extraction process is constrained to only consider "fresh" data, i.e.,
  * entries not older than 15 minutes from current time (to avoid stale logs).
- * 
+ *
  * Each data field is extracted only once — the newest valid value is kept.
  * Stops early if all values are found.
- * 
+ *
  * Returns:
  * - true if extraction completed (even if partial)
- * 
+ *
  * Throws:
  * - Error if something goes wrong unexpectedly during parsing.
  */
@@ -817,18 +930,14 @@ async function fetchDisplayFileContents(){
 }
 
 /**
- * Checks for a new log file in Google Drive, processes it, and updates the local reversed.txt file.
- * 
+ * Main polling function - now fetches from Supabase instead of Google Drive
+ *
  * Steps:
- * 1. Fetch metadata of the most recent file in the Google Drive folder.
- * 2. If the file is stale (>15 min), mark experiment as inactive and skip.
- * 3. If the file is new, fetch its contents and reverse the log lines.
- * 4. Run data extraction and file writing in parallel using Promise.allSettled().
- * 5. On success, update in-memory state and mark experiment as running.
- * 
- * Returns:
- * - false: if no update was needed or fetch failed
- * - true: implicitly if successful (not used but possible)
+ * 1. Fetch latest entry from Supabase
+ * 2. Check if experiment is still active (within 15 minutes)
+ * 3. Map Supabase data to application format
+ * 4. Update global data object
+ * 5. Fetch display logs from Google Drive (separate operation)
  */
 async function fetchAndUpdateFile() {
   sampleGraph.chartDataIntervalCount++;
@@ -840,141 +949,60 @@ async function fetchAndUpdateFile() {
     }
   }
 
-  let release; // used if you implement lock control (e.g. mutex/fmutex)
-
   try {
-    // Step 1: Get the most recent file from Drive
-    const { dataFile, displayFile } = await getMostRecentFile();
+    // 1. Fetch latest entry from Supabase
+    const latestEntry = await fetchLatestSupabaseEntry();
 
-    if (!dataFile){
-      console.log("No data file found!")
-    }
-
-    let fileModifiedTime = null;
-    if (dataFile && dataFile.modifiedTime) {
-      fileModifiedTime = new Date(dataFile.modifiedTime).getTime();
-    }
-
-    const currentTime = Date.now(); // Get current time in ms
-
-    console.log("XX", fileModifiedTime);
-    console.log("YY", currentTime);
-
-    // Step 2: Check experiment activity status
-    // FIXME: Currently disabled for testing
-    // if (currentTime - fileModifiedTime > INACTIVE_THRESHOLD) { // More than 15 minutes old?
-    if (currentTime === currentTime) {
+    if (!latestEntry) {
+      console.log('No data available from Supabase');
       experimentRunning = false;
+      resetData();
+      return;
+    }
 
-      // Reset data to nulls — consistent fallback structure
-      data = {
-        pressure: null,
-        pressureTimestamp: null,
-        safetyOutputDataFlags: null,
-        safetyInputDataFlags: null,
-        safetyOutputStatusFlags: null,
-        safetyInputStatusFlags: null,
-        temperatures: null, 
-        vacuumBits: null,
-        heaterCurrent_A: null,
-        heaterCurrent_B: null,
-        heaterCurrent_C: null,
-        heaterVoltage_A: null,
-        heaterVoltage_B: null,
-        heaterVoltage_C: null,
-        clamp_temperature_A: null,
-        clamp_temperature_B: null,
-        clamp_temperature_C: null
-      };
-    } else {
+    // 2. Parse experiment timestamp
+    const experimentTime = new Date(latestEntry.experiment_time);
+    const experimentTimestamp = experimentTime.getTime();
+    webMonitorLastModified = experimentTime;
+
+    // 3. Check if experiment is still active (within 15 minutes)
+    const now = Date.now();
+
+    if (now - experimentTimestamp > INACTIVE_THRESHOLD) {
+      console.log('Experiment inactive - last update too old');
+      experimentRunning = false;
+      resetData();
+      return;
+    }
+
+    // 4. Map Supabase data to application format
+    const mappedData = mapSupabaseDataToAppFormat(latestEntry.log_data);
+
+    if (mappedData) {
+      // Update global data object
+      Object.assign(data, mappedData);
       experimentRunning = true;
-    }
+      console.log(`Data updated from Supabase at ${new Date().toLocaleTimeString()}`);
 
-    // FIXME: uncomment this block after testing
-    // if (lastModifiedTime === dataFile.modifiedTime) {
-    //   console.log("No new updates. Using cached data.");
-    //   return false;
-    // }
-
-    console.log("Fetching new file...");
-    let dataExtractionLines = null;
-    try {
-      dataExtractionLines = await fetchFileContents(dataFile.id);
-      if (!Array.isArray(dataExtractionLines)) {
-        console.warn("File fetch failed or returned no lines. Skipping extraction.");
-        return false;
+      // Update pressure graph
+      if (data.pressure !== null && data.pressureTimestamp !== null) {
+        pressureGraph.fullXVals.push(data.pressureTimestamp);
+        pressureGraph.fullYVals.push(data.pressure);
+        updateDisplayData(pressureGraph);
       }
-      dataExtractionLines = dataExtractionLines.reverse();
-      dataLines = dataExtractionLines.slice(0, 100); // TODO: just added this
-    } catch (e) {
-      console.error("WebMonitor file failed:", e);
-    }
-    
-    // TODO: Need to add experimentRunning check
-    // FIXME: changes dataExtractionLines to real lines rather than sample data lines for testing
-    addLogs(); // Simulate adding logs for testing
-    //const extractPromise = extractData(dataExtractionLines); // Parse data from logs
-    const extractPromise = extractData(sampleDataLines); // Parse data from logs
-    
-    const [extractionResult] = await Promise.allSettled([
-      extractPromise,
-    ]);
-
-    pressureGraph.fullXVals.push(data.pressureTimestamp);
-    // FIXME: handle null/invalid pressure values appropriately
-    pressureGraph.fullYVals.push(data.pressure ? data.pressure : 0);
-    //extractLines.push(`${data.pressureTimestamp}, ${data.pressure}, from graph: ${pressureGraph.fullXVals[pressureGraph.fullXVals.length - 1]}, ${pressureGraph.fullYVals[pressureGraph.fullYVals.length - 1]}`);
-    //extractLines.push(`{from graph: [${pressureGraph.fullXVals}], [${pressureGraph.fullYVals}]}`);
-    updateDisplayData(pressureGraph);
-
-    if (extractionResult.status === 'fulfilled') {
-      data.webMonitorLastModified = dataFile.modifiedTime;
-      // FIXME: TEMP CHANGE: Uncomment
-      // data.displayLogLastModified = displayFile.modifiedTime;
-      console.log("Extraction complete:", data);
     } else {
-      console.error("Extraction failed:", extractionResult.reason);
+      console.log('Failed to map Supabase data');
+      experimentRunning = false;
+      resetData();
     }
 
-    if (dataFile && dataFile.modifiedTime) {
-      lastModifiedTime = new Date(dataFile.modifiedTime).getTime();
-    }
+    // 5. Still fetch display logs from Google Drive (separate operation)
+    await fetchDisplayFileContents();
 
-  } catch (err) {
-    // Catch-all error handling for the fetch/extract/write process
-    console.error(`Error processing file: ${err.message}`);
-    experimentRunning = false; // not sure if this should be here but doesn't hurt much
-
-    // Reset data to safe empty state
-    data = {
-      pressure: null,
-      pressureTimestamp: null,
-      safetyOutputDataFlags: null,
-      safetyInputDataFlags: null,
-      safetyOutputStatusFlags: null,
-      safetyInputStatusFlags: null,
-      temperatures: null, 
-      vacuumBits: null,
-      heaterCurrent_A: null,
-      heaterCurrent_B: null,
-      heaterCurrent_C: null,
-      heaterVoltage_A: null,
-      heaterVoltage_B: null,
-      heaterVoltage_C: null,
-      clamp_temperature_A: null,
-      clamp_temperature_B: null,
-      clamp_temperature_C: null,
-      fileModifiedTime: null,
-      webMonitorLastModified: null
-    };
-
-    console.log("Could not extract the log data");
-    return false;
-  } finally {
-    // Always release lock/mutex if used
-    if (release) {
-      await release();
-    }
+  } catch (error) {
+    console.error('Error in fetchAndUpdateFile:', error);
+    experimentRunning = false;
+    resetData();
   }
 }
 
@@ -1188,6 +1216,28 @@ try {
   app.get('/refresh-display', async (req, res) => {
     await fetchDisplayFileContents();
     res.status(200).send('Refreshed display logs');
+  });
+
+  // Health check endpoint to monitor Supabase connectivity
+  app.get('/health', async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('beam_logs')
+        .select('count')
+        .limit(1);
+
+      res.json({
+        status: 'ok',
+        supabase: error ? 'disconnected' : 'connected',
+        experimentRunning,
+        lastUpdate: webMonitorLastModified
+      });
+    } catch (err) {
+      res.status(500).json({
+        status: 'error',
+        message: err.message
+      });
+    }
   });
 
   //  keep your HTML generation as-is below this

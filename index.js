@@ -160,8 +160,17 @@ let data = {
   safetyInputDataFlags: null,
   safetyOutputStatusFlags: null,
   safetyInputStatusFlags: null,
-  temperatures: null, 
-  vacuumBits: null
+  temperatures: null,
+  vacuumBits: null,
+  heaterCurrent_A: null,
+  heaterCurrent_B: null,
+  heaterCurrent_C: null,
+  heaterVoltage_A: null,
+  heaterVoltage_B: null,
+  heaterVoltage_C: null,
+  clamp_temperature_A: null,
+  clamp_temperature_B: null,
+  clamp_temperature_C: null
 };
 
 function createGraphObj(options = {}) {
@@ -455,7 +464,9 @@ function mapSupabaseDataToAppFormat(logData) {
     safetyInputStatusFlags: logData.safetyInputStatusFlags || null,
     safetyOutputStatusFlags: logData.safetyOutputStatusFlags || null,
     temperatures: logData.temperatures || null,
-    vacuumBits: logData.vacuumBits || null,
+    vacuumBits: typeof logData.vacuumBits === 'string'
+      ? logData.vacuumBits.split('').map(bit => bit === '1')
+      : (logData.vacuumBits || null),
     heaterCurrent_A: logData.heaterCurrent_A || null,
     heaterCurrent_B: logData.heaterCurrent_B || null,
     heaterCurrent_C: logData.heaterCurrent_C || null,
@@ -887,7 +898,8 @@ async function fetchDisplayFileContents(){
     const { dataFile, displayFile } = await getMostRecentFile();
 
     if (!displayFile){
-      console.log("No display file found!")
+      console.log("No display file found!");
+      return false;
     }
 
     // Step 4: File has changed → proceed to fetch contents
@@ -915,8 +927,10 @@ async function fetchDisplayFileContents(){
     // Step 7: Handle write result
     if (writeResult.status === 'fulfilled') {
       console.log("File write complete.");
-      lastModifiedTime = dataFile.modifiedTime; // Update in-memory cache
-      logFileName = dataFile.name;
+      if (dataFile) {
+        lastModifiedTime = dataFile.modifiedTime; // Update in-memory cache
+        logFileName = dataFile.name;
+      }
     } else {
       console.error("File write failed:", writeResult.reason);
       // You could reset experimentRunning = false here if desired
@@ -1023,8 +1037,8 @@ const codeLastUpdated = new Date().toLocaleString('en-US', {
   // 1) grab the latest logs right now
   await fetchAndUpdateFile();
 
-  // 2) then keep polling every minute
-  setInterval(fetchAndUpdateFile, 60_000);
+  // 2) then keep polling every 3 seconds
+  setInterval(fetchAndUpdateFile, 3_000);
 
   // 3) finally open the HTTP port
   app.listen(PORT, () => console.log(`Listening on ${PORT}`));
@@ -1138,108 +1152,6 @@ try {
     ])(data.vacuumBits);
 
   
-  /**
-   * GET /data
-   * 
-   * API endpoint that returns the latest extracted experimental values
-   * in JSON format. This data is used by the frontend dashboard to display:
-   * - Pressure and its timestamp
-   * - Safety Output/Input Terminal Flags
-   * - PMON temperature readings
-   * - Vacuum interlock bits (VTRX states)
-   * 
-   * The values come from the shared `data` object in memory, which gets 
-   * updated every minute by `fetchAndUpdateFile()`.
-   */
-
-  app.get('/data', (req, res) => {
-    const inF  = data.safetyInputDataFlags || null;
-    const outF = data.safetyOutputDataFlags || null;
-
-    const inSF = data.safetyInputStatusFlags || null;
-
-    const doorColor           = getDoorStatus(inF, inSF);
-    const waterColor          = getWaterStatus(inF, inSF);
-    const vacuumPowerColor    = getVacuumPower(inF, inSF);
-    const vacuumPressureColor = getVacuumPressure(inF, inSF);
-    const oilLowColor         = getOilLow(inF, inSF);
-    const oilHighColor        = getOilHigh(inF, inSF);
-    const estopIntColor       = getEStopInternal(inF, inSF);
-    const estopExtColor       = getEStopExternal(inF, inSF);
-    const allInterlocksColor  = getAllInterlocksStatus(outF);
-    const G9OutputColor       = getG9Output(outF);
-    const hvoltColor          = getHvoltOn(inF, inSF);
-
-    // recompute all 8 vacuum‐bit colors:
-    const vacColors = Array.from({ length: 8 }, (_, i) =>
-      data.vacuumBits
-        ? varBitToColor(data.vacuumBits, i)
-        : 'grey'
-    );
-
-    res.json({
-      pressure: data.pressure,                         
-      pressureTimestamp: data.pressureTimestamp,   
-      safetyInputStatusFlags: data.safetyInputStatusFlags,
-      safetyOutputStatusFlags: data.safetyOutputStatusFlags,    
-      safetyOutputDataFlags: data.safetyOutputDataFlags, 
-      safetyInputDataFlags: data.safetyInputDataFlags,  
-      temperatures: data.temperatures,                  
-      vacuumBits: data.vacuumBits,                       
-      vacuumColors: vacColors,
-      sicColors: [doorColor,
-        waterColor,
-        vacuumPowerColor,
-        vacuumPressureColor,
-        oilLowColor,
-        oilHighColor,
-        estopIntColor,
-        estopExtColor,
-        allInterlocksColor,
-        G9OutputColor,
-        hvoltColor],
-      heaterCurrent_A: data.heaterCurrent_A,
-      heaterCurrent_B: data.heaterCurrent_B,
-      heaterCurrent_C: data.heaterCurrent_C,
-      heaterVoltage_A: data.heaterVoltage_A,
-      heaterVoltage_B: data.heaterVoltage_B,
-      heaterVoltage_C: data.heaterVoltage_C,
-      clamp_temperature_A: data.clamp_temperature_A,
-      clamp_temperature_B: data.clamp_temperature_B,
-      clamp_temperature_C: data.clamp_temperature_C,
-      siteLastUpdated: new Date().toISOString(),
-      webMonitorLastModified: data.webMonitorLastModified || null,
-      displayLogLastModified: data.displayLogLastModified || null
-    });
-  });
-
-  app.get('/refresh-display', async (req, res) => {
-    await fetchDisplayFileContents();
-    res.status(200).send('Refreshed display logs');
-  });
-
-  // Health check endpoint to monitor Supabase connectivity
-  app.get('/health', async (req, res) => {
-    try {
-      const { data, error } = await supabase
-        .from('beam_logs')
-        .select('count')
-        .limit(1);
-
-      res.json({
-        status: 'ok',
-        supabase: error ? 'disconnected' : 'connected',
-        experimentRunning,
-        lastUpdate: webMonitorLastModified
-      });
-    } catch (err) {
-      res.status(500).json({
-        status: 'error',
-        message: err.message
-      });
-    }
-  });
-
   //  keep your HTML generation as-is below this
   res.send(`
     <!DOCTYPE html>
@@ -1492,7 +1404,7 @@ try {
           font-size: 0.75em;
           color: #fff;
         }
-        // gauge circle now displays the attributes of a textbox
+        /* gauge circle now displays the attributes of a textbox */
         .gauge-circle {
           width: 80px;
           height: 37px;
@@ -2134,12 +2046,12 @@ try {
           siteLastUpdated.textContent = clean_string;
 
           pressureReadings.textContent = "Vacuum Indicators: " + String(data.pressure).replace("E", "e") + " mbar";
-          sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None" && !experimentRunning) ? '--' : data.temperatures["1"] + '°C';
-          sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None" && !experimentRunning) ? '--' : data.temperatures["2"] + '°C';
-          sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None" && !experimentRunning) ? '--' : data.temperatures["3"] + '°C';
-          sensor4.querySelector('.gauge-cover').textContent = (!data.temperatures["4"] || data.temperatures["4"] === "DISCONNECTED" || data.temperatures["4"] === "None" && !experimentRunning) ? '--' : data.temperatures["4"] + '°C';
-          sensor5.querySelector('.gauge-cover').textContent = (!data.temperatures["5"] || data.temperatures["5"] === "DISCONNECTED" || data.temperatures["5"] === "None" && !experimentRunning) ? '--' : data.temperatures["5"] + '°C';
-          sensor6.querySelector('.gauge-cover').textContent = (!data.temperatures["6"] || data.temperatures["6"] === "DISCONNECTED" || data.temperatures["6"] === "None" && !experimentRunning) ? '--' : data.temperatures["6"] + '°C';
+          sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None" && !experimentRunning) ? '--' : data.temperatures["1"] + '°C';
+          sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None" && !experimentRunning) ? '--' : data.temperatures["2"] + '°C';
+          sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None" && !experimentRunning) ? '--' : data.temperatures["3"] + '°C';
+          sensor4.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["4"] || data.temperatures["4"] === "DISCONNECTED" || data.temperatures["4"] === "None" && !experimentRunning) ? '--' : data.temperatures["4"] + '°C';
+          sensor5.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["5"] || data.temperatures["5"] === "DISCONNECTED" || data.temperatures["5"] === "None" && !experimentRunning) ? '--' : data.temperatures["5"] + '°C';
+          sensor6.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["6"] || data.temperatures["6"] === "DISCONNECTED" || data.temperatures["6"] === "None" && !experimentRunning) ? '--' : data.temperatures["6"] + '°C';
 
           
 
@@ -2175,6 +2087,108 @@ try {
   console.error(err);
   res.status(500).send(`Error: ${err.message}`);
 }
+});
+
+
+/**
+ * GET /data
+ *
+ * API endpoint that returns the latest extracted experimental values
+ * in JSON format. This data is used by the frontend dashboard to display:
+ * - Pressure and its timestamp
+ * - Safety Output/Input Terminal Flags
+ * - PMON temperature readings
+ * - Vacuum interlock bits (VTRX states)
+ *
+ * The values come from the shared `data` object in memory, which gets
+ * updated every 3 seconds by `fetchAndUpdateFile()`.
+ */
+app.get('/data', (req, res) => {
+  const inF  = data.safetyInputDataFlags || null;
+  const outF = data.safetyOutputDataFlags || null;
+
+  const inSF = data.safetyInputStatusFlags || null;
+
+  const doorColor           = getDoorStatus(inF, inSF);
+  const waterColor          = getWaterStatus(inF, inSF);
+  const vacuumPowerColor    = getVacuumPower(inF, inSF);
+  const vacuumPressureColor = getVacuumPressure(inF, inSF);
+  const oilLowColor         = getOilLow(inF, inSF);
+  const oilHighColor        = getOilHigh(inF, inSF);
+  const estopIntColor       = getEStopInternal(inF, inSF);
+  const estopExtColor       = getEStopExternal(inF, inSF);
+  const allInterlocksColor  = getAllInterlocksStatus(outF);
+  const G9OutputColor       = getG9Output(outF);
+  const hvoltColor          = getHvoltOn(inF, inSF);
+
+  // recompute all 8 vacuum-bit colors:
+  const vacColors = Array.from({ length: 8 }, (_, i) =>
+    data.vacuumBits
+      ? varBitToColor(data.vacuumBits, i)
+      : 'grey'
+  );
+
+  res.json({
+    pressure: data.pressure,
+    pressureTimestamp: data.pressureTimestamp,
+    safetyInputStatusFlags: data.safetyInputStatusFlags,
+    safetyOutputStatusFlags: data.safetyOutputStatusFlags,
+    safetyOutputDataFlags: data.safetyOutputDataFlags,
+    safetyInputDataFlags: data.safetyInputDataFlags,
+    temperatures: data.temperatures,
+    vacuumBits: data.vacuumBits,
+    vacuumColors: vacColors,
+    sicColors: [doorColor,
+      waterColor,
+      vacuumPowerColor,
+      vacuumPressureColor,
+      oilLowColor,
+      oilHighColor,
+      estopIntColor,
+      estopExtColor,
+      allInterlocksColor,
+      G9OutputColor,
+      hvoltColor],
+    heaterCurrent_A: data.heaterCurrent_A,
+    heaterCurrent_B: data.heaterCurrent_B,
+    heaterCurrent_C: data.heaterCurrent_C,
+    heaterVoltage_A: data.heaterVoltage_A,
+    heaterVoltage_B: data.heaterVoltage_B,
+    heaterVoltage_C: data.heaterVoltage_C,
+    clamp_temperature_A: data.clamp_temperature_A,
+    clamp_temperature_B: data.clamp_temperature_B,
+    clamp_temperature_C: data.clamp_temperature_C,
+    siteLastUpdated: new Date().toISOString(),
+    webMonitorLastModified: webMonitorLastModified || null,
+    displayLogLastModified: displayLogLastModified || null
+  });
+});
+
+app.get('/refresh-display', async (req, res) => {
+  await fetchDisplayFileContents();
+  res.status(200).send('Refreshed display logs');
+});
+
+// Health check endpoint to monitor Supabase connectivity
+app.get('/health', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('beam_logs')
+      .select('count')
+      .limit(1);
+
+    res.json({
+      status: 'ok',
+      supabase: error ? 'disconnected' : 'connected',
+      experimentRunning,
+      lastUpdate: webMonitorLastModified
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message
+    });
+  }
 });
 
 

@@ -427,7 +427,7 @@ async function fetchLatestSupabaseEntry() {
   try {
     const { data, error } = await supabase
       .from('beam_logs')
-      .select('experiment_time, log_data')
+      .select('experiment_time, created_at, log_data')
       .order('experiment_time', { ascending: false })
       .limit(1);
 
@@ -974,8 +974,8 @@ async function fetchAndUpdateFile() {
       return;
     }
 
-    // 2. Parse experiment timestamp
-    const experimentTime = new Date(latestEntry.experiment_time);
+    // 2. Parse experiment timestamp (use created_at which has proper UTC timezone)
+    const experimentTime = new Date(latestEntry.created_at);
     const experimentTimestamp = experimentTime.getTime();
     webMonitorLastModified = experimentTime;
 

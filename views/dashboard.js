@@ -860,7 +860,7 @@ function renderDashboard(opts) {
           catch {
           console.error('Failed to load the dashboard!')
             }
-          }, 60000)
+          }, 3000)
 
         toggleButton.addEventListener('click', async () => {
           if (!showingFull) {

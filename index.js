@@ -10,7 +10,7 @@
 const express = require('express');
 const path = require('path');
 const { PORT } = require('./config');
-const { fetchAndUpdateFile } = require('./polling');
+const { fetchAndUpdateFile } = require('./services/polling');
 const registerRoutes = require('./routes');
 
 const app = express();

@@ -4,8 +4,7 @@
   "description": "A simple Node.js server that fetches a Google Drive file and displays reversed logs.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "log": "node create_local_log.mjs"
+    "start": "node index.js"
   },
   "author": "Your Name",
   "license": "ISC",

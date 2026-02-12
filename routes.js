@@ -1,9 +1,9 @@
 const fs = require('fs');
 const { supabase, REVERSED_FILE_PATH } = require('./config');
-const state = require('./state');
-const { computeAllColors } = require('./interlocks');
-const { fetchDisplayFileContents } = require('./gdrive');
-const { sampleGraph, pressureGraph } = require('./graphs');
+const state = require('./services/state');
+const { computeAllColors } = require('./services/interlocks');
+const { fetchDisplayFileContents } = require('./services/gdrive');
+const { sampleGraph, pressureGraph } = require('./services/graphs');
 const { renderDashboard } = require('./views/dashboard');
 
 const codeLastUpdated = new Date().toLocaleString('en-US', {

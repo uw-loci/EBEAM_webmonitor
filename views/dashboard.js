@@ -649,7 +649,10 @@ function renderDashboard(opts) {
               }
             ],
             scales: { x: { time: true } },
-            axes: [{ stroke: '#ccc' }, { stroke: '#ccc' }],
+            axes: [
+              { stroke: '#ccc' },
+              { stroke: '#ccc', values: (u, vals) => vals.map(v => v.toExponential(2)) },
+            ],
             cursor: {
               focus: { prox: 16 },
               drag: {

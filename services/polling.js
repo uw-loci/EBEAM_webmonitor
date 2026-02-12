@@ -57,10 +57,11 @@ async function fetchAndUpdateFile() {
       state.experimentRunning = true;
       console.log(`Data updated from Supabase at ${new Date().toLocaleTimeString()}`);
 
-      // Update pressure graph
-      if (state.data.pressure !== null && state.data.pressureTimestamp !== null) {
-        pressureGraph.fullXVals.push(state.data.pressureTimestamp);
-        pressureGraph.fullYVals.push(state.data.pressure);
+      // Update pressure graph (X = created_at in unix seconds, Y = pressure)
+      if (state.data.pressure !== null) {
+        const pressureTimeSec = Math.floor(experimentTimestamp / 1000);
+        pressureGraph.fullXVals.push(pressureTimeSec);
+        pressureGraph.fullYVals.push(parseFloat(state.data.pressure));
         updateDisplayData(pressureGraph);
       }
     } else {

@@ -13,7 +13,8 @@ function createGraphObj(options = {}) {
   };
 }
 
-const pressureGraph = createGraphObj();
+const shortTermPressureGraph = createGraphObj({ maxDataPoints: 30000, maxDisplayPoints: 256 });
+const longTermPressureGraph = createGraphObj({ maxDataPoints: 100000, maxDisplayPoints: 256 });
 const sampleGraph = createGraphObj();
 
 function addSampleChartDataPoint() {
@@ -69,6 +70,7 @@ module.exports = {
   createGraphObj,
   updateDisplayData,
   addSampleChartDataPoint,
-  pressureGraph,
+  shortTermPressureGraph,
+  longTermPressureGraph,
   sampleGraph,
 };

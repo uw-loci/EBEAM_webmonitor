@@ -7,7 +7,8 @@
  * @param {number[]} opts.sicColors     - 11-element array of interlock colors
  * @param {string[]} opts.vacColors     - 8-element array of vacuum indicator colors
  * @param {Object} opts.sampleGraph     - Sample chart graph object
- * @param {Object} opts.pressureGraph   - Pressure chart graph object
+ * @param {Object} opts.shortTermPressureGraph - Short-term pressure chart graph object
+ * @param {Object} opts.longTermPressureGraph - Long-term pressure chart graph object
  * @param {string} opts.codeLastUpdated - Timestamp string for code deploy
  * @returns {string} Full HTML string
  */
@@ -18,7 +19,8 @@ function renderDashboard(opts) {
     sicColors,
     vacColors,
     sampleGraph,
-    pressureGraph,
+    shortTermPressureGraph,
+    longTermPressureGraph,
     codeLastUpdated,
   } = opts;
 
@@ -599,7 +601,17 @@ function renderDashboard(opts) {
 
       <div id="chart-root-1"></div>
       <div id="chart-root-2"></div>
-      <div id="chart-root-3"></div>
+      <div id="pressure-chart-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 98%; margin: 50px auto 0 auto;">
+          <span id="pressure-chart-label" style="color:#ccc; font-size:14px;">
+            Short-Term (Last 24h, ~3s resolution)
+          </span>
+          <button id="pressure-view-toggle" class="btn-toggle" style="float:none; margin:0;">
+            Switch to Historical View
+          </button>
+        </div>
+        <div id="chart-root-3" style="margin-top: 0;"></div>
+      </div>
 
       <script>
         function createLiveUplotChart(container, config) {
@@ -692,16 +704,56 @@ function renderDashboard(opts) {
           return [x, y];
         }
 
-        const chartConfigs = [
-          { containerId: 'chart-root-1', title: 'Live Update Sin Graph', data: [${JSON.stringify(sampleGraph.displayXVals)}, ${JSON.stringify(sampleGraph.displayYVals)}], seriesLabel: "sin(t/10)",
-            maxDataPoints: ${sampleGraph.maxDataPoints}, maxDisplayPoints: ${sampleGraph.maxDisplayPoints}, displayXVals: ${JSON.stringify(sampleGraph.displayXVals)}, lastUsedFactor: ${sampleGraph.lastUsedFactor}, chartDataIntervalDuration: ${sampleGraph.chartDataIntervalDuration} },
-          { containerId: 'chart-root-3', title: 'Live Update Pressure Graph', data: [${JSON.stringify(pressureGraph.fullXVals)}, ${JSON.stringify(pressureGraph.fullYVals)}], seriesLabel: "pressure (mbar)",
-            maxDataPoints: ${pressureGraph.maxDataPoints}, maxDisplayPoints: ${pressureGraph.maxDisplayPoints}, displayXVals: ${JSON.stringify(pressureGraph.displayXVals)}, lastUsedFactor: ${pressureGraph.lastUsedFactor}, chartDataIntervalDuration: ${pressureGraph.chartDataIntervalDuration} },
-        ];
+        // Create the sample sine chart
+        createLiveUplotChart(document.getElementById('chart-root-1'), {
+          title: 'Live Update Sin Graph',
+          data: [${JSON.stringify(sampleGraph.displayXVals)}, ${JSON.stringify(sampleGraph.displayYVals)}],
+          seriesLabel: "sin(t/10)",
+          maxDataPoints: ${sampleGraph.maxDataPoints},
+          maxDisplayPoints: ${sampleGraph.maxDisplayPoints},
+          displayXVals: ${JSON.stringify(sampleGraph.displayXVals)},
+          lastUsedFactor: ${sampleGraph.lastUsedFactor},
+          chartDataIntervalDuration: ${sampleGraph.chartDataIntervalDuration},
+        });
 
-        chartConfigs.forEach(cfg => {
-          const container = document.getElementById(cfg.containerId);
-          createLiveUplotChart(container, cfg);
+        // Create the pressure chart and keep a reference for live updates
+        let pressureChart = createLiveUplotChart(document.getElementById('chart-root-3'), {
+          title: 'Pressure Graph',
+          data: [${JSON.stringify(shortTermPressureGraph.displayXVals)}, ${JSON.stringify(shortTermPressureGraph.displayYVals)}],
+          seriesLabel: "pressure (mbar)",
+          maxDataPoints: ${shortTermPressureGraph.maxDataPoints},
+          maxDisplayPoints: ${shortTermPressureGraph.maxDisplayPoints},
+          displayXVals: ${JSON.stringify(shortTermPressureGraph.displayXVals)},
+          lastUsedFactor: ${shortTermPressureGraph.lastUsedFactor},
+          chartDataIntervalDuration: ${shortTermPressureGraph.chartDataIntervalDuration},
+        });
+
+        // Toggle state for pressure chart view
+        let currentPressureView = 'short';
+        let longTermPollCounter = 0;
+        const LONG_TERM_POLL_EVERY = 20; // 20 * 3s = 60s
+
+        const pressureViewToggle = document.getElementById('pressure-view-toggle');
+        const pressureChartLabel = document.getElementById('pressure-chart-label');
+
+        pressureViewToggle.addEventListener('click', async () => {
+          currentPressureView = currentPressureView === 'short' ? 'long' : 'short';
+
+          if (currentPressureView === 'short') {
+            pressureViewToggle.textContent = 'Switch to Historical View';
+            pressureChartLabel.textContent = 'Short-Term (Last 24h, ~3s resolution)';
+          } else {
+            pressureViewToggle.textContent = 'Switch to Live View';
+            pressureChartLabel.textContent = 'Historical (All-time, 1-min averages)';
+          }
+
+          try {
+            const res = await fetch('/chart-data?view=' + currentPressureView);
+            const chartData = await res.json();
+            pressureChart.setData([chartData.xVals, chartData.yVals]);
+          } catch (e) {
+            console.error('Failed to load chart data:', e);
+          }
         });
       </script>
 
@@ -859,6 +911,22 @@ function renderDashboard(opts) {
 
           console.log(sensor1.textContent);
           console.log(data.sicColors);
+
+          // Live chart update
+          longTermPollCounter++;
+          const shouldUpdateLongTerm = longTermPollCounter >= LONG_TERM_POLL_EVERY;
+          if (shouldUpdateLongTerm) longTermPollCounter = 0;
+
+          if (currentPressureView === 'short' || (currentPressureView === 'long' && shouldUpdateLongTerm)) {
+            try {
+              const chartRes = await fetch('/chart-data?view=' + currentPressureView);
+              const chartData = await chartRes.json();
+              pressureChart.setData([chartData.xVals, chartData.yVals]);
+            } catch (e) {
+              console.error('Chart data update failed:', e);
+            }
+          }
+
           }
           catch {
           console.error('Failed to load the dashboard!')

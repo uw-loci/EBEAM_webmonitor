@@ -6,7 +6,6 @@
  * @param {Object} opts.state           - Shared app state
  * @param {number[]} opts.sicColors     - 11-element array of interlock colors
  * @param {string[]} opts.vacColors     - 8-element array of vacuum indicator colors
- * @param {Object} opts.sampleGraph     - Sample chart graph object
  * @param {Object} opts.shortTermPressureGraph - Short-term pressure chart graph object
  * @param {Object} opts.longTermPressureGraph - Long-term pressure chart graph object
  * @param {string} opts.codeLastUpdated - Timestamp string for code deploy
@@ -18,7 +17,6 @@ function renderDashboard(opts) {
     state,
     sicColors,
     vacColors,
-    sampleGraph,
     shortTermPressureGraph,
     longTermPressureGraph,
     codeLastUpdated,
@@ -599,7 +597,6 @@ function renderDashboard(opts) {
         </div>
       </div>
 
-      <div id="chart-root-1"></div>
       <div id="chart-root-2"></div>
       <div id="pressure-chart-section">
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 98%; margin: 50px auto 0 auto;">
@@ -696,26 +693,6 @@ function renderDashboard(opts) {
           return uplot;
         }
 
-        const now = Date.now();
-
-        function makeSineData(freq = 10, len = 100) {
-          const x = Array.from({ length: len }, (_, i) => now + i * 60000);
-          const y = x.map((_, i) => Math.sin(i / freq));
-          return [x, y];
-        }
-
-        // Create the sample sine chart
-        createLiveUplotChart(document.getElementById('chart-root-1'), {
-          title: 'Live Update Sin Graph',
-          data: [${JSON.stringify(sampleGraph.displayXVals)}, ${JSON.stringify(sampleGraph.displayYVals)}],
-          seriesLabel: "sin(t/10)",
-          maxDataPoints: ${sampleGraph.maxDataPoints},
-          maxDisplayPoints: ${sampleGraph.maxDisplayPoints},
-          displayXVals: ${JSON.stringify(sampleGraph.displayXVals)},
-          lastUsedFactor: ${sampleGraph.lastUsedFactor},
-          chartDataIntervalDuration: ${sampleGraph.chartDataIntervalDuration},
-        });
-
         // Create the pressure chart and keep a reference for live updates
         let pressureChart = createLiveUplotChart(document.getElementById('chart-root-3'), {
           title: 'Pressure Graph',
@@ -760,12 +737,6 @@ function renderDashboard(opts) {
 
       <div class="env-section", style="overflow-y: auto;">
         <p>Code last updated: ${codeLastUpdated}</p>
-      </div>
-
-      <div class="env-section" style="max-height: 200px; overflow-y: auto;">
-        <p>Data extracted</span></p>
-        <pre>${JSON.stringify(data, null, 2)}</pre>
-        <pre>${JSON.stringify(state.extractLines)}</pre>
       </div>
 
       <!-- Log Viewer -->

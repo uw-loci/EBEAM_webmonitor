@@ -3,7 +3,7 @@ const { supabase, REVERSED_FILE_PATH } = require('./config');
 const state = require('./services/state');
 const { computeAllColors } = require('./services/interlocks');
 const { fetchDisplayFileContents } = require('./services/gdrive');
-const { sampleGraph, shortTermPressureGraph, longTermPressureGraph } = require('./services/graphs');
+const { shortTermPressureGraph, longTermPressureGraph } = require('./services/graphs');
 const { renderDashboard } = require('./views/dashboard');
 
 const codeLastUpdated = new Date().toLocaleString('en-US', {
@@ -24,7 +24,6 @@ function registerRoutes(app) {
         state,
         sicColors,
         vacColors,
-        sampleGraph,
         shortTermPressureGraph,
         longTermPressureGraph,
         codeLastUpdated,

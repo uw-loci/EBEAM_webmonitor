@@ -2,7 +2,7 @@ const { INACTIVE_THRESHOLD } = require('../config');
 const state = require('./state');
 const { mapSupabaseDataToAppFormat, resetData, fetchLatestShortTermEntry, fetchLatestLongTermEntry } = require('./supabase');
 const { fetchDisplayFileContents } = require('./gdrive');
-const { sampleGraph, shortTermPressureGraph, longTermPressureGraph, addSampleChartDataPoint, updateDisplayData } = require('./graphs');
+const { shortTermPressureGraph, longTermPressureGraph, updateDisplayData } = require('./graphs');
 
 /**
  * Polls the short_term_logs table for the latest entry.
@@ -66,14 +66,6 @@ async function pollLongTerm() {
  * 5. Fetch display logs from Google Drive (separate operation)
  */
 async function fetchAndUpdateFile() {
-  sampleGraph.chartDataIntervalCount++;
-  if (sampleGraph.chartDataIntervalCount == sampleGraph.chartDataIntervalDuration) {
-    if (sampleGraph.fullXVals.length < sampleGraph.maxDataPoints) {
-      addSampleChartDataPoint();
-      sampleGraph.chartDataIntervalCount = 0;
-    }
-  }
-
   try {
     // 1. Fetch latest entry from short_term_logs
     const latestEntry = await fetchLatestShortTermEntry();

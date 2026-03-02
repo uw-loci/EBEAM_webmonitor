@@ -86,9 +86,8 @@ async function backfillShortTermGraph(graph) {
       const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
       graph.fullXVals.push(tSec);
       graph.fullYVals.push(parseFloat(pressure));
+      updateDisplayData(graph);
     }
-
-    updateDisplayData(graph);
     console.log(`Backfilled ${graph.fullXVals.length} short-term points`);
     return data[data.length - 1].created_at;
   } catch (err) {
@@ -124,9 +123,8 @@ async function backfillLongTermGraph(graph) {
       const tSec = Math.floor(new Date(row.recorded_at).getTime() / 1000);
       graph.fullXVals.push(tSec);
       graph.fullYVals.push(row.avg_pressure);
+      updateDisplayData(graph);
     }
-
-    updateDisplayData(graph);
     console.log(`Backfilled ${graph.fullXVals.length} long-term points`);
     return data[data.length - 1].recorded_at;
   } catch (err) {

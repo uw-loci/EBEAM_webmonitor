@@ -13,19 +13,8 @@ function createGraphObj(options = {}) {
   };
 }
 
-const pressureGraph = createGraphObj();
-const sampleGraph = createGraphObj();
-
-function addSampleChartDataPoint() {
-  const nowMs = Date.now();
-  const tSec = Math.floor(nowMs / 1000);
-  const y = Math.sin(tSec / 10);
-
-  sampleGraph.fullXVals.push(tSec);
-  sampleGraph.fullYVals.push(y);
-
-  updateDisplayData(sampleGraph);
-}
+const shortTermPressureGraph = createGraphObj({ maxDataPoints: 30000, maxDisplayPoints: 256 });
+const longTermPressureGraph = createGraphObj({ maxDataPoints: 100000, maxDisplayPoints: 256 });
 
 function updateDisplayData(graph) {
   const len = graph.fullXVals.length;
@@ -68,7 +57,6 @@ function updateDisplayData(graph) {
 module.exports = {
   createGraphObj,
   updateDisplayData,
-  addSampleChartDataPoint,
-  pressureGraph,
-  sampleGraph,
+  shortTermPressureGraph,
+  longTermPressureGraph,
 };

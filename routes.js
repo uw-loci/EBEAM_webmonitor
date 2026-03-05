@@ -3,7 +3,7 @@ const { supabase, REVERSED_FILE_PATH } = require('./config');
 const state = require('./services/state');
 const { computeAllColors } = require('./services/interlocks');
 const { fetchDisplayFileContents } = require('./services/gdrive');
-const { sampleGraph, pressureGraph } = require('./services/graphs');
+const { shortTermPressureGraph, longTermPressureGraph } = require('./services/graphs');
 const { renderDashboard } = require('./views/dashboard');
 
 const codeLastUpdated = new Date().toLocaleString('en-US', {
@@ -24,8 +24,8 @@ function registerRoutes(app) {
         state,
         sicColors,
         vacColors,
-        sampleGraph,
-        pressureGraph,
+        shortTermPressureGraph,
+        longTermPressureGraph,
         codeLastUpdated,
       });
 
@@ -75,7 +75,7 @@ function registerRoutes(app) {
   app.get('/health', async (req, res) => {
     try {
       const { data, error } = await supabase
-        .from('beam_logs')
+        .from('short_term_logs')
         .select('count')
         .limit(1);
 
@@ -91,6 +91,18 @@ function registerRoutes(app) {
         message: err.message
       });
     }
+  });
+
+  // Chart data endpoint for live chart updates
+  app.get('/chart-data', (req, res) => {
+    const view = req.query.view === 'long' ? 'long' : 'short';
+    const graph = view === 'long' ? longTermPressureGraph : shortTermPressureGraph;
+
+    res.json({
+      view,
+      xVals: graph.displayXVals,
+      yVals: graph.displayYVals,
+    });
   });
 
   // Raw reversed log file

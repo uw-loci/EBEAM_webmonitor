@@ -5,6 +5,8 @@ const state = {
   webMonitorLastModified: null,
   displayLogLastModified: null,
   experimentRunning: false,
+  lastShortTermTimestamp: null,
+  lastLongTermTimestamp: null,
   dataLines: null,
   debugLogs: [],
   sampleDataLines: [],

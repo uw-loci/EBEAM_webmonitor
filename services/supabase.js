@@ -1,34 +1,6 @@
 const { supabase } = require('../config');
 const state = require('./state');
-
-/**
- * Fetches the most recent entry from Supabase beam_logs table
- * @returns {Object|null} Most recent log entry or null if error/no data
- */
-async function fetchLatestSupabaseEntry() {
-  try {
-    const { data, error } = await supabase
-      .from('beam_logs')
-      .select('experiment_time, created_at, log_data')
-      .order('experiment_time', { ascending: false })
-      .limit(1);
-
-    if (error) {
-      console.error('Supabase query error:', error);
-      return null;
-    }
-
-    if (!data || data.length === 0) {
-      console.log('No data found in Supabase table');
-      return null;
-    }
-
-    return data[0];
-  } catch (err) {
-    console.error('Error fetching from Supabase:', err);
-    return null;
-  }
-}
+const { updateDisplayData } = require('./graphs');
 
 /**
  * Maps Supabase log_data JSON to the application's data object format
@@ -86,8 +58,134 @@ function resetData() {
   };
 }
 
+/**
+ * Backfills the short-term pressure graph from the short_term_logs table.
+ * @param {Object} graph - The graph object to populate
+ * @returns {string|null} The created_at of the last row, or null if no data
+ */
+async function backfillShortTermGraph(graph) {
+  try {
+    const { data, error } = await supabase
+      .from('short_term_logs')
+      .select('created_at, data')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Backfill short-term error:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      console.log('No short-term data to backfill');
+      return null;
+    }
+
+    for (const row of data) {
+      const pressure = row.data?.pressure;
+      if (pressure == null) continue;
+      const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
+      graph.fullXVals.push(tSec);
+      graph.fullYVals.push(parseFloat(pressure));
+      updateDisplayData(graph);
+    }
+    console.log(`Backfilled ${graph.fullXVals.length} short-term points`);
+    return data[data.length - 1].created_at;
+  } catch (err) {
+    console.error('Error backfilling short-term graph:', err);
+    return null;
+  }
+}
+
+/**
+ * Backfills the long-term pressure graph from the long_term_logs table.
+ * @param {Object} graph - The graph object to populate
+ * @returns {string|null} The recorded_at of the last row, or null if no data
+ */
+async function backfillLongTermGraph(graph) {
+  try {
+    const { data, error } = await supabase
+      .from('long_term_logs')
+      .select('recorded_at, avg_pressure')
+      .order('recorded_at', { ascending: true });
+
+    if (error) {
+      console.error('Backfill long-term error:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      console.log('No long-term data to backfill');
+      return null;
+    }
+
+    for (const row of data) {
+      if (row.avg_pressure == null) continue;
+      const tSec = Math.floor(new Date(row.recorded_at).getTime() / 1000);
+      graph.fullXVals.push(tSec);
+      graph.fullYVals.push(row.avg_pressure);
+      updateDisplayData(graph);
+    }
+    console.log(`Backfilled ${graph.fullXVals.length} long-term points`);
+    return data[data.length - 1].recorded_at;
+  } catch (err) {
+    console.error('Error backfilling long-term graph:', err);
+    return null;
+  }
+}
+
+/**
+ * Fetches the most recent entry from short_term_logs.
+ */
+async function fetchLatestShortTermEntry() {
+  try {
+    const { data, error } = await supabase
+      .from('short_term_logs')
+      .select('created_at, data')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Short-term query error:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) return null;
+    return data[0];
+  } catch (err) {
+    console.error('Error fetching short-term entry:', err);
+    return null;
+  }
+}
+
+/**
+ * Fetches the most recent entry from long_term_logs.
+ */
+async function fetchLatestLongTermEntry() {
+  try {
+    const { data, error } = await supabase
+      .from('long_term_logs')
+      .select('recorded_at, avg_pressure')
+      .order('recorded_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Long-term query error:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) return null;
+    return data[0];
+  } catch (err) {
+    console.error('Error fetching long-term entry:', err);
+    return null;
+  }
+}
+
 module.exports = {
-  fetchLatestSupabaseEntry,
   mapSupabaseDataToAppFormat,
   resetData,
+  backfillShortTermGraph,
+  backfillLongTermGraph,
+  fetchLatestShortTermEntry,
+  fetchLatestLongTermEntry,
 };

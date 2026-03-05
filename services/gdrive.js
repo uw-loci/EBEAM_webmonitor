@@ -5,7 +5,7 @@ const state = require('./state');
 
 /**
  * Fetch the most recent plain-text log files from Google Drive.
- * Returns { dataFile, displayFile } where either may be null.
+ * Returns { displayFile } where displayFile may be null.
  */
 async function getMostRecentFile() {
   try {
@@ -19,30 +19,16 @@ async function getMostRecentFile() {
     const files = res.data.files;
     console.log("Latest files seen:", files.map(f => f.name));
 
-    let displayFile = null;
-
     if (!files || files.length === 0) {
       throw new Error('No files found in the folder.');
     }
 
-    let dataFile = null;
-
-    for (const file of files){
-      if (file.name.startsWith('webMonitor')){
-        dataFile = file;
-        console.log(dataFile);
-        console.log("DATA FILE'S ID: ", dataFile.id)
-      }
-      else if (file.name.startsWith('log_')){
-        displayFile = file;
-      }
-      if (dataFile) break;
-    }
-    return {dataFile, displayFile};
+    const displayFile = files.find(f => f.name.startsWith('log_')) || null;
+    return { displayFile };
 
   } catch (err) {
     console.error(`Google Drive API Error: ${err.message}`);
-    return {dataFile: null, displayFile: null};
+    return { displayFile: null };
   }
 }
 
@@ -94,8 +80,9 @@ async function fetchFileContents(fileId) {
       return lines;
 
     } catch (err) {
-      console.log(`Retry ${4 - retries}: ${err.message}`);
-      return false;
+      retries--;
+      console.log(`Retry attempt ${4 - retries}: ${err.message}`);
+      if (retries === 0) return false;
     }
   }
 }
@@ -140,9 +127,9 @@ function writeToFile(lines) {
  */
 async function fetchDisplayFileContents() {
   try {
-    const { dataFile, displayFile } = await getMostRecentFile();
+    const { displayFile } = await getMostRecentFile();
 
-    if (!displayFile){
+    if (!displayFile) {
       console.log("No display file found!");
       return false;
     }
@@ -162,16 +149,11 @@ async function fetchDisplayFileContents() {
     }
 
     const writePromise = writeToFile(displayLines);
-
-    const [writeResult] = await Promise.allSettled([
-      writePromise
-    ]);
+    const [writeResult] = await Promise.allSettled([writePromise]);
 
     if (writeResult.status === 'fulfilled') {
       console.log("File write complete.");
-      if (dataFile) {
-        state.lastModifiedTime = dataFile.modifiedTime;
-      }
+      state.displayLogLastModified = displayFile.modifiedTime;
     } else {
       console.error("File write failed:", writeResult.reason);
     }

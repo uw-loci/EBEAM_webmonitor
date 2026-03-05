@@ -4,7 +4,7 @@ const path = require('path');
 require('dotenv').config();
 
 // Validate environment variables
-if (!process.env.FOLDER_ID || !process.env.API_KEY) {
+if (!process.env.SIMULATE && (!process.env.FOLDER_ID || !process.env.API_KEY)) {
   console.error("Missing FOLDER_ID or API_KEY in environment variables. Exiting...");
   process.exit(1);
 }
@@ -27,7 +27,7 @@ const supabase = createClient(
 );
 
 // Initialize Google Drive API
-const drive = google.drive({ version: 'v3', auth: API_KEY });
+const drive = process.env.SIMULATE ? null : google.drive({ version: 'v3', auth: API_KEY });
 
 module.exports = {
   supabase,

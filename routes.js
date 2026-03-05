@@ -30,6 +30,7 @@ function registerRoutes(app) {
         ccsGraphB,
         ccsGraphC,
         codeLastUpdated,
+        simulationMode: !!process.env.SIMULATE,
       });
 
       res.send(html);
@@ -65,7 +66,8 @@ function registerRoutes(app) {
       clamp_temperature_C: state.data.clamp_temperature_C,
       siteLastUpdated: new Date().toISOString(),
       webMonitorLastModified: state.webMonitorLastModified || null,
-      displayLogLastModified: state.displayLogLastModified || null
+      displayLogLastModified: state.displayLogLastModified || null,
+      simulationMode: !!process.env.SIMULATE,
     });
   });
 

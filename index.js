@@ -10,6 +10,7 @@
 const express = require('express');
 const path = require('path');
 const { PORT } = require('./config');
+const { startSimulation } = require('./services/simulation');
 const { fetchAndUpdateFile, pollLongTerm } = require('./services/polling');
 const { backfillShortTermGraph, backfillLongTermGraph, backfillCCSGraphs } = require('./services/supabase');
 const { shortTermPressureGraph, longTermPressureGraph, ccsGraphA, ccsGraphB, ccsGraphC } = require('./services/graphs');
@@ -45,4 +46,9 @@ registerRoutes(app);
 
   // 5) Open the HTTP port after caches are warm
   app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+
+  if (process.env.SIMULATE) {
+    console.log('[SIMULATION] Mode enabled — inserting synthetic data every 3s');
+    startSimulation();
+  }
 })();

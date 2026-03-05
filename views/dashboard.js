@@ -26,6 +26,7 @@ function renderDashboard(opts) {
     ccsGraphB,
     ccsGraphC,
     codeLastUpdated,
+    simulationMode,
   } = opts;
 
   const experimentRunning = state.experimentRunning;
@@ -412,6 +413,9 @@ function renderDashboard(opts) {
       </style>
     </head>
     <body>
+      ${simulationMode ? `<div style="position:sticky;top:0;z-index:10000;background:#f59e0b;color:#000;text-align:center;padding:10px;font-weight:bold;font-size:1.1rem;">
+        SIMULATION MODE - Data shown is synthetic and does not reflect real hardware
+      </div>` : ''}
       <div class="container-fluid mt-4">
         <!-- If experiment isn't running, show a neon warning. In the alternate case, show a neon success -->
         <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'} fixed-top-right">

@@ -8,6 +8,9 @@
  * @param {string[]} opts.vacColors     - 8-element array of vacuum indicator colors
  * @param {Object} opts.shortTermPressureGraph - Short-term pressure chart graph object
  * @param {Object} opts.longTermPressureGraph - Long-term pressure chart graph object
+ * @param {Object} opts.ccsGraphA - CCS clamp temperature graph for cathode A
+ * @param {Object} opts.ccsGraphB - CCS clamp temperature graph for cathode B
+ * @param {Object} opts.ccsGraphC - CCS clamp temperature graph for cathode C
  * @param {string} opts.codeLastUpdated - Timestamp string for code deploy
  * @returns {string} Full HTML string
  */
@@ -19,6 +22,9 @@ function renderDashboard(opts) {
     vacColors,
     shortTermPressureGraph,
     longTermPressureGraph,
+    ccsGraphA,
+    ccsGraphB,
+    ccsGraphC,
     codeLastUpdated,
   } = opts;
 
@@ -734,6 +740,86 @@ function renderDashboard(opts) {
         });
       </script>
 
+      <div id="ccs-charts-section">
+        <div id="ccs-chart-A"></div>
+        <div id="ccs-chart-B"></div>
+        <div id="ccs-chart-C"></div>
+      </div>
+
+      <script>
+        function createCCSUplotChart(container, config) {
+          if (typeof container === 'string') container = document.querySelector(container);
+
+          const {
+            title = "CCS Temperature",
+            data = [[], []],
+            seriesLabel = "Temp (°C)",
+            stroke = '#f97316',
+          } = config;
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'chart-container';
+          wrapper.innerHTML = \`
+            <div class="chart-title">\${title}</div>
+            <div class="chart"></div>
+          \`;
+          container.appendChild(wrapper);
+
+          const chartEl = wrapper.querySelector('.chart');
+
+          const uplot = new uPlot({
+            width: wrapper.clientWidth,
+            height: 200,
+            series: [
+              {},
+              {
+                label: seriesLabel,
+                value: (u, v) => v == null ? "" : v.toFixed(1) + " °C",
+                stroke,
+                points: { show: false },
+              }
+            ],
+            scales: { x: { time: true }, y: { auto: true } },
+            axes: [
+              { stroke: '#ccc' },
+              { stroke: '#ccc', values: (u, vals) => vals.map(v => v != null ? v.toFixed(1) : "") },
+            ],
+            cursor: {
+              focus: { prox: 16 },
+              drag: { x: true, y: false, setScale: true },
+            },
+          }, data, chartEl);
+
+          window.addEventListener('resize', () => {
+            uplot.setSize({ width: wrapper.clientWidth, height: 200 });
+          });
+
+          chartEl.ondblclick = () => {
+            uplot.setScale('x', { min: null, max: null });
+          };
+
+          return uplot;
+        }
+
+        let ccsChartA = createCCSUplotChart(document.getElementById('ccs-chart-A'), {
+          title: 'Cathode A \u2014 Clamp Temperature',
+          data: [${JSON.stringify(ccsGraphA.xVals)}, ${JSON.stringify(ccsGraphA.yVals)}],
+          seriesLabel: 'Temp A (°C)',
+          stroke: '#f97316',
+        });
+        let ccsChartB = createCCSUplotChart(document.getElementById('ccs-chart-B'), {
+          title: 'Cathode B \u2014 Clamp Temperature',
+          data: [${JSON.stringify(ccsGraphB.xVals)}, ${JSON.stringify(ccsGraphB.yVals)}],
+          seriesLabel: 'Temp B (°C)',
+          stroke: '#22c55e',
+        });
+        let ccsChartC = createCCSUplotChart(document.getElementById('ccs-chart-C'), {
+          title: 'Cathode C \u2014 Clamp Temperature',
+          data: [${JSON.stringify(ccsGraphC.xVals)}, ${JSON.stringify(ccsGraphC.yVals)}],
+          seriesLabel: 'Temp C (°C)',
+          stroke: '#3b82f6',
+        });
+      </script>
 
       <div class="env-section", style="overflow-y: auto;">
         <p>Code last updated: ${codeLastUpdated}</p>
@@ -896,6 +982,16 @@ function renderDashboard(opts) {
             } catch (e) {
               console.error('Chart data update failed:', e);
             }
+          }
+
+          try {
+            const ccsRes = await fetch('/ccs-chart-data');
+            const ccsData = await ccsRes.json();
+            ccsChartA.setData([ccsData.A.xVals, ccsData.A.yVals]);
+            ccsChartB.setData([ccsData.B.xVals, ccsData.B.yVals]);
+            ccsChartC.setData([ccsData.C.xVals, ccsData.C.yVals]);
+          } catch (e) {
+            console.error('CCS chart data update failed:', e);
           }
 
           }

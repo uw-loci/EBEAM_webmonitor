@@ -1,6 +1,6 @@
 const { supabase } = require('../config');
 const state = require('./state');
-const { updateDisplayData } = require('./graphs');
+const { updateDisplayData, addCCSPoint } = require('./graphs');
 
 /**
  * Maps Supabase log_data JSON to the application's data object format
@@ -59,15 +59,18 @@ function resetData() {
 }
 
 /**
- * Backfills the short-term pressure graph from the short_term_logs table.
+ * Backfills the short-term pressure graph from the last 24 hours of short_term_logs.
+ * Time window: 24h (matches the "Last 24h" chart label and maxDataPoints: 30000 @ 3s ≈ 25h capacity).
  * @param {Object} graph - The graph object to populate
  * @returns {string|null} The created_at of the last row, or null if no data
  */
 async function backfillShortTermGraph(graph) {
   try {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await supabase
       .from('short_term_logs')
       .select('created_at, data')
+      .gte('created_at', twentyFourHoursAgo)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -97,7 +100,8 @@ async function backfillShortTermGraph(graph) {
 }
 
 /**
- * Backfills the long-term pressure graph from the long_term_logs table.
+ * Backfills the long-term pressure graph from long_term_logs.
+ * Time window: all-time (matches the "Historical / All-time" chart label; 1-min averaged rows).
  * @param {Object} graph - The graph object to populate
  * @returns {string|null} The recorded_at of the last row, or null if no data
  */
@@ -181,11 +185,53 @@ async function fetchLatestLongTermEntry() {
   }
 }
 
+/**
+ * Backfills the CCS clamp temperature graphs from the last hour of short_term_logs.
+ * Time window: 1h (matches the CCS ring buffer capacity of 1200 points @ 3s ≈ 1h).
+ * @param {Object} graphA - CCS graph object for cathode A
+ * @param {Object} graphB - CCS graph object for cathode B
+ * @param {Object} graphC - CCS graph object for cathode C
+ * @returns {string|null} The created_at of the last row, or null if no data
+ */
+async function backfillCCSGraphs(graphA, graphB, graphC) {
+  try {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { data, error } = await supabase
+      .from('short_term_logs')
+      .select('created_at, data')
+      .gte('created_at', oneHourAgo)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Backfill CCS graphs error:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      console.log('No CCS data to backfill');
+      return null;
+    }
+
+    for (const row of data) {
+      const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
+      addCCSPoint(graphA, tSec, row.data?.clamp_temperature_A ?? null);
+      addCCSPoint(graphB, tSec, row.data?.clamp_temperature_B ?? null);
+      addCCSPoint(graphC, tSec, row.data?.clamp_temperature_C ?? null);
+    }
+    console.log(`Backfilled CCS graphs with ${data.length} points`);
+    return data[data.length - 1].created_at;
+  } catch (err) {
+    console.error('Error backfilling CCS graphs:', err);
+    return null;
+  }
+}
+
 module.exports = {
   mapSupabaseDataToAppFormat,
   resetData,
   backfillShortTermGraph,
   backfillLongTermGraph,
+  backfillCCSGraphs,
   fetchLatestShortTermEntry,
   fetchLatestLongTermEntry,
 };

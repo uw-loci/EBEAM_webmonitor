@@ -3,7 +3,7 @@ const { supabase, REVERSED_FILE_PATH } = require('./config');
 const state = require('./services/state');
 const { computeAllColors } = require('./services/interlocks');
 const { fetchDisplayFileContents } = require('./services/gdrive');
-const { shortTermPressureGraph, longTermPressureGraph } = require('./services/graphs');
+const { shortTermPressureGraph, longTermPressureGraph, ccsGraphA, ccsGraphB, ccsGraphC } = require('./services/graphs');
 const { renderDashboard } = require('./views/dashboard');
 
 const codeLastUpdated = new Date().toLocaleString('en-US', {
@@ -26,6 +26,9 @@ function registerRoutes(app) {
         vacColors,
         shortTermPressureGraph,
         longTermPressureGraph,
+        ccsGraphA,
+        ccsGraphB,
+        ccsGraphC,
         codeLastUpdated,
       });
 
@@ -102,6 +105,15 @@ function registerRoutes(app) {
       view,
       xVals: graph.displayXVals,
       yVals: graph.displayYVals,
+    });
+  });
+
+  // CCS clamp temperature chart data
+  app.get('/ccs-chart-data', (req, res) => {
+    res.json({
+      A: { xVals: ccsGraphA.xVals, yVals: ccsGraphA.yVals },
+      B: { xVals: ccsGraphB.xVals, yVals: ccsGraphB.yVals },
+      C: { xVals: ccsGraphC.xVals, yVals: ccsGraphC.yVals },
     });
   });
 

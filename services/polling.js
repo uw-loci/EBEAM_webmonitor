@@ -2,7 +2,7 @@ const { INACTIVE_THRESHOLD } = require('../config');
 const state = require('./state');
 const { mapSupabaseDataToAppFormat, resetData, fetchLatestShortTermEntry, fetchLatestLongTermEntry } = require('./supabase');
 const { fetchDisplayFileContents } = require('./gdrive');
-const { shortTermPressureGraph, longTermPressureGraph, updateDisplayData } = require('./graphs');
+const { shortTermPressureGraph, longTermPressureGraph, updateDisplayData, addCCSPoint, ccsGraphA, ccsGraphB, ccsGraphC } = require('./graphs');
 
 /**
  * Polls the short_term_logs table for the latest entry.
@@ -23,6 +23,10 @@ async function pollShortTerm() {
     shortTermPressureGraph.fullXVals.push(tSec);
     shortTermPressureGraph.fullYVals.push(parseFloat(pressure));
     updateDisplayData(shortTermPressureGraph);
+
+    addCCSPoint(ccsGraphA, tSec, entry.data?.clamp_temperature_A ?? null);
+    addCCSPoint(ccsGraphB, tSec, entry.data?.clamp_temperature_B ?? null);
+    addCCSPoint(ccsGraphC, tSec, entry.data?.clamp_temperature_C ?? null);
 
     state.lastShortTermTimestamp = entryTimestamp;
   } catch (err) {

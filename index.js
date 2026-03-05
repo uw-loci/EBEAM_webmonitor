@@ -11,8 +11,8 @@ const express = require('express');
 const path = require('path');
 const { PORT } = require('./config');
 const { fetchAndUpdateFile, pollLongTerm } = require('./services/polling');
-const { backfillShortTermGraph, backfillLongTermGraph } = require('./services/supabase');
-const { shortTermPressureGraph, longTermPressureGraph } = require('./services/graphs');
+const { backfillShortTermGraph, backfillLongTermGraph, backfillCCSGraphs } = require('./services/supabase');
+const { shortTermPressureGraph, longTermPressureGraph, ccsGraphA, ccsGraphB, ccsGraphC } = require('./services/graphs');
 const state = require('./services/state');
 const registerRoutes = require('./routes');
 
@@ -30,6 +30,9 @@ registerRoutes(app);
 
   console.log('Backfilling long-term pressure cache...');
   state.lastLongTermTimestamp = await backfillLongTermGraph(longTermPressureGraph);
+
+  console.log('Backfilling CCS temperature graphs...');
+  await backfillCCSGraphs(ccsGraphA, ccsGraphB, ccsGraphC);
 
   // 2) Grab the latest scalar data right now
   await fetchAndUpdateFile();

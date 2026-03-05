@@ -54,9 +54,32 @@ function updateDisplayData(graph) {
   }
 }
 
+const CCS_MAX_POINTS = 1200; // ~1 hour at 3s polling
+
+function createCCSGraphObj() {
+  return { xVals: [], yVals: [], maxPoints: CCS_MAX_POINTS };
+}
+
+function addCCSPoint(graph, tSec, temp) {
+  graph.xVals.push(tSec);
+  graph.yVals.push(temp ?? null);
+  if (graph.xVals.length > graph.maxPoints) {
+    graph.xVals.shift();
+    graph.yVals.shift();
+  }
+}
+
+const ccsGraphA = createCCSGraphObj();
+const ccsGraphB = createCCSGraphObj();
+const ccsGraphC = createCCSGraphObj();
+
 module.exports = {
   createGraphObj,
   updateDisplayData,
   shortTermPressureGraph,
   longTermPressureGraph,
+  addCCSPoint,
+  ccsGraphA,
+  ccsGraphB,
+  ccsGraphC,
 };

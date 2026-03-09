@@ -71,7 +71,8 @@ async function backfillShortTermGraph(graph) {
       .from('short_term_logs')
       .select('created_at, data')
       .gte('created_at', twentyFourHoursAgo)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true })
+      .limit(30000);
 
     if (error) {
       console.error('Backfill short-term error:', error);
@@ -200,7 +201,8 @@ async function backfillCCSGraphs(graphA, graphB, graphC) {
       .from('short_term_logs')
       .select('created_at, data')
       .gte('created_at', oneHourAgo)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true })
+      .limit(1200);
 
     if (error) {
       console.error('Backfill CCS graphs error:', error);

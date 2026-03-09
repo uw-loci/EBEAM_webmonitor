@@ -62,7 +62,7 @@ function renderDashboard(opts) {
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>uPlot Live Update</title>
+      <title>E-Beam Web Monitor</title>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
       <link rel="stylesheet" href="https://unpkg.com/uplot/dist/uPlot.min.css">
       <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
@@ -71,12 +71,24 @@ function renderDashboard(opts) {
            FUTURISTIC BACKGROUND
         ========================== */
 
+        :root {
+          --bg-base:        #0a0e1a;
+          --bg-surface:     rgba(255,255,255,0.05);
+          --bg-surface-alt: rgba(255,255,255,0.08);
+          --border-subtle:  rgba(255,255,255,0.10);
+          --accent:         #38bdf8;
+          --success:        #22c55e;
+          --danger:         #ef4444;
+          --text-primary:   #e2e8f0;
+          --text-secondary: #94a3b8;
+        }
+
         body {
           font-family: Arial, sans-serif;
           text-align: center;
-          background: #0d1117;
+          background: var(--bg-base);
           background-size: 400% 400%;
-          color: white;
+          color: var(--text-primary);
           margin: 0;
         }
 
@@ -104,10 +116,11 @@ function renderDashboard(opts) {
           background: rgba(255, 255, 255, 0.08);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border-radius: 15px;
-          padding: 20px;
-          margin: 50px auto;
+          border-radius: 10px;
+          padding: 12px 16px;
+          margin: 14px auto;
           width: 90%;
+          border: 1px solid var(--border-subtle);
         }
 
         /* =========================
@@ -129,6 +142,16 @@ function renderDashboard(opts) {
           color: rgba(255, 255, 255, 0.8);
           display: flex;
         }
+        .section-header {
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--text-secondary);
+          margin: 0 0 8px 0;
+          padding-bottom: 6px;
+          border-bottom: 1px solid var(--border-subtle);
+        }
         /* =========================
            INTERLOCKS SECTION
         ========================== */
@@ -139,25 +162,34 @@ function renderDashboard(opts) {
         }
         .interlocks-container {
           display: flex;
-          justify-content: space-around;
+          justify-content: flex-start;
           align-items: center;
           flex-wrap: wrap;
+          gap: 10px;
         }
         .interlock-item {
-          text-align: center;
-          font-size: 0.75em;
-          margin: 10px;
-          transition: transform 0.3s ease, filter 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 0.72rem;
+          color: var(--text-secondary);
+          margin: 0;
+          transition: color 0.2s ease;
         }
-        .interlock-item div:last-child {
-          transition: font-weight 0.3s ease;
+        .interlock-item:hover {
+          color: var(--text-primary);
         }
         .circle {
-          width: 30px;
-          height: 30px;
+          width: 14px;
+          height: 14px;
           border-radius: 50%;
-          margin: 0 auto 5px auto;
+          margin: 0;
+          cursor: default;
           transition: transform 0.3s ease, filter 0.3s ease;
+        }
+        .interlock-item:hover .circle {
+          transform: scale(1.5);
+          filter: brightness(1.3);
         }
         /* =========================
            GREEN INDICATORS SECTION
@@ -169,25 +201,34 @@ function renderDashboard(opts) {
         }
         .vacuum-indicators-container {
           display: flex;
-          justify-content: space-around;
+          justify-content: flex-start;
           align-items: center;
           flex-wrap: wrap;
+          gap: 10px;
         }
         .vacuum-indicators-item {
-          text-align: center;
-          font-size: 0.75em;
-          margin: 10px;
-          transition: transform 0.3s ease, filter 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 0.72rem;
+          color: var(--text-secondary);
+          margin: 0;
+          transition: color 0.2s ease;
         }
-        .vacuum-indicators-item div:last-child {
-          transition: font-weight 0.3s ease;
+        .vacuum-indicators-item:hover {
+          color: var(--text-primary);
         }
         .vacuum-indicators-circle {
-          width: 30px;
-          height: 30px;
+          width: 14px;
+          height: 14px;
           border-radius: 50%;
-          margin: 0 auto 5px auto;
+          margin: 0;
+          cursor: default;
           transition: transform 0.3s ease, filter 0.3s ease;
+        }
+        .vacuum-indicators-item:hover .vacuum-indicators-circle {
+          transform: scale(1.5);
+          filter: brightness(1.3);
         }
         /* =========================
            ENVIRONMENTAL SECTION
@@ -209,8 +250,8 @@ function renderDashboard(opts) {
         .ccs-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-          gap: 1rem;
-          margin-top: 1rem;
+          gap: 0.5rem;
+          margin-top: 0.5rem;
         }
         .beam-energy-grid {
           display: grid;
@@ -222,30 +263,31 @@ function renderDashboard(opts) {
         .ccs-reading {
           font-size: 0.8rem;
           font-weight: 500;
-          margin-bottom: 12px;
-          padding: 10px;
+          margin-bottom: 5px;
+          padding: 5px 8px;
           border-radius: 6px;
-          background-color:rgb(116, 118, 121);
-          border: 1px solid #ced4da;
+          background: var(--bg-base);
+          border: 1px solid var(--border-subtle);
         }
         .beam-energy-reading {
           font-size: 0.9rem;
           font-weight: 500;
           margin-top: 2px;
           border-radius: 6px;
-          background-color:rgb(116, 118, 121);
-          border: 1px solid #ced4da;
+          background: var(--bg-surface);
+          border: 1px solid var(--border-subtle);
         }
         .beam-energy-reading p{
           margin-top: 7px;
         }
         .cathode-box {
           flex: 1;
-          border: 1px solid #dee2e6;
+          border: 1px solid var(--border-subtle);
+          background: var(--bg-surface);
           margin-top: 5px;
           margin-bottom: 12px;
           border-radius: 7px;
-          padding: 20px;
+          padding: 10px 12px;
         }
         .cathode-heading {
            margin-bottom: 12px;
@@ -256,8 +298,8 @@ function renderDashboard(opts) {
           justify-content: space-around;
           align-items: center;
           flex-wrap: wrap;
-          gap: 1.5rem;
-          margin-top: 1.5rem;
+          gap: 0.5rem;
+          margin-top: 0.5rem;
         }
         .gauge {
           text-align: center;
@@ -266,14 +308,16 @@ function renderDashboard(opts) {
         }
         /* gauge circle now displays the attributes of a textbox */
         .gauge-circle {
-          width: 80px;
-          height: 37px;
-          padding: 10px;
-          background-color: conic-gradient(#ccc 0deg, #ccc 360deg);
+          background: var(--bg-surface);
+          border: 1px solid var(--border-subtle);
+          border-radius: 6px;
+          padding: 4px 8px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          width: auto;
+          height: auto;
           color: white;
-          border: 1px solid #ccc;
           text-align: center;
-          font-size: 0.9em;
         }
         /* =========================
            LOG VIEWER
@@ -298,8 +342,8 @@ function renderDashboard(opts) {
           display: block;
         }
         .btn-toggle {
-          background-color: #00bcd4;
-          color: white;
+          background: var(--accent);
+          color: #0a0e1a;
           border: none;
           padding: 5px 10px;
           font-size: 0.75em;
@@ -346,16 +390,16 @@ function renderDashboard(opts) {
           z-index: 9999;
         }
         .neon-warning {
-          border: 2px solid red;
-          box-shadow: 0 0 10px red;
-          text-shadow: 0 0 10px red;
-          background-color: rgba(255, 0, 0, 0.2);
+          border: 2px solid var(--danger);
+          box-shadow: 0 0 8px var(--danger);
+          text-shadow: 0 0 8px var(--danger);
+          background-color: rgba(239, 68, 68, 0.15);
         }
         .neon-success {
-          border: 2px solid green;
-          box-shadow: 0 0 10px green;
-          text-shadow: 0 0 10px green;
-          background-color: rgba(0, 255, 0, 0.2);
+          border: 2px solid var(--success);
+          box-shadow: 0 0 8px var(--success);
+          text-shadow: 0 0 8px var(--success);
+          background-color: rgba(34, 197, 94, 0.15);
         }
         @media (max-width: 768px) {
           .fixed-top-right {
@@ -382,138 +426,159 @@ function renderDashboard(opts) {
           -webkit-backdrop-filter: blur(20px);
           border-radius: 15px;
           padding: 10px;
-          margin: 50px auto;
+          margin: 14px auto;
           width: 98%;
-          max-height: 500px;
-          overflow-y: auto;
-          border: 2px dashed red;
         }
+
+        #ccs-charts-section .chart-container { margin: 0; width: 100%; }
 
         .chart {
           position: relative;
           height: 300px;
           width: 100%;
-          border: 2px solid blue;
+        }
+
+        #ccs-charts-section .chart {
+          height: 180px;
+        }
+
+        #ccs-charts-section {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          width: 98%;
+          margin: 10px auto;
+          box-sizing: border-box;
+        }
+        @media (max-width: 900px) {
+          #ccs-charts-section {
+            grid-template-columns: 1fr;
+          }
         }
 
         .chart-title {
-          font-size: 20px;
-          font-weight: bold;
-          margin-bottom: 10px;
-          color: #ccc;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          margin-bottom: 6px;
         }
 
         .chart-info-text {
-          margin-top: 40px;
+          margin-top: 8px;
           font-size: 0.9em;
           color: #ccc;
-          border: 1px dotted green;
         }
       </style>
     </head>
     <body>
       <div class="container-fluid mt-4">
-        <!-- If experiment isn't running, show a neon warning. In the alternate case, show a neon success -->
-        <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'} fixed-top-right">
-          Dashboard is ${!experimentRunning ? 'not ' : ''}running
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 24px 10px; border-bottom:1px solid var(--border-subtle); margin-bottom:12px;">
+          <h2 style="font-size:1.4rem; font-weight:700; color:#d6eaff; margin:0;">E-beam Web Monitor</h2>
+          <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'}" style="padding:4px 10px; font-size:0.7em; border-radius:8px; color:white; font-weight:bold;">
+            Dashboard is ${!experimentRunning ? 'not ' : ''}running
+          </div>
         </div>
-        <!-- Title & Subtitle -->
-        <h2 class="dashboard-title">E-beam Web Monitor</h2>
-        <p class="dashboard-subtitle">
-          <strong>Web Monitor Log Last Modified:</strong> <span id="log-last-modified">${fileModified}</span> |
-          <strong>Site Last Updated:</strong> <span id="site-last-updated">${currentTime}</span>
+        <p style="text-align:center; font-size:0.75rem; color:var(--text-secondary); margin:0 0 12px 0;">
+          Log Modified: <span id="log-last-modified">${fileModified}</span> &nbsp;·&nbsp; Updated: <span id="site-last-updated">${currentTime}</span>
         </p>
         <!-- Interlocks Section -->
         <div class="interlocks-section">
-          <h3 class="dashboard-subtitle interlocks-title">Interlocks</h3>
+          <h3 class="section-header">Interlocks</h3>
           <div class="interlocks-container">
-            <div class="interlock-item">
+            <div class="interlock-item" title="Door">
               <div id="sic-door" class="circle" style="background-color:${doorColor}"></div>
-              <div>Door</div>
+              <span>Door</span>
             </div>
-            <div class="interlock-item">
+            <div class="interlock-item" title="Water">
               <div id="sic-water" class="circle" style="background-color:${waterColor}"></div>
-              <div>Water</div>
+              <span>Water</span>
             </div>
-            <div class="interlock-item">
+            <div class="interlock-item" title="Vacuum Power">
               <div id="sic-vacuum-power" class="circle" style="background-color:${vacuumPowerColor}"></div>
-              <div>Vacuum Power</div>
+              <span>Vacuum Power</span>
             </div>
-            <div class="interlock-item">
+            <div class="interlock-item" title="Vacuum Pressure">
               <div id="sic-vacuum-pressure" class="circle" style="background-color:${vacuumPressureColor}"></div>
-              <div>Vacuum Pressure</div>
+              <span>Vacuum Pressure</span>
             </div>
-            <div class="interlock-item">
+            <div class="interlock-item" title="Low Oil">
               <div id="sic-oil-low" class="circle" style="background-color:${oilLowColor}"></div>
-              <div>Low Oil</div>
+              <span>Low Oil</span>
             </div>
-            <div class="interlock-item">
+            <div class="interlock-item" title="High Oil">
               <div id="sic-oil-high" class="circle" style="background-color:${oilHighColor}"></div>
-              <div>High Oil</div>
+              <span>High Oil</span>
             </div>
-            <div class="interlock-item">
+            <div class="interlock-item" title="E-STOP Int">
               <div id="sic-estop" class="circle" style="background-color:${estopIntColor}"></div>
-              <div>E-STOP Int</div>
+              <span>E-STOP Int</span>
             </div>
-            <div class="interlock-item">
+            <div class="interlock-item" title="E-STOP Ext">
               <div id="sic-estopExt" class="circle" style="background-color:${estopExtColor}"></div>
-              <div>E-STOP Ext</div>
+              <span>E-STOP Ext</span>
             </div>
-            <div class="interlock-item">
+            <div class="interlock-item" title="All Interlocks">
               <div id="all-interlocks" class="circle" style="background-color:${allInterlocksColor}"></div>
-              <div>All Interlocks</div>
+              <span>All Interlocks</span>
             </div>
-            <div class="interlock-item">
+            <div class="interlock-item" title="G9 Output">
               <div id="g9-output" class="circle" style="background-color:${G9OutputColor}"></div>
-              <div>G9 Output</div>
+              <span>G9 Output</span>
             </div>
-            <div class="interlock-item">
+            <div class="interlock-item" title="HVolt ON">
               <div id="hvolt" class="circle" style="background-color:${hvoltColor}"></div>
-              <div>HVolt ON</div>
+              <span>HVolt ON</span>
             </div>
           </div>
         </div>
         <!-- Vacuum Indicators Section -->
         <div class="vacuum-indicators">
-          <h3 id="pressureReadings" class="dashboard-subtitle vacuum-indicators-title">Vacuum Indicators: ${pressure !== null ? pressure + ' mbar' : '--'}</h3>
+          <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border-subtle);">
+            <h3 class="section-header" style="border-bottom:none; margin:0;">Vacuum Indicators</h3>
+            <span id="pressureReadings" style="font-size:0.85rem; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums;">
+              ${pressure !== null ? pressure + ' mbar' : '--'}
+            </span>
+          </div>
           <div class="vacuum-indicators-container">
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-0" class="vacuum-indicators-circle" style="background-color:${vacColors[0]}"></div>
-              <div>Pumps Power ON</div>
+            <div class="vacuum-indicators-item" title="Pumps Power ON">
+              <div id="vac-indicator-0" class="vacuum-indicators-circle" style="background-color:${vacColors[0]}"></div>
+              <span>Pumps Power ON</span>
             </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-1" class="vacuum-indicators-circle" style="background-color:${vacColors[1]}"></div>
-              <div>Turbo Rotor ON</div>
+            <div class="vacuum-indicators-item" title="Turbo Rotor ON">
+              <div id="vac-indicator-1" class="vacuum-indicators-circle" style="background-color:${vacColors[1]}"></div>
+              <span>Turbo Rotor ON</span>
             </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-2" class="vacuum-indicators-circle" style="background-color:${vacColors[2]}"></div>
-              <div>Turbo Vent Open</div>
+            <div class="vacuum-indicators-item" title="Turbo Vent Open">
+              <div id="vac-indicator-2" class="vacuum-indicators-circle" style="background-color:${vacColors[2]}"></div>
+              <span>Turbo Vent Open</span>
             </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-3" class="vacuum-indicators-circle" style="background-color:${vacColors[3]}"></div>
-              <div>972b Power On</div>
+            <div class="vacuum-indicators-item" title="972b Power On">
+              <div id="vac-indicator-3" class="vacuum-indicators-circle" style="background-color:${vacColors[3]}"></div>
+              <span>972b Power On</span>
             </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-4" class="vacuum-indicators-circle" style="background-color:${vacColors[4]}"></div>
-              <div>Turbo Gate Closed</div>
+            <div class="vacuum-indicators-item" title="Turbo Gate Closed">
+              <div id="vac-indicator-4" class="vacuum-indicators-circle" style="background-color:${vacColors[4]}"></div>
+              <span>Turbo Gate Closed</span>
             </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-5" class="vacuum-indicators-circle" style="background-color:${vacColors[5]}"></div>
-              <div>Turbo Gate Open</div>
+            <div class="vacuum-indicators-item" title="Turbo Gate Open">
+              <div id="vac-indicator-5" class="vacuum-indicators-circle" style="background-color:${vacColors[5]}"></div>
+              <span>Turbo Gate Open</span>
             </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-6" class="vacuum-indicators-circle" style="background-color:${vacColors[6]}"></div>
-              <div>Argon Gate Open</div>
+            <div class="vacuum-indicators-item" title="Argon Gate Open">
+              <div id="vac-indicator-6" class="vacuum-indicators-circle" style="background-color:${vacColors[6]}"></div>
+              <span>Argon Gate Open</span>
             </div>
-            <div class="vacuum-indicators-item">
-              <div id = "vac-indicator-7" class="vacuum-indicators-circle" style="background-color:${vacColors[7]}"></div>
-              <div>Argon Gate Closed</div>
+            <div class="vacuum-indicators-item" title="Argon Gate Closed">
+              <div id="vac-indicator-7" class="vacuum-indicators-circle" style="background-color:${vacColors[7]}"></div>
+              <span>Argon Gate Closed</span>
             </div>
           </div>
         </div>
         <!-- Environmental Section -->
         <div class="env-section">
-          <h3 class="dashboard-subtitle env-title">Environmental</h3>
+          <h3 class="section-header">Environmental</h3>
           <div class="gauge-grid">
             <div class="gauge" id="sensor-1">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["1"] === "DISCONNECTED" || temperatures["1"] === "None" ? '--' : temperatures["1"] + '°C'}</div></div>
@@ -543,7 +608,7 @@ function renderDashboard(opts) {
         </div>
         <!-- CCS Section -->
         <div class="env-section">
-          <h3 class="dashboard-subtitle env-title">CCS</h3>
+          <h3 class="section-header">CCS</h3>
           <div class="ccs-grid">
             <div class="cathode-box">
               <p class="cathode-heading">Cathode 1</p>
@@ -594,7 +659,7 @@ function renderDashboard(opts) {
         </div>
         <!-- Beam Energy -->
         <div class="env-section">
-          <h3 class="dashboard-subtitle env-title">Beam Energy</h3>
+          <h3 class="section-header">Beam Energy</h3>
           <div class="beam-energy-grid">
                 <div class = "beam-energy-reading"><p>Set: --</p></div>
                 <div class = "beam-energy-reading"><p>High Voltage: --</p></div>
@@ -605,8 +670,8 @@ function renderDashboard(opts) {
 
       <div id="chart-root-2"></div>
       <div id="pressure-chart-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 98%; margin: 50px auto 0 auto;">
-          <span id="pressure-chart-label" style="color:#ccc; font-size:14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 98%; margin: 0 auto 0 auto;">
+          <span id="pressure-chart-label" style="color:#94a3b8; font-size:14px;">
             Short-Term (Last 24h, ~3s resolution)
           </span>
           <button id="pressure-view-toggle" class="btn-toggle" style="float:none; margin:0;">
@@ -636,13 +701,6 @@ function renderDashboard(opts) {
           wrapper.innerHTML = \`
             <div class="chart-title">\${title}</div>
             <div class="chart"></div>
-            <div class="chart-info-text">
-              Max \${maxDataPoints} calculated points. Max \${maxDisplayPoints} display points.
-              # points displayed: \${displayXVals.length}.
-              Current stride: \${lastUsedFactor} minute(s).
-              New point added every \${60 * chartDataIntervalDuration}s.
-              Double-click to reset zoom. Drag horizontally to zoom in.
-            </div>
           \`;
           container.appendChild(wrapper);
 
@@ -659,14 +717,29 @@ function renderDashboard(opts) {
                   if (v == null) return "";
                   return v.toExponential(4);
                 },
-                stroke: 'blue',
-                points: { show: true, size: 5, fill: 'blue', stroke: 'blue' }
+                stroke: '#38bdf8',
+                points: { show: true, size: 5, fill: '#38bdf8', stroke: '#38bdf8' }
               }
             ],
             scales: { x: { time: true } },
             axes: [
-              { stroke: '#ccc' },
-              { stroke: '#ccc', values: (u, vals) => vals.map(v => v.toExponential(2)) },
+              {
+                stroke: '#94a3b8',
+                font: '10px Arial',
+                ticks: { stroke: 'rgba(255,255,255,0.15)', width: 1 },
+                grid:  { stroke: 'rgba(255,255,255,0.06)', width: 1 },
+              },
+              {
+                label: 'Pressure (mbar)',
+                labelSize: 20,
+                labelFont: '10px Arial',
+                stroke: '#94a3b8',
+                font: '10px Arial',
+                size: 80,
+                values: (u, vals) => vals.map(v => v.toExponential(2)),
+                ticks: { stroke: 'rgba(255,255,255,0.15)', width: 1 },
+                grid:  { stroke: 'rgba(255,255,255,0.06)', width: 1 },
+              },
             ],
             cursor: {
               focus: { prox: 16 },
@@ -769,7 +842,7 @@ function renderDashboard(opts) {
 
           const uplot = new uPlot({
             width: wrapper.clientWidth,
-            height: 200,
+            height: 180,
             series: [
               {},
               {
@@ -781,8 +854,23 @@ function renderDashboard(opts) {
             ],
             scales: { x: { time: true }, y: { auto: true } },
             axes: [
-              { stroke: '#ccc' },
-              { stroke: '#ccc', values: (u, vals) => vals.map(v => v != null ? v.toFixed(1) : "") },
+              {
+                stroke: '#94a3b8',
+                font: '10px Arial',
+                ticks: { stroke: 'rgba(255,255,255,0.15)', width: 1 },
+                grid:  { stroke: 'rgba(255,255,255,0.06)', width: 1 },
+              },
+              {
+                label: '°C',
+                labelSize: 18,
+                labelFont: '10px Arial',
+                stroke: '#94a3b8',
+                font: '10px Arial',
+                size: 50,
+                values: (u, vals) => vals.map(v => v != null ? v.toFixed(1) : ""),
+                ticks: { stroke: 'rgba(255,255,255,0.15)', width: 1 },
+                grid:  { stroke: 'rgba(255,255,255,0.06)', width: 1 },
+              },
             ],
             cursor: {
               focus: { prox: 16 },
@@ -791,7 +879,7 @@ function renderDashboard(opts) {
           }, data, chartEl);
 
           window.addEventListener('resize', () => {
-            uplot.setSize({ width: wrapper.clientWidth, height: 200 });
+            uplot.setSize({ width: wrapper.clientWidth, height: 180 });
           });
 
           chartEl.ondblclick = () => {
@@ -817,13 +905,9 @@ function renderDashboard(opts) {
           title: 'Cathode C \u2014 Clamp Temperature',
           data: [${JSON.stringify(ccsGraphC.xVals)}, ${JSON.stringify(ccsGraphC.yVals)}],
           seriesLabel: 'Temp C (°C)',
-          stroke: '#3b82f6',
+          stroke: '#818cf8',
         });
       </script>
-
-      <div class="env-section", style="overflow-y: auto;">
-        <p>Code last updated: ${codeLastUpdated}</p>
-      </div>
 
       <!-- Log Viewer -->
       <div class="env-section">
@@ -956,7 +1040,7 @@ function renderDashboard(opts) {
           });
           siteLastUpdated.textContent = clean_string;
 
-          pressureReadings.textContent = "Vacuum Indicators: " + String(data.pressure).replace("E", "e") + " mbar";
+          pressureReadings.textContent = String(data.pressure).replace("E", "e") + " mbar";
           sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None" && !experimentRunning) ? '--' : data.temperatures["1"] + '°C';
           sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None" && !experimentRunning) ? '--' : data.temperatures["2"] + '°C';
           sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None" && !experimentRunning) ? '--' : data.temperatures["3"] + '°C';

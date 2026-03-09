@@ -116,30 +116,39 @@ async function backfillShortTermGraph(graph) {
  */
 async function backfillLongTermGraph(graph) {
   try {
-    const { data, error } = await supabase
-      .from('long_term_logs')
-      .select('recorded_at, avg_pressure')
-      .order('recorded_at', { ascending: true });
+    const PAGE_SIZE = 1000;
+    let from = 0;
+    let lastRecordedAt = null;
 
-    if (error) {
-      console.error('Backfill long-term error:', error);
-      return null;
+    while (true) {
+      const { data, error } = await supabase
+        .from('long_term_logs')
+        .select('recorded_at, avg_pressure')
+        .order('recorded_at', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error) {
+        console.error('Backfill long-term error:', error);
+        break;
+      }
+
+      if (!data || data.length === 0) break;
+
+      for (const row of data) {
+        if (row.avg_pressure == null) continue;
+        const tSec = Math.floor(new Date(row.recorded_at).getTime() / 1000);
+        graph.fullXVals.push(tSec);
+        graph.fullYVals.push(row.avg_pressure);
+        updateDisplayData(graph);
+      }
+
+      lastRecordedAt = data[data.length - 1].recorded_at;
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
     }
 
-    if (!data || data.length === 0) {
-      console.log('No long-term data to backfill');
-      return null;
-    }
-
-    for (const row of data) {
-      if (row.avg_pressure == null) continue;
-      const tSec = Math.floor(new Date(row.recorded_at).getTime() / 1000);
-      graph.fullXVals.push(tSec);
-      graph.fullYVals.push(row.avg_pressure);
-      updateDisplayData(graph);
-    }
     console.log(`Backfilled ${graph.fullXVals.length} long-term points`);
-    return data[data.length - 1].recorded_at;
+    return lastRecordedAt;
   } catch (err) {
     console.error('Error backfilling long-term graph:', err);
     return null;

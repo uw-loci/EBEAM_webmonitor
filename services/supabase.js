@@ -67,33 +67,41 @@ function resetData() {
 async function backfillShortTermGraph(graph) {
   try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data, error } = await supabase
-      .from('short_term_logs')
-      .select('created_at, data')
-      .gte('created_at', twentyFourHoursAgo)
-      .order('created_at', { ascending: true })
-      .limit(30000);
+    const PAGE_SIZE = 1000;
+    let from = 0;
+    let lastCreatedAt = null;
 
-    if (error) {
-      console.error('Backfill short-term error:', error);
-      return null;
+    while (true) {
+      const { data, error } = await supabase
+        .from('short_term_logs')
+        .select('created_at, data')
+        .gte('created_at', twentyFourHoursAgo)
+        .order('created_at', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error) {
+        console.error('Backfill short-term error:', error);
+        break;
+      }
+
+      if (!data || data.length === 0) break;
+
+      for (const row of data) {
+        const pressure = row.data?.pressure;
+        if (pressure == null) continue;
+        const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
+        graph.fullXVals.push(tSec);
+        graph.fullYVals.push(parseFloat(pressure));
+        updateDisplayData(graph);
+      }
+
+      lastCreatedAt = data[data.length - 1].created_at;
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
     }
 
-    if (!data || data.length === 0) {
-      console.log('No short-term data to backfill');
-      return null;
-    }
-
-    for (const row of data) {
-      const pressure = row.data?.pressure;
-      if (pressure == null) continue;
-      const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
-      graph.fullXVals.push(tSec);
-      graph.fullYVals.push(parseFloat(pressure));
-      updateDisplayData(graph);
-    }
     console.log(`Backfilled ${graph.fullXVals.length} short-term points`);
-    return data[data.length - 1].created_at;
+    return lastCreatedAt;
   } catch (err) {
     console.error('Error backfilling short-term graph:', err);
     return null;
@@ -197,31 +205,41 @@ async function fetchLatestLongTermEntry() {
 async function backfillCCSGraphs(graphA, graphB, graphC) {
   try {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const { data, error } = await supabase
-      .from('short_term_logs')
-      .select('created_at, data')
-      .gte('created_at', oneHourAgo)
-      .order('created_at', { ascending: true })
-      .limit(1200);
+    const PAGE_SIZE = 1000;
+    let from = 0;
+    let lastCreatedAt = null;
+    let totalRows = 0;
 
-    if (error) {
-      console.error('Backfill CCS graphs error:', error);
-      return null;
+    while (true) {
+      const { data, error } = await supabase
+        .from('short_term_logs')
+        .select('created_at, data')
+        .gte('created_at', oneHourAgo)
+        .order('created_at', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error) {
+        console.error('Backfill CCS graphs error:', error);
+        break;
+      }
+
+      if (!data || data.length === 0) break;
+
+      for (const row of data) {
+        const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
+        addCCSPoint(graphA, tSec, row.data?.clamp_temperature_A ?? null);
+        addCCSPoint(graphB, tSec, row.data?.clamp_temperature_B ?? null);
+        addCCSPoint(graphC, tSec, row.data?.clamp_temperature_C ?? null);
+      }
+
+      totalRows += data.length;
+      lastCreatedAt = data[data.length - 1].created_at;
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
     }
 
-    if (!data || data.length === 0) {
-      console.log('No CCS data to backfill');
-      return null;
-    }
-
-    for (const row of data) {
-      const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
-      addCCSPoint(graphA, tSec, row.data?.clamp_temperature_A ?? null);
-      addCCSPoint(graphB, tSec, row.data?.clamp_temperature_B ?? null);
-      addCCSPoint(graphC, tSec, row.data?.clamp_temperature_C ?? null);
-    }
-    console.log(`Backfilled CCS graphs with ${data.length} points`);
-    return data[data.length - 1].created_at;
+    console.log(`Backfilled CCS graphs with ${totalRows} points`);
+    return lastCreatedAt;
   } catch (err) {
     console.error('Error backfilling CCS graphs:', err);
     return null;

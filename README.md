@@ -3,6 +3,13 @@
 A Node.js/Express server that provides a real-time web dashboard for monitoring the subsystems of the 3D electron-beam metal printer. The dashboard displays interlock states, vacuum indicators, pressure graphs, temperatures, and CCS heater readings — all updated live without page reloads.
 
 **Live site:** [ebeam-webmonitor.onrender.com](https://ebeam-webmonitor.onrender.com/)
+If you need to change the web monitor branch that the website runs on, follow these steps:
+1. Log into Render
+2. Click on EBEAM_webmonitor under Projects>Services
+3. Click on 'Settings' in the left nav bar
+4. Under 'Build & Deploy' find the 'Branch' field
+5. Click 'Edit' and it will display your GitHub branches
+6. Choose your desired branch and Render will automatically redeploy the website
 
 ## Setup
 

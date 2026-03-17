@@ -1,134 +1,142 @@
-# EBEAM_webmonitor
-EBeam WebMonitor reports the status of all the subsystems of the 3-D metal printer. Using this web-hosted platform, we will be able to remotely monitor all the subsystems without the need to be present onsite (in the Wet Lab). 
+# E-Beam Web Monitor
 
-The url for the website is: [ebeam-webmonitor.onrender.com/](https://ebeam-webmonitor.onrender.com/)
+A Node.js/Express server that provides a real-time web dashboard for monitoring the subsystems of the 3D electron-beam metal printer. The dashboard displays interlock states, vacuum indicators, pressure graphs, temperatures, and CCS heater readings — all updated live without page reloads.
 
-## Installation
-1. Run the EBEAM-Dashboard
-   
-   Switch to the correct branch: `git checkout feature/create_global_dict`
-   
-   (i) Connect your laptop to Wi-Fi to ensure syncs happen properly.
-   
-   (ii) Follow the EBEAM-Dashboard documentation for:
-      - Installing requirements
-      - Setting up dependencies
-      - Any additional environment configuration
-     
-   Note: The EBEAM-Dashboard is required for adding new subsystems to the global dict as we integrate them into the dashboard.
+**Live site:** [ebeam-webmonitor.onrender.com](https://ebeam-webmonitor.onrender.com/)
+If you need to change the web monitor branch that the website runs on, follow these steps:
+1. Log into Render
+2. Click on EBEAM_webmonitor under Projects>Services
+3. Click on 'Settings' in the left nav bar
+4. Under 'Build & Deploy' find the 'Branch' field
+5. Click 'Edit' and it will display your GitHub branches
+6. Choose your desired branch, click 'Save Changes' and Render will automatically redeploy the website
 
-3. Start the Express.js Server & Web Monitor
-   
-   From the project root:
-      (i) Express.js Server
-   
-          - `npm install`
-          - `npm start`
-   
-      (ii) Webmonitor
-          - `node index.js`
+## Setup
 
-## Backend Logic
+### Prerequisites
+- Node.js (v18+)
+- A Supabase project with the `short_term_logs` and `long_term_logs` tables (see [SUPABASE-README.md](./SUPABASE-README.md))
+- A Google Cloud API key with Drive API enabled
+- A Google Drive folder containing the system log files
 
-When you run the dashboard on the `feature/create_global_dict` branch, two files are generated:
+### Environment Variables
 
-1) WebMonitor Log File
-   (i) Purpose: to track real-time updates from all subsystems – Interlocks, VTRX, Pressure Readings, CCS, and Beam Energy.
-     (Note: the driver file for Beam Energy is maintained on a separate branch.)
+Create a `.env` file in the project root:
 
-2) System Log File
-   
-   (i) Purpose: to provide a complete view of the raw logs.
-   
-   (ii) The View Box at the bottom of the dashboard displays these logs directly, allowing you to trace detailed patterns or troubleshoot issues that might not be fully captured by the UI.
-   
-   (iii) While the UI elements are optimized for quick, real-time monitoring of subsystem health, the raw logs serve as a complementary source for deeper diagnostics.
-     
-## Features
+```
+SUPABASE_API_URL=https://your-project.supabase.co
+SUPABASE_API_KEY=your-anon-key
+API_KEY=your-google-cloud-api-key
+FOLDER_ID=your-google-drive-folder-id
+PORT=3000
+```
 
-1) Scalable Backend
-   
-   (i) Modular driver/subsystem design enables the WebMonitor to integrate new hardware subsystems (Interlocks, VTRX, CCS, Beam Energy, etc.) without major rewrites.
-   
-   (ii) Each subsystem logs independently but funnels into a consistent pipeline for UI rendering and API serving.
+### Running Locally
 
-3) Efficient UI Updates
-   
-   (i) Differential Refreshes: UI elements auto-reload every 60 minutes without refreshing the entire dashboard.
-   
-   (ii) On-Demand Logs: Full log files are only fetched and displayed when the user clicks Expand, preventing rate-limit issues and avoiding unnecessary latency caused because of excessive               resource consumption on the backend side.
+```bash
+npm install
+npm start
+```
 
-5) Async File Handling (Express.js)
-   
-   (i) getMostRecentFile: Fetches the latest WebMonitor and raw log files from Google Drive, populating the dataFile and displayFile references.
-   
-   (ii) fetchFileContents: Streams and parses large text files line-by-line. Used to power the log display on the web monitor.
-   
-   (iii) extractData: Parses JSON blocks from log files to extract experimental metrics (pressure, temperatures, interlocks, vacuum states, etc.), updating the in-memory data dictionary.
-   
-   (iv) fetchDisplayFileContents: Updates the UI log preview by pulling only the newest display logs, writing them to a reversed file buffer for frontend viewing.
-   
-   (v) fetchAndUpdateFile: Periodically checks for new log files, resets stale data if thresholds are exceeded, and refreshes the shared data object for API consumption.
+On startup the server will:
+1. Backfill both pressure graph caches from Supabase
+2. Begin polling for new data
+3. Open the HTTP port once caches are ready
 
+## Architecture Overview
 
-## Logic for Updating the Interlocks Section
-Please note the correspondence between each of the input and output Safety Terminal Data Flags (bit numbers) and their respective indicators. This same mapping is followed in the code, and is illustrated in the G9 Driver Schematic Diagram below (annotated in blue).
+```
+Supabase                        Server (Node/Express)                Browser
+┌──────────────┐               ┌───────────────────────┐           ┌──────────────┐
+│short_term_logs│──3s poll────▶│ polling.js            │           │              │
+│              │               │  ├─ scalar state.data  │──/data──▶│ DOM updates  │
+│              │               │  └─ shortTermGraph     │           │ (3s interval)│
+├──────────────┤               │                        │           │              │
+│long_term_logs │──60s poll───▶│  └─ longTermGraph      │           │              │
+└──────────────┘               │                        │──/chart──▶│ uPlot chart  │
+                               │ routes.js              │  -data    │ .setData()   │
+Google Drive                   │  ├─ GET /              │           │              │
+┌──────────────┐               │  ├─ GET /data          │           │              │
+│  log files   │──gdrive.js──▶│  ├─ GET /chart-data    │           │              │
+└──────────────┘               │  ├─ GET /raw           │           │              │
+                               │  └─ GET /health        │           │              │
+                               └───────────────────────┘           └──────────────┘
+```
 
-![Annotated Schematic Diagram](schematic_diagram.svg)
+## Project Structure
 
-## How to deploy changes:
-1) Test code by running on replit
+```
+├── index.js                  # Entry point — backfill, polling intervals, server start
+├── config.js                 # Env vars, Supabase client, Google Drive client, constants
+├── routes.js                 # Express route handlers
+├── services/
+│   ├── state.js              # Shared mutable state singleton (all modules read/write)
+│   ├── supabase.js           # Supabase queries — backfill, polling, data mapping
+│   ├── polling.js            # Polling orchestration — fetchAndUpdateFile, pollLongTerm
+│   ├── graphs.js             # Graph data structures and downsampling algorithm
+│   ├── interlocks.js         # Interlock/vacuum color computation from safety flags
+│   ├── gdrive.js             # Google Drive file fetching for system log viewer
+│   └── utils.js              # Helpers — sample data generation, timestamps
+├── views/
+│   └── dashboard.js          # Server-side HTML renderer (full dashboard template)
+├── assets/                   # Static files served by Express
+├── render.yaml               # Render.com deployment config
+└── SUPABASE-README.md        # Supabase table schemas and automation docs
+```
 
-2) Push code to github repo
+## Key Concepts
 
-3) Wait for render autoupdate
+### Data Flow
 
-## Overarching System Architecture:
-1) Subsystem Data Source:
+1. **Startup backfill** (`index.js` → `supabase.js`): On boot, the server pulls all rows from `short_term_logs` and `long_term_logs` into in-memory graph arrays. The HTTP port opens only after backfill completes.
 
-   (i) Data (e.g., voltages, currents, beam status) is collected in Python as a global dictionary.
+2. **Short-term polling** (every 3s in `polling.js`): `fetchAndUpdateFile()` fetches the latest row from `short_term_logs`. It updates both the scalar `state.data` (interlocks, temps, pressure, heater values) and appends to `shortTermPressureGraph`. Timestamp comparison prevents duplicate processing.
 
-   (ii) Each update is passed to the WebMonitorLogger class.
+3. **Long-term polling** (every 60s in `polling.js`): `pollLongTerm()` fetches the latest row from `long_term_logs` and appends to `longTermPressureGraph`. Also uses timestamp dedup.
 
-3) Logger (Python):
-   
-   (i) Logs updates to a dedicated webmonitor log file and system log file.
-   Note: Webmonitor log file contains data in json format for more robust transmission of data. Regex logic can break with minor changes in logs. System log files contain logs in its native               format for manual review via the web monitor.
+4. **Client updates**: The browser polls `GET /data` every 3s to update scalar DOM elements (indicator circles, temperature readings, etc.). It also polls `GET /chart-data?view=short|long` to live-update the uPlot pressure chart via `setData()`.
 
-5) Express.js Dashboard:
-   
-   (i) Periodically fetches the latest data from the log file.
-   
-   (ii) Displays status on a real-time dashboard.
-  
-## Important 
-If you create new folder directories for storing log files, make sure to update the `FOLDER_ID` value in Render’s environment variables so the WebMonitor can locate the correct Google Drive folder.
+### Pressure Graph Toggle
 
-## Extending the Project
+The dashboard has a toggle button that switches between:
+- **Short-term view**: Last ~24h of data at ~3s resolution (from `short_term_logs`)
+- **Historical view**: All-time data at 1-minute averaged resolution (from `long_term_logs`)
 
-1) Add new subsystems: Extend the Python dictionary keys and logger updates.
+Both datasets are always in server memory, so toggling is instant — no Supabase query on switch. See [SUPABASE-README.md](./SUPABASE-README.md) for the database-side architecture.
 
-2) Increase Uptime: Build a more robust system by separating the directories for both the log files. Failure to sync the displayFile must not affect the logFile and vice-versa.
-  
-## Hosting Information:
+### Downsampling (`graphs.js`)
 
-[render.com](https://render.com/) is the hosting service. Render automatically restarts the hosting server for each change to the git main branch.
-render requires the following environment variables:
+Raw data arrays can grow to tens of thousands of points. The `updateDisplayData()` function maintains a separate `displayXVals`/`displayYVals` array capped at 256 points using a stride-doubling algorithm. The `/chart-data` endpoint serves these downsampled arrays to keep payloads small.
 
- 1) API_KEY: api key associated with the dashboard google account to access google drive resources.
-            Need to create it in a google cloud platform project.
-            
- 2) FOLDER_ID: folder id of the associated google drive logs folder
+### Interlock Color Logic (`interlocks.js`)
 
+Each interlock indicator (Door, Water, Vacuum, E-Stop, etc.) is derived from safety flag bit arrays in the experiment data. `computeAllColors()` returns arrays of `"green"`, `"red"`, or `"grey"` strings used for both server-side rendering and client-side polling updates.
 
+### Google Drive Log Viewer (`gdrive.js`)
 
+A separate system fetches raw log files from Google Drive for the expandable "System Logs" section at the bottom of the dashboard. This is independent of the Supabase data pipeline.
 
+## API Endpoints
 
-#### Contributors: Pratyush, Anurag, Arundhati
+| Endpoint | Method | Description |
+|---|---|---|
+| `/` | GET | Server-rendered HTML dashboard |
+| `/data` | GET | JSON with all current scalar values and computed colors |
+| `/chart-data?view=short\|long` | GET | JSON with downsampled `xVals`/`yVals` for the pressure chart |
+| `/health` | GET | Supabase connection status and experiment state |
+| `/raw` | GET | Plain text content of the reversed system log file |
+| `/refresh-display` | GET | Triggers a manual Google Drive log fetch |
 
+## Deployment
 
+Hosted on [Render](https://render.com/). Render auto-deploys on pushes to `main`.
 
+Required Render environment variables:
+- `SUPABASE_API_URL`
+- `SUPABASE_API_KEY`
+- `API_KEY` (Google Cloud)
+- `FOLDER_ID` (Google Drive)
 
+## Contributors
 
-
-
+Brandon, Pratyush, Arundhati, Anurag, Mathom

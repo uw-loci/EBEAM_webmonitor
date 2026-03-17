@@ -9,7 +9,7 @@ If you need to change the web monitor branch that the website runs on, follow th
 3. Click on 'Settings' in the left nav bar
 4. Under 'Build & Deploy' find the 'Branch' field
 5. Click 'Edit' and it will display your GitHub branches
-6. Choose your desired branch and Render will automatically redeploy the website
+6. Choose your desired branch, click 'Save Changes' and Render will automatically redeploy the website
 
 ## Setup
 

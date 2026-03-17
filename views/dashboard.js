@@ -162,7 +162,7 @@ function renderDashboard(opts) {
         }
         .interlocks-container {
           display: flex;
-          justify-content: flex-start;
+          justify-content: space-evenly;
           align-items: center;
           flex-wrap: wrap;
           gap: 10px;
@@ -201,7 +201,7 @@ function renderDashboard(opts) {
         }
         .vacuum-indicators-container {
           display: flex;
-          justify-content: flex-start;
+          justify-content: space-evenly;
           align-items: center;
           flex-wrap: wrap;
           gap: 10px;
@@ -434,12 +434,14 @@ function renderDashboard(opts) {
 
         .chart {
           position: relative;
-          height: 300px;
+          min-height: 300px;
+          height: auto;
           width: 100%;
         }
 
         #ccs-charts-section .chart {
-          height: 180px;
+          min-height: 180px;
+          height: auto;
         }
 
         #ccs-charts-section {
@@ -535,9 +537,10 @@ function renderDashboard(opts) {
         </div>
         <!-- Vacuum Indicators Section -->
         <div class="vacuum-indicators">
-          <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border-subtle);">
-            <h3 class="section-header" style="border-bottom:none; margin:0;">Vacuum Indicators</h3>
-            <span id="pressureReadings" style="font-size:0.85rem; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums;">
+          <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border-subtle);">
+            <span></span>
+            <h3 class="section-header" style="border-bottom:none; margin:0; text-align:center;">Vacuum Indicators</h3>
+            <span id="pressureReadings" style="font-size:1.05rem; font-weight:700; color:#7dd3fc; font-variant-numeric:tabular-nums; text-align:right;">
               ${pressure !== null ? pressure + ' mbar' : '--'}
             </span>
           </div>
@@ -755,15 +758,6 @@ function renderDashboard(opts) {
             const newWidth = wrapper.clientWidth;
             uplot.setSize({ width: newWidth, height: 300 });
           });
-
-          const innerChart = chartEl.querySelector(':scope > *');
-          if (innerChart) {
-            innerChart.style.position = 'absolute';
-            innerChart.style.top = '0';
-            innerChart.style.left = '0';
-            innerChart.style.width = '100%';
-            innerChart.style.height = '100%';
-          }
 
           chartEl.ondblclick = () => {
             uplot.setScale('x', { min: null, max: null });

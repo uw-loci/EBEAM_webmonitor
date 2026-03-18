@@ -1169,7 +1169,7 @@ function renderDashboard(opts) {
               });
               if (res.ok) {
                 msg.style.color = '#22c55e';
-                msg.textContent = 'Reset successful. Long-term log cleared.';
+                msg.textContent = 'Reset successful. Short-term and long-term pressure logs cleared.';
                 setTimeout(closeModal, 1500);
               } else {
                 const body = await res.json().catch(() => ({}));

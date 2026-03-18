@@ -117,7 +117,7 @@ function registerRoutes(app) {
     });
   });
 
-  // Experiment reset — deletes all long-term log data
+  // Experiment reset — deletes all log data
   app.post('/experiment-reset', async (req, res) => {
     const resetPassword = process.env.EXPERIMENT_RESET_PASSWORD;
     if (!resetPassword) {
@@ -129,14 +129,15 @@ function registerRoutes(app) {
       return res.status(401).json({ error: 'Incorrect password.' });
     }
 
-    const { error } = await supabase
-      .from('long_term_logs')
-      .delete()
-      .gte('id', '00000000-0000-0000-0000-000000000000');
+    const [longResult, shortResult] = await Promise.all([
+      supabase.from('long_term_logs').delete().gte('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('short_term_logs').delete().gte('id', 0),
+    ]);
 
-    if (error) {
-      console.error('Experiment reset Supabase error:', error);
-      return res.status(500).json({ error: error.message });
+    if (longResult.error || shortResult.error) {
+      const msg = (longResult.error?.message || '') + ' ' + (shortResult.error?.message || '');
+      console.error('Experiment reset Supabase error:', msg.trim());
+      return res.status(500).json({ error: msg.trim() });
     }
 
     longTermPressureGraph.fullXVals.length = 0;
@@ -144,7 +145,12 @@ function registerRoutes(app) {
     longTermPressureGraph.displayXVals.length = 0;
     longTermPressureGraph.displayYVals.length = 0;
 
-    console.log('Experiment reset: long_term_logs cleared.');
+    shortTermPressureGraph.fullXVals.length = 0;
+    shortTermPressureGraph.fullYVals.length = 0;
+    shortTermPressureGraph.displayXVals.length = 0;
+    shortTermPressureGraph.displayYVals.length = 0;
+
+    console.log('Experiment reset: long_term_logs and short_term_logs cleared.');
     return res.status(200).json({ success: true });
   });
 

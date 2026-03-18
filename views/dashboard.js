@@ -478,8 +478,13 @@ function renderDashboard(opts) {
       <div class="container-fluid mt-4">
         <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 24px 10px; border-bottom:1px solid var(--border-subtle); margin-bottom:12px;">
           <h2 style="font-size:1.4rem; font-weight:700; color:#d6eaff; margin:0;">E-beam Web Monitor</h2>
-          <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'}" style="padding:4px 10px; font-size:0.7em; border-radius:8px; color:white; font-weight:bold;">
-            Dashboard is ${!experimentRunning ? 'not ' : ''}running
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'}" style="padding:4px 10px; font-size:0.7em; border-radius:8px; color:white; font-weight:bold;">
+              Dashboard is ${!experimentRunning ? 'not ' : ''}running
+            </div>
+            <button id="open-reset-modal" style="padding:4px 10px; font-size:0.7em; border-radius:8px; font-weight:bold; background:#7f1d1d; border:1px solid #ef4444; color:#fca5a5; cursor:pointer;">
+              Experiment Reset
+            </button>
           </div>
         </div>
         <p style="text-align:center; font-size:0.75rem; color:var(--text-secondary); margin:0 0 12px 0;">
@@ -1093,6 +1098,96 @@ function renderDashboard(opts) {
           showingFull = !showingFull;
           sessionStorage.setItem('showingFull', showingFull);
         })
+      </script>
+
+      <!-- Experiment Reset Modal -->
+      <div id="reset-modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#1e293b; border:1px solid #ef4444; border-radius:12px; padding:28px 32px; max-width:420px; width:90%; text-align:left; box-shadow:0 0 32px rgba(239,68,68,0.4);">
+          <h3 style="color:#fca5a5; margin:0 0 12px 0; font-size:1.1rem; font-weight:700;">Experiment Reset</h3>
+          <p style="color:#cbd5e1; font-size:0.85rem; margin:0 0 18px 0;">
+            This will permanently delete all data from the long-term pressure log.
+            This action <strong style="color:#ef4444;">cannot be undone</strong>.
+          </p>
+          <input id="reset-password-input" type="password" placeholder='Password'
+            style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:0.85rem; margin-bottom:16px; box-sizing:border-box;" />
+          <div id="reset-modal-message" style="font-size:0.8rem; margin-bottom:12px; min-height:1em;"></div>
+          <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button id="reset-cancel-btn" style="padding:7px 18px; border-radius:6px; border:1px solid #475569; background:transparent; color:#94a3b8; cursor:pointer; font-size:0.85rem;">Cancel</button>
+            <button id="reset-confirm-btn" disabled style="padding:7px 18px; border-radius:6px; border:1px solid #ef4444; background:#7f1d1d; color:#fca5a5; cursor:not-allowed; font-size:0.85rem; font-weight:bold; opacity:0.5;">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          const overlay = document.getElementById('reset-modal-overlay');
+          const openBtn = document.getElementById('open-reset-modal');
+          const cancelBtn = document.getElementById('reset-cancel-btn');
+          const confirmBtn = document.getElementById('reset-confirm-btn');
+          const passwordInput = document.getElementById('reset-password-input');
+          const msg = document.getElementById('reset-modal-message');
+
+          function setReady() {
+            const ready = passwordInput.value.length > 0;
+            confirmBtn.disabled = !ready;
+            confirmBtn.style.opacity = ready ? '1' : '0.5';
+            confirmBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+          }
+
+          function openModal() {
+            passwordInput.value = '';
+            msg.textContent = '';
+            msg.style.color = '';
+            confirmBtn.disabled = true;
+            confirmBtn.style.opacity = '0.5';
+            confirmBtn.style.cursor = 'not-allowed';
+            overlay.style.display = 'flex';
+          }
+
+          function closeModal() {
+            overlay.style.display = 'none';
+          }
+
+          openBtn.addEventListener('click', openModal);
+          cancelBtn.addEventListener('click', closeModal);
+          overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) closeModal();
+          });
+
+          passwordInput.addEventListener('input', setReady);
+
+          confirmBtn.addEventListener('click', async function () {
+            confirmBtn.disabled = true;
+            confirmBtn.style.opacity = '0.5';
+            msg.style.color = '#94a3b8';
+            msg.textContent = 'Resetting…';
+            try {
+              const res = await fetch('/experiment-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: passwordInput.value }),
+              });
+              if (res.ok) {
+                msg.style.color = '#22c55e';
+                msg.textContent = 'Reset successful. Long-term log cleared.';
+                setTimeout(closeModal, 1500);
+              } else {
+                const body = await res.json().catch(() => ({}));
+                msg.style.color = '#ef4444';
+                msg.textContent = 'Error: ' + (body.error || res.statusText);
+                confirmBtn.disabled = false;
+                confirmBtn.style.opacity = '1';
+                confirmBtn.style.cursor = 'pointer';
+              }
+            } catch (err) {
+              msg.style.color = '#ef4444';
+              msg.textContent = 'Network error: ' + err.message;
+              confirmBtn.disabled = false;
+              confirmBtn.style.opacity = '1';
+              confirmBtn.style.cursor = 'pointer';
+            }
+          });
+        })();
       </script>
     </body>
     </html>

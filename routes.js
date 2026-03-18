@@ -117,6 +117,37 @@ function registerRoutes(app) {
     });
   });
 
+  // Experiment reset — deletes all long-term log data
+  app.post('/experiment-reset', async (req, res) => {
+    const resetPassword = process.env.EXPERIMENT_RESET_PASSWORD;
+    if (!resetPassword) {
+      return res.status(503).json({ error: 'Experiment reset is not configured on this server.' });
+    }
+
+    const { password } = req.body || {};
+    if (password !== resetPassword) {
+      return res.status(401).json({ error: 'Incorrect password.' });
+    }
+
+    const { error } = await supabase
+      .from('long_term_logs')
+      .delete()
+      .gte('id', '00000000-0000-0000-0000-000000000000');
+
+    if (error) {
+      console.error('Experiment reset Supabase error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    longTermPressureGraph.fullXVals.length = 0;
+    longTermPressureGraph.fullYVals.length = 0;
+    longTermPressureGraph.displayXVals.length = 0;
+    longTermPressureGraph.displayYVals.length = 0;
+
+    console.log('Experiment reset: long_term_logs cleared.');
+    return res.status(200).json({ success: true });
+  });
+
   // Raw reversed log file
   app.get('/raw', async (req, res) => {
     try {

@@ -117,7 +117,7 @@ function registerRoutes(app) {
     });
   });
 
-  // Raw reversed log file
+  // raw reversed log file
   app.get('/raw', async (req, res) => {
     try {
       if (fs.existsSync(REVERSED_FILE_PATH)) {

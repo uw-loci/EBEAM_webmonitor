@@ -7,6 +7,192 @@ process.env.API_KEY ??= 'test-api-key';
 process.env.SUPABASE_API_URL ??= 'http://127.0.0.1:54321';
 process.env.SUPABASE_API_KEY ??= 'test-supabase-key';
 
+const supabaseTables = {
+  short_term_logs: [],
+  long_term_logs: [],
+};
+
+function cloneRow(row) {
+  if (!row || typeof row !== 'object') {
+    return row;
+  }
+
+  return {
+    ...row,
+    data: row.data && typeof row.data === 'object'
+      ? { ...row.data }
+      : row.data,
+  };
+}
+
+function resetSupabaseTables() {
+  supabaseTables.short_term_logs = [];
+  supabaseTables.long_term_logs = [];
+}
+
+function setSupabaseTableRows(tableName, rows) {
+  supabaseTables[tableName] = rows.map(cloneRow);
+}
+
+function compareValues(left, right) {
+  if (left === right) {
+    return 0;
+  }
+
+  return left < right ? -1 : 1;
+}
+
+function applySupabaseOrder(rows, orderings, rangeFrom) {
+  if (orderings.length === 0) {
+    return rows.slice();
+  }
+
+  const pageIndex = Math.floor((rangeFrom ?? 0) / 1000);
+  const unstableTieDirection = pageIndex % 2 === 0 ? 1 : -1;
+
+  return rows
+    .map((row, index) => ({ row, index }))
+    .sort((left, right) => {
+      for (const { column, ascending } of orderings) {
+        const comparison = compareValues(left.row[column], right.row[column]);
+        if (comparison !== 0) {
+          return ascending ? comparison : -comparison;
+        }
+      }
+
+      if (orderings.length === 1) {
+        return unstableTieDirection * (left.index - right.index);
+      }
+
+      return left.index - right.index;
+    })
+    .map(({ row }) => row);
+}
+
+function projectSupabaseRow(row, selectedColumns) {
+  if (!selectedColumns || selectedColumns === '*') {
+    return cloneRow(row);
+  }
+
+  const columns = selectedColumns
+    .split(',')
+    .map((column) => column.trim())
+    .filter(Boolean);
+
+  return Object.fromEntries(columns.map((column) => [column, cloneRow(row[column])]));
+}
+
+function matchesSupabaseFilters(row, filters) {
+  return filters.every(({ operator, column, value }) => {
+    if (operator === 'gt') {
+      return row[column] > value;
+    }
+
+    if (operator === 'gte') {
+      return row[column] >= value;
+    }
+
+    return true;
+  });
+}
+
+function evaluateSupabaseQuery(queryState) {
+  const {
+    tableName,
+    selectedColumns,
+    orderings,
+    filters,
+    limitCount,
+    rangeFrom,
+    rangeTo,
+    operation,
+  } = queryState;
+  const tableRows = supabaseTables[tableName] ?? [];
+
+  if (operation === 'delete') {
+    const deletedRows = [];
+    const remainingRows = [];
+
+    for (const row of tableRows) {
+      if (matchesSupabaseFilters(row, filters)) {
+        deletedRows.push(row);
+      } else {
+        remainingRows.push(row);
+      }
+    }
+
+    supabaseTables[tableName] = remainingRows.map(cloneRow);
+    return { data: deletedRows.map(cloneRow), error: null };
+  }
+
+  let rows = tableRows.filter((row) => matchesSupabaseFilters(row, filters));
+  rows = applySupabaseOrder(rows, orderings, rangeFrom);
+
+  if (typeof rangeFrom === 'number' && typeof rangeTo === 'number') {
+    rows = rows.slice(rangeFrom, rangeTo + 1);
+  } else if (typeof limitCount === 'number') {
+    rows = rows.slice(0, limitCount);
+  }
+
+  return {
+    data: rows.map((row) => projectSupabaseRow(row, selectedColumns)),
+    error: null,
+  };
+}
+
+function createSupabaseQueryBuilder(tableName) {
+  const queryState = {
+    tableName,
+    selectedColumns: '*',
+    orderings: [],
+    filters: [],
+    limitCount: null,
+    rangeFrom: null,
+    rangeTo: null,
+    operation: 'select',
+  };
+
+  const builder = {
+    select(columns) {
+      queryState.selectedColumns = columns;
+      return builder;
+    },
+    order(column, options = {}) {
+      queryState.orderings.push({
+        column,
+        ascending: options.ascending !== false,
+      });
+      return builder;
+    },
+    limit(count) {
+      queryState.limitCount = count;
+      return builder;
+    },
+    range(from, to) {
+      queryState.rangeFrom = from;
+      queryState.rangeTo = to;
+      return builder;
+    },
+    gte(column, value) {
+      queryState.filters.push({ operator: 'gte', column, value });
+      return builder;
+    },
+    gt(column, value) {
+      queryState.filters.push({ operator: 'gt', column, value });
+      return builder;
+    },
+    delete() {
+      queryState.operation = 'delete';
+      return builder;
+    },
+    then(resolve, reject) {
+      return Promise.resolve(evaluateSupabaseQuery(queryState)).then(resolve, reject);
+    },
+  };
+
+  return builder;
+}
+
 const originalLoad = Module._load;
 Module._load = function mockExternalDependencies(request, parent, isMain) {
   if (request === 'dotenv') {
@@ -16,20 +202,7 @@ Module._load = function mockExternalDependencies(request, parent, isMain) {
   if (request === '@supabase/supabase-js') {
     return {
       createClient: () => ({
-        from: () => {
-          const builder = {
-            select: () => builder,
-            order: () => builder,
-            limit: () => builder,
-            range: () => builder,
-            gte: () => builder,
-            gt: () => builder,
-            delete: () => builder,
-            then: (resolve) => resolve({ data: [], error: null }),
-          };
-
-          return builder;
-        },
+        from: (tableName) => createSupabaseQueryBuilder(tableName),
       }),
     };
   }
@@ -60,6 +233,10 @@ const {
   ccsGraphB,
   ccsGraphC,
 } = require('../services/graphs');
+const {
+  fetchShortTermEntriesSince,
+  fetchLongTermEntriesSince,
+} = require('../services/supabase');
 const { applyShortTermEntries, applyLongTermEntries } = require('../services/polling');
 
 function createLogger() {
@@ -91,9 +268,11 @@ function buildShortTermEntries(count, options = {}) {
     startMs = Date.parse('2026-03-21T12:00:00.000Z'),
     intervalMs = 3_000,
     pressureFactory = (index) => `${1e-6 + index * 1e-7}`,
+    idFactory = (index) => `short-${String(index).padStart(6, '0')}`,
   } = options;
 
   return Array.from({ length: count }, (_, index) => ({
+    id: idFactory(index),
     created_at: new Date(startMs + index * intervalMs).toISOString(),
     data: {
       pressure: pressureFactory(index),
@@ -109,9 +288,11 @@ function buildLongTermEntries(count, options = {}) {
     startMs = Date.parse('2026-03-21T12:00:00.000Z'),
     intervalMs = 60_000,
     pressureFactory = (index) => 1e-6 + index * 1e-7,
+    idFactory = (index) => `long-${String(index).padStart(6, '0')}`,
   } = options;
 
   return Array.from({ length: count }, (_, index) => ({
+    id: idFactory(index),
     recorded_at: new Date(startMs + index * intervalMs).toISOString(),
     avg_pressure: pressureFactory(index),
   }));
@@ -194,6 +375,7 @@ function createResponseRecorder() {
 }
 
 beforeEach(() => {
+  resetSupabaseTables();
   resetSingletonState();
   resetPressureGraph(shortTermPressureGraph);
   resetPressureGraph(longTermPressureGraph);
@@ -299,6 +481,46 @@ test('applyLongTermEntries drains missed long-term rows in order', () => {
   assert.equal(stateRef.lastLongTermTimestamp, entries.at(-1).recorded_at);
   assert.equal(warns.length, 0);
   assert.match(logs[0], /Long-term sync processed 6 rows/);
+});
+
+test('fetchShortTermEntriesSince paginates tied timestamps deterministically across pages', async () => {
+  const entries = buildShortTermEntries(1_005);
+  const boundaryTimestamp = entries[998].created_at;
+
+  for (const index of [999, 1000, 1001, 1002]) {
+    entries[index].created_at = boundaryTimestamp;
+  }
+
+  setSupabaseTableRows('short_term_logs', entries);
+
+  const fetched = await fetchShortTermEntriesSince(null);
+
+  assert.equal(fetched.length, entries.length);
+  assert.equal(new Set(fetched.map((entry) => entry.id)).size, entries.length);
+  assert.deepEqual(
+    fetched.map((entry) => entry.id),
+    entries.map((entry) => entry.id)
+  );
+});
+
+test('fetchLongTermEntriesSince paginates tied timestamps deterministically across pages', async () => {
+  const entries = buildLongTermEntries(1_005);
+  const boundaryTimestamp = entries[998].recorded_at;
+
+  for (const index of [999, 1000, 1001, 1002]) {
+    entries[index].recorded_at = boundaryTimestamp;
+  }
+
+  setSupabaseTableRows('long_term_logs', entries);
+
+  const fetched = await fetchLongTermEntriesSince(null);
+
+  assert.equal(fetched.length, entries.length);
+  assert.equal(new Set(fetched.map((entry) => entry.id)).size, entries.length);
+  assert.deepEqual(
+    fetched.map((entry) => entry.id),
+    entries.map((entry) => entry.id)
+  );
 });
 
 test('24-hour short-term data keeps a denser live display than the old 256-point cap', () => {

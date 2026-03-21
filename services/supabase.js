@@ -13,6 +13,7 @@ async function fetchEntriesSince(tableName, columns, timestampColumn, cursor) {
       .from(tableName)
       .select(columns)
       .order(timestampColumn, { ascending: true })
+      .order('id', { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
 
     if (cursor) {
@@ -112,9 +113,10 @@ async function backfillShortTermGraph(graph) {
     while (true) {
       const { data, error } = await supabase
         .from('short_term_logs')
-        .select('created_at, data')
+        .select('id, created_at, data')
         .gte('created_at', twentyFourHoursAgo)
         .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
 
       if (error) {
@@ -165,8 +167,9 @@ async function backfillLongTermGraph(graph) {
     while (true) {
       const { data, error } = await supabase
         .from('long_term_logs')
-        .select('recorded_at, avg_pressure')
+        .select('id, recorded_at, avg_pressure')
         .order('recorded_at', { ascending: true })
+        .order('id', { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
 
       if (error) {
@@ -209,8 +212,9 @@ async function fetchLatestShortTermEntry() {
   try {
     const { data, error } = await supabase
       .from('short_term_logs')
-      .select('created_at, data')
+      .select('id, created_at, data')
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(1);
 
     if (error) {
@@ -233,8 +237,9 @@ async function fetchLatestLongTermEntry() {
   try {
     const { data, error } = await supabase
       .from('long_term_logs')
-      .select('recorded_at, avg_pressure')
+      .select('id, recorded_at, avg_pressure')
       .order('recorded_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(1);
 
     if (error) {
@@ -256,7 +261,7 @@ async function fetchLatestLongTermEntry() {
  */
 async function fetchShortTermEntriesSince(cursor) {
   try {
-    return await fetchEntriesSince('short_term_logs', 'created_at, data', 'created_at', cursor);
+    return await fetchEntriesSince('short_term_logs', 'id, created_at, data', 'created_at', cursor);
   } catch (err) {
     console.error('Error fetching short-term entries since cursor:', err);
     return [];
@@ -269,7 +274,7 @@ async function fetchShortTermEntriesSince(cursor) {
  */
 async function fetchLongTermEntriesSince(cursor) {
   try {
-    return await fetchEntriesSince('long_term_logs', 'recorded_at, avg_pressure', 'recorded_at', cursor);
+    return await fetchEntriesSince('long_term_logs', 'id, recorded_at, avg_pressure', 'recorded_at', cursor);
   } catch (err) {
     console.error('Error fetching long-term entries since cursor:', err);
     return [];
@@ -294,9 +299,10 @@ async function backfillCCSGraphs(graphA, graphB, graphC) {
     while (true) {
       const { data, error } = await supabase
         .from('short_term_logs')
-        .select('created_at, data')
+        .select('id, created_at, data')
         .gte('created_at', oneHourAgo)
         .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
 
       if (error) {

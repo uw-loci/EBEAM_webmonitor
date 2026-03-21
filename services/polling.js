@@ -22,6 +22,7 @@ const SHORT_TERM_EXPECTED_INTERVAL_MS = 3_000;
 const LONG_TERM_EXPECTED_INTERVAL_MS = 60_000;
 
 let telemetrySyncInProgress = false;
+let longTermSyncInProgress = false;
 let displayRefreshInProgress = false;
 
 function parseTimestampMs(timestamp) {
@@ -42,6 +43,30 @@ function buildCursor(timestamp, id) {
     timestamp,
     id: id ?? null,
   };
+}
+
+function isCursorAfter(candidateCursor, referenceCursor) {
+  if (!candidateCursor?.timestamp) {
+    return false;
+  }
+
+  if (!referenceCursor?.timestamp) {
+    return true;
+  }
+
+  if (candidateCursor.timestamp > referenceCursor.timestamp) {
+    return true;
+  }
+
+  if (candidateCursor.timestamp < referenceCursor.timestamp) {
+    return false;
+  }
+
+  if (referenceCursor.id == null || candidateCursor.id == null) {
+    return false;
+  }
+
+  return candidateCursor.id > referenceCursor.id;
 }
 
 function logGapIfNeeded({
@@ -191,6 +216,11 @@ function applyLongTermEntries(entries, options = {}) {
       summary.firstTimestamp = entryTimestamp;
     }
 
+    if (!isCursorAfter(entryCursor, stateRef.lastLongTermCursor)) {
+      summary.skippedCount++;
+      continue;
+    }
+
     logGapIfNeeded({
       logger,
       label: 'Long-term',
@@ -245,12 +275,21 @@ async function pollShortTerm() {
  * Polls the long_term_logs table and drains every unseen row since the last cursor.
  */
 async function pollLongTerm() {
+  if (longTermSyncInProgress) {
+    console.warn('Long-term sync skipped because the previous run is still in progress');
+    return null;
+  }
+
+  longTermSyncInProgress = true;
+
   try {
     const entries = await fetchLongTermEntriesSince(state.lastLongTermCursor);
     return applyLongTermEntries(entries);
   } catch (err) {
     console.error('Error in pollLongTerm:', err);
     return null;
+  } finally {
+    longTermSyncInProgress = false;
   }
 }
 

@@ -11,6 +11,14 @@ const supabaseTables = {
   short_term_logs: [],
   long_term_logs: [],
 };
+const supabaseQueryDelaysMs = {
+  short_term_logs: 0,
+  long_term_logs: 0,
+};
+const supabaseQueryCounts = {
+  short_term_logs: 0,
+  long_term_logs: 0,
+};
 
 function cloneRow(row) {
   if (!row || typeof row !== 'object') {
@@ -30,8 +38,23 @@ function resetSupabaseTables() {
   supabaseTables.long_term_logs = [];
 }
 
+function resetSupabaseQueryControls() {
+  supabaseQueryDelaysMs.short_term_logs = 0;
+  supabaseQueryDelaysMs.long_term_logs = 0;
+  supabaseQueryCounts.short_term_logs = 0;
+  supabaseQueryCounts.long_term_logs = 0;
+}
+
 function setSupabaseTableRows(tableName, rows) {
   supabaseTables[tableName] = rows.map(cloneRow);
+}
+
+function setSupabaseQueryDelay(tableName, delayMs) {
+  supabaseQueryDelaysMs[tableName] = delayMs;
+}
+
+function getSupabaseQueryCount(tableName) {
+  return supabaseQueryCounts[tableName] ?? 0;
 }
 
 function compareValues(left, right) {
@@ -186,7 +209,17 @@ function createSupabaseQueryBuilder(tableName) {
       return builder;
     },
     then(resolve, reject) {
-      return Promise.resolve(evaluateSupabaseQuery(queryState)).then(resolve, reject);
+      supabaseQueryCounts[tableName] = (supabaseQueryCounts[tableName] ?? 0) + 1;
+
+      const result = evaluateSupabaseQuery(queryState);
+      const delayMs = supabaseQueryDelaysMs[tableName] ?? 0;
+
+      if (delayMs > 0) {
+        return new Promise((resultResolve) => setTimeout(resultResolve, delayMs, result))
+          .then(resolve, reject);
+      }
+
+      return Promise.resolve(result).then(resolve, reject);
     },
   };
 
@@ -237,7 +270,11 @@ const {
   fetchShortTermEntriesSince,
   fetchLongTermEntriesSince,
 } = require('../services/supabase');
-const { applyShortTermEntries, applyLongTermEntries } = require('../services/polling');
+const {
+  applyShortTermEntries,
+  applyLongTermEntries,
+  pollLongTerm,
+} = require('../services/polling');
 
 function createLogger() {
   const logs = [];
@@ -376,6 +413,7 @@ function createResponseRecorder() {
 
 beforeEach(() => {
   resetSupabaseTables();
+  resetSupabaseQueryControls();
   resetSingletonState();
   resetPressureGraph(shortTermPressureGraph);
   resetPressureGraph(longTermPressureGraph);
@@ -490,6 +528,64 @@ test('applyLongTermEntries drains missed long-term rows in order', () => {
   });
   assert.equal(warns.length, 0);
   assert.match(logs[0], /Long-term sync processed 6 rows/);
+});
+
+test('applyLongTermEntries ignores stale long-term rows that were already covered by the cursor', () => {
+  const graph = createGraphObj({ maxDisplayPoints: 256 });
+  const stateRef = { lastLongTermCursor: null };
+  const entries = buildLongTermEntries(4);
+  const { logger } = createLogger();
+
+  applyLongTermEntries(entries.slice(0, 2), {
+    stateRef,
+    graph,
+    graphUpdater: updateDisplayData,
+    logger,
+  });
+
+  const summary = applyLongTermEntries(entries, {
+    stateRef,
+    graph,
+    graphUpdater: updateDisplayData,
+    logger,
+  });
+
+  assert.equal(summary.batchSize, 4);
+  assert.equal(summary.appendedCount, 2);
+  assert.equal(summary.skippedCount, 2);
+  assert.equal(graph.fullXVals.length, 4);
+  assert.deepEqual(
+    graph.fullXVals,
+    entries.map((entry) => Math.floor(Date.parse(entry.recorded_at) / 1000))
+  );
+  assert.deepEqual(stateRef.lastLongTermCursor, {
+    timestamp: entries.at(-1).recorded_at,
+    id: entries.at(-1).id,
+  });
+});
+
+test('pollLongTerm skips overlapping runs instead of fetching the same batch twice', async () => {
+  const entries = buildLongTermEntries(2);
+  setSupabaseTableRows('long_term_logs', entries);
+  setSupabaseQueryDelay('long_term_logs', 25);
+
+  const [firstResult, secondResult] = await Promise.all([
+    pollLongTerm(),
+    pollLongTerm(),
+  ]);
+
+  assert.equal(getSupabaseQueryCount('long_term_logs'), 1);
+  assert.equal(longTermPressureGraph.fullXVals.length, 2);
+  assert.deepEqual(
+    longTermPressureGraph.fullXVals,
+    entries.map((entry) => Math.floor(Date.parse(entry.recorded_at) / 1000))
+  );
+  assert.equal(firstResult?.appendedCount, 2);
+  assert.equal(secondResult, null);
+  assert.deepEqual(state.lastLongTermCursor, {
+    timestamp: entries.at(-1).recorded_at,
+    id: entries.at(-1).id,
+  });
 });
 
 test('fetchShortTermEntriesSince paginates tied timestamps deterministically across pages', async () => {

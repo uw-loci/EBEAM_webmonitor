@@ -3,7 +3,14 @@ const { supabase, REVERSED_FILE_PATH } = require('./config');
 const state = require('./services/state');
 const { computeAllColors } = require('./services/interlocks');
 const { fetchDisplayFileContents } = require('./services/gdrive');
-const { shortTermPressureGraph, longTermPressureGraph, ccsGraphA, ccsGraphB, ccsGraphC } = require('./services/graphs');
+const {
+  shortTermPressureGraph,
+  longTermPressureGraph,
+  ccsGraphA,
+  ccsGraphB,
+  ccsGraphC,
+  getGraphMetadata,
+} = require('./services/graphs');
 const { renderDashboard } = require('./views/dashboard');
 
 const codeLastUpdated = new Date().toLocaleString('en-US', {
@@ -105,6 +112,7 @@ function registerRoutes(app) {
       view,
       xVals: graph.displayXVals,
       yVals: graph.displayYVals,
+      ...getGraphMetadata(graph),
     });
   });
 

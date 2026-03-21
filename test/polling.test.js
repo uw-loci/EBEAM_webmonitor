@@ -301,10 +301,61 @@ test('applyLongTermEntries drains missed long-term rows in order', () => {
   assert.match(logs[0], /Long-term sync processed 6 rows/);
 });
 
-test('chart-data short view returns the newest synced short-term point after catch-up', () => {
+test('24-hour short-term data keeps a denser live display than the old 256-point cap', () => {
+  const graph = createGraphObj({
+    maxDisplayPoints: 1024,
+    sourceResolutionLabel: '~3s source data',
+  });
+  const ccsA = createCCSGraph();
+  const ccsB = createCCSGraph();
+  const ccsC = createCCSGraph();
+  const stateRef = { lastShortTermTimestamp: null };
+  const entries = buildShortTermEntries(28_800);
   const { logger } = createLogger();
-  const entries = buildShortTermEntries(8);
-  applyShortTermEntries(entries, { logger });
+
+  applyShortTermEntries(entries, {
+    stateRef,
+    graph,
+    graphUpdater: updateDisplayData,
+    ccsA,
+    ccsB,
+    ccsC,
+    ccsPointAdder: addCCSPointForTest,
+    logger,
+  });
+
+  assert.equal(graph.lastUsedFactor, 32);
+  assert.ok(graph.displayXVals.length > 850, `expected a denser live display, got ${graph.displayXVals.length}`);
+  assert.ok(graph.displayXVals.length <= 1024);
+});
+
+test('long-term data remains capped at the lower historical display density', () => {
+  const graph = createGraphObj({
+    maxDisplayPoints: 256,
+    sourceResolutionLabel: '1-min averaged source data',
+  });
+  const stateRef = { lastLongTermTimestamp: null };
+  const entries = buildLongTermEntries(1_440);
+  const { logger } = createLogger();
+
+  applyLongTermEntries(entries, {
+    stateRef,
+    graph,
+    graphUpdater: updateDisplayData,
+    logger,
+  });
+
+  assert.equal(graph.lastUsedFactor, 8);
+  assert.ok(graph.displayXVals.length >= 180 && graph.displayXVals.length <= 181);
+  assert.ok(graph.displayXVals.length <= 256);
+});
+
+test('chart-data returns density metadata for both short and long views', () => {
+  const { logger } = createLogger();
+  const shortEntries = buildShortTermEntries(8);
+  const longEntries = buildLongTermEntries(6);
+  applyShortTermEntries(shortEntries, { logger });
+  applyLongTermEntries(longEntries, { logger });
 
   const app = createFakeApp();
   registerRoutes(app);
@@ -319,12 +370,28 @@ test('chart-data short view returns the newest synced short-term point after cat
   assert.equal(response.payload.view, 'short');
   assert.equal(
     response.payload.xVals.at(-1),
-    Math.floor(Date.parse(entries.at(-1).created_at) / 1000)
+    Math.floor(Date.parse(shortEntries.at(-1).created_at) / 1000)
   );
   assert.equal(
     response.payload.yVals.at(-1),
-    Number.parseFloat(entries.at(-1).data.pressure)
+    Number.parseFloat(shortEntries.at(-1).data.pressure)
   );
+  assert.equal(response.payload.rawPointCount, shortTermPressureGraph.fullXVals.length);
+  assert.equal(response.payload.displayPointCount, shortTermPressureGraph.displayXVals.length);
+  assert.equal(response.payload.downsampleFactor, shortTermPressureGraph.lastUsedFactor);
+  assert.equal(response.payload.sourceResolutionLabel, shortTermPressureGraph.sourceResolutionLabel);
   assert.deepEqual(response.payload.xVals, shortTermPressureGraph.displayXVals);
   assert.deepEqual(response.payload.yVals, shortTermPressureGraph.displayYVals);
+
+  const longResponse = createResponseRecorder();
+  chartRoute.handler({ query: { view: 'long' } }, longResponse);
+
+  assert.equal(longResponse.statusCode, 200);
+  assert.equal(longResponse.payload.view, 'long');
+  assert.equal(longResponse.payload.rawPointCount, longTermPressureGraph.fullXVals.length);
+  assert.equal(longResponse.payload.displayPointCount, longTermPressureGraph.displayXVals.length);
+  assert.equal(longResponse.payload.downsampleFactor, longTermPressureGraph.lastUsedFactor);
+  assert.equal(longResponse.payload.sourceResolutionLabel, longTermPressureGraph.sourceResolutionLabel);
+  assert.deepEqual(longResponse.payload.xVals, longTermPressureGraph.displayXVals);
+  assert.deepEqual(longResponse.payload.yVals, longTermPressureGraph.displayYVals);
 });

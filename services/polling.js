@@ -1,77 +1,254 @@
 const { INACTIVE_THRESHOLD } = require('../config');
 const state = require('./state');
-const { mapSupabaseDataToAppFormat, resetData, fetchLatestShortTermEntry, fetchLatestLongTermEntry } = require('./supabase');
+const {
+  mapSupabaseDataToAppFormat,
+  resetData,
+  fetchLatestShortTermEntry,
+  fetchShortTermEntriesSince,
+  fetchLongTermEntriesSince,
+} = require('./supabase');
 const { fetchDisplayFileContents } = require('./gdrive');
-const { shortTermPressureGraph, longTermPressureGraph, updateDisplayData, addCCSPoint, ccsGraphA, ccsGraphB, ccsGraphC } = require('./graphs');
+const {
+  shortTermPressureGraph,
+  longTermPressureGraph,
+  updateDisplayData,
+  addCCSPoint,
+  ccsGraphA,
+  ccsGraphB,
+  ccsGraphC,
+} = require('./graphs');
+
+const SHORT_TERM_EXPECTED_INTERVAL_MS = 3_000;
+const LONG_TERM_EXPECTED_INTERVAL_MS = 60_000;
+
+let telemetrySyncInProgress = false;
+let displayRefreshInProgress = false;
+
+function parseTimestampMs(timestamp) {
+  const parsed = Date.parse(timestamp);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function logGapIfNeeded({
+  logger,
+  label,
+  previousTimestamp,
+  previousMs,
+  currentTimestamp,
+  currentMs,
+  expectedIntervalMs,
+}) {
+  if (previousMs == null || currentMs == null) {
+    return;
+  }
+
+  const gapMs = currentMs - previousMs;
+  if (gapMs > expectedIntervalMs * 2) {
+    logger.warn(
+      `${label} sync gap detected: ${gapMs} ms between ${previousTimestamp} and ${currentTimestamp}`
+    );
+  }
+}
+
+function logBatchSummary(logger, label, summary) {
+  if (summary.batchSize === 0) {
+    return;
+  }
+
+  logger.log(
+    `${label} sync processed ${summary.batchSize} rows ` +
+    `(${summary.appendedCount} plotted, ${summary.skippedCount} skipped) ` +
+    `from ${summary.firstTimestamp} to ${summary.lastTimestamp}`
+  );
+}
+
+function applyShortTermEntries(entries, options = {}) {
+  const {
+    stateRef = state,
+    graph = shortTermPressureGraph,
+    graphUpdater = updateDisplayData,
+    ccsA = ccsGraphA,
+    ccsB = ccsGraphB,
+    ccsC = ccsGraphC,
+    ccsPointAdder = addCCSPoint,
+    logger = console,
+    expectedIntervalMs = SHORT_TERM_EXPECTED_INTERVAL_MS,
+  } = options;
+
+  const summary = {
+    batchSize: entries.length,
+    appendedCount: 0,
+    skippedCount: 0,
+    firstTimestamp: null,
+    lastTimestamp: stateRef.lastShortTermTimestamp,
+  };
+
+  let previousTimestamp = stateRef.lastShortTermTimestamp;
+  let previousMs = parseTimestampMs(previousTimestamp);
+
+  for (const entry of entries) {
+    const entryTimestamp = entry?.created_at;
+    const entryMs = parseTimestampMs(entryTimestamp);
+
+    if (!entryTimestamp || entryMs == null) {
+      logger.warn('Skipping short-term row with invalid timestamp');
+      continue;
+    }
+
+    if (summary.firstTimestamp === null) {
+      summary.firstTimestamp = entryTimestamp;
+    }
+
+    logGapIfNeeded({
+      logger,
+      label: 'Short-term',
+      previousTimestamp,
+      previousMs,
+      currentTimestamp: entryTimestamp,
+      currentMs: entryMs,
+      expectedIntervalMs,
+    });
+
+    const tSec = Math.floor(entryMs / 1000);
+
+    ccsPointAdder(ccsA, tSec, entry.data?.clamp_temperature_A ?? null);
+    ccsPointAdder(ccsB, tSec, entry.data?.clamp_temperature_B ?? null);
+    ccsPointAdder(ccsC, tSec, entry.data?.clamp_temperature_C ?? null);
+
+    const pressure = Number.parseFloat(entry.data?.pressure);
+    if (!Number.isFinite(pressure)) {
+      summary.skippedCount++;
+      logger.warn(`Skipping short-term pressure row at ${entryTimestamp}: invalid pressure value`);
+      stateRef.lastShortTermTimestamp = entryTimestamp;
+      previousTimestamp = entryTimestamp;
+      previousMs = entryMs;
+      summary.lastTimestamp = entryTimestamp;
+      continue;
+    }
+
+    graph.fullXVals.push(tSec);
+    graph.fullYVals.push(pressure);
+    graphUpdater(graph);
+
+    summary.appendedCount++;
+    stateRef.lastShortTermTimestamp = entryTimestamp;
+    previousTimestamp = entryTimestamp;
+    previousMs = entryMs;
+    summary.lastTimestamp = entryTimestamp;
+  }
+
+  logBatchSummary(logger, 'Short-term', summary);
+  return summary;
+}
+
+function applyLongTermEntries(entries, options = {}) {
+  const {
+    stateRef = state,
+    graph = longTermPressureGraph,
+    graphUpdater = updateDisplayData,
+    logger = console,
+    expectedIntervalMs = LONG_TERM_EXPECTED_INTERVAL_MS,
+  } = options;
+
+  const summary = {
+    batchSize: entries.length,
+    appendedCount: 0,
+    skippedCount: 0,
+    firstTimestamp: null,
+    lastTimestamp: stateRef.lastLongTermTimestamp,
+  };
+
+  let previousTimestamp = stateRef.lastLongTermTimestamp;
+  let previousMs = parseTimestampMs(previousTimestamp);
+
+  for (const entry of entries) {
+    const entryTimestamp = entry?.recorded_at;
+    const entryMs = parseTimestampMs(entryTimestamp);
+
+    if (!entryTimestamp || entryMs == null) {
+      logger.warn('Skipping long-term row with invalid timestamp');
+      continue;
+    }
+
+    if (summary.firstTimestamp === null) {
+      summary.firstTimestamp = entryTimestamp;
+    }
+
+    logGapIfNeeded({
+      logger,
+      label: 'Long-term',
+      previousTimestamp,
+      previousMs,
+      currentTimestamp: entryTimestamp,
+      currentMs: entryMs,
+      expectedIntervalMs,
+    });
+
+    const pressure = Number.parseFloat(entry.avg_pressure);
+    if (!Number.isFinite(pressure)) {
+      summary.skippedCount++;
+      logger.warn(`Skipping long-term pressure row at ${entryTimestamp}: invalid avg_pressure`);
+      stateRef.lastLongTermTimestamp = entryTimestamp;
+      previousTimestamp = entryTimestamp;
+      previousMs = entryMs;
+      summary.lastTimestamp = entryTimestamp;
+      continue;
+    }
+
+    const tSec = Math.floor(entryMs / 1000);
+    graph.fullXVals.push(tSec);
+    graph.fullYVals.push(pressure);
+    graphUpdater(graph);
+
+    summary.appendedCount++;
+    stateRef.lastLongTermTimestamp = entryTimestamp;
+    previousTimestamp = entryTimestamp;
+    previousMs = entryMs;
+    summary.lastTimestamp = entryTimestamp;
+  }
+
+  logBatchSummary(logger, 'Long-term', summary);
+  return summary;
+}
 
 /**
- * Polls the short_term_logs table for the latest entry.
- * Skips if the timestamp hasn't advanced past the last one we processed.
+ * Polls the short_term_logs table and drains every unseen row since the last cursor.
  */
 async function pollShortTerm() {
   try {
-    const entry = await fetchLatestShortTermEntry();
-    if (!entry) return;
-
-    const entryTimestamp = entry.created_at;
-    if (state.lastShortTermTimestamp && entryTimestamp <= state.lastShortTermTimestamp) return;
-
-    const pressure = entry.data?.pressure;
-    if (pressure == null) return;
-
-    const tSec = Math.floor(new Date(entryTimestamp).getTime() / 1000);
-    shortTermPressureGraph.fullXVals.push(tSec);
-    shortTermPressureGraph.fullYVals.push(parseFloat(pressure));
-    updateDisplayData(shortTermPressureGraph);
-
-    addCCSPoint(ccsGraphA, tSec, entry.data?.clamp_temperature_A ?? null);
-    addCCSPoint(ccsGraphB, tSec, entry.data?.clamp_temperature_B ?? null);
-    addCCSPoint(ccsGraphC, tSec, entry.data?.clamp_temperature_C ?? null);
-
-    state.lastShortTermTimestamp = entryTimestamp;
+    const entries = await fetchShortTermEntriesSince(state.lastShortTermTimestamp);
+    return applyShortTermEntries(entries);
   } catch (err) {
     console.error('Error in pollShortTerm:', err);
+    return null;
   }
 }
 
 /**
- * Polls the long_term_logs table for the latest entry.
- * Skips if the timestamp hasn't advanced past the last one we processed.
+ * Polls the long_term_logs table and drains every unseen row since the last cursor.
  */
 async function pollLongTerm() {
   try {
-    const entry = await fetchLatestLongTermEntry();
-    if (!entry) return;
-
-    const entryTimestamp = entry.recorded_at;
-    if (state.lastLongTermTimestamp && entryTimestamp <= state.lastLongTermTimestamp) return;
-
-    if (entry.avg_pressure == null) return;
-
-    const tSec = Math.floor(new Date(entryTimestamp).getTime() / 1000);
-    longTermPressureGraph.fullXVals.push(tSec);
-    longTermPressureGraph.fullYVals.push(entry.avg_pressure);
-    updateDisplayData(longTermPressureGraph);
-
-    state.lastLongTermTimestamp = entryTimestamp;
+    const entries = await fetchLongTermEntriesSince(state.lastLongTermTimestamp);
+    return applyLongTermEntries(entries);
   } catch (err) {
     console.error('Error in pollLongTerm:', err);
+    return null;
   }
 }
 
 /**
- * Main polling function - fetches from Supabase and updates global state.
- *
- * Steps:
- * 1. Tick sample graph
- * 2. Fetch latest entry from short_term_logs for scalar state + graph
- * 3. Check if experiment is still active (within 15 minutes)
- * 4. Map data to application format and update global state
- * 5. Fetch display logs from Google Drive (separate operation)
+ * Main telemetry polling function - fetches scalar state and catches up graph caches.
  */
 async function fetchAndUpdateFile() {
+  if (telemetrySyncInProgress) {
+    console.warn('Telemetry sync skipped because the previous run is still in progress');
+    return;
+  }
+
+  telemetrySyncInProgress = true;
+
   try {
-    // 1. Fetch latest entry from short_term_logs
     const latestEntry = await fetchLatestShortTermEntry();
 
     if (!latestEntry) {
@@ -81,12 +258,12 @@ async function fetchAndUpdateFile() {
       return;
     }
 
-    // 2. Parse experiment timestamp
+    await pollShortTerm();
+
     const experimentTime = new Date(latestEntry.created_at);
     const experimentTimestamp = experimentTime.getTime();
     state.webMonitorLastModified = experimentTime;
 
-    // 3. Check if experiment is still active (within 15 minutes)
     const now = Date.now();
 
     if (now - experimentTimestamp > INACTIVE_THRESHOLD) {
@@ -96,7 +273,6 @@ async function fetchAndUpdateFile() {
       return;
     }
 
-    // 4. Map data to application format
     const mappedData = mapSupabaseDataToAppFormat(latestEntry.data);
 
     if (mappedData) {
@@ -108,18 +284,37 @@ async function fetchAndUpdateFile() {
       state.experimentRunning = false;
       resetData();
     }
-
-    // 5. Update short-term pressure graph (dedup by timestamp)
-    await pollShortTerm();
-
-    // 6. Fetch display logs from Google Drive (separate operation)
-    await fetchDisplayFileContents();
-
   } catch (error) {
     console.error('Error in fetchAndUpdateFile:', error);
     state.experimentRunning = false;
     resetData();
+  } finally {
+    telemetrySyncInProgress = false;
   }
 }
 
-module.exports = { fetchAndUpdateFile, pollLongTerm };
+async function refreshDisplayLogs() {
+  if (displayRefreshInProgress) {
+    console.warn('Display log refresh skipped because the previous run is still in progress');
+    return false;
+  }
+
+  displayRefreshInProgress = true;
+
+  try {
+    return await fetchDisplayFileContents();
+  } finally {
+    displayRefreshInProgress = false;
+  }
+}
+
+module.exports = {
+  fetchAndUpdateFile,
+  pollShortTerm,
+  pollLongTerm,
+  refreshDisplayLogs,
+  applyShortTermEntries,
+  applyLongTermEntries,
+  SHORT_TERM_EXPECTED_INTERVAL_MS,
+  LONG_TERM_EXPECTED_INTERVAL_MS,
+};

@@ -4,6 +4,43 @@ const { updateDisplayData, addCCSPoint } = require('./graphs');
 
 const PAGE_SIZE = 1000;
 
+async function fetchEntriesSince(tableName, columns, timestampColumn, cursor) {
+  const rows = [];
+  let from = 0;
+
+  while (true) {
+    let query = supabase
+      .from(tableName)
+      .select(columns)
+      .order(timestampColumn, { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (cursor) {
+      query = query.gt(timestampColumn, cursor);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      break;
+    }
+
+    rows.push(...data);
+
+    if (data.length < PAGE_SIZE) {
+      break;
+    }
+
+    from += PAGE_SIZE;
+  }
+
+  return rows;
+}
+
 /**
  * Maps Supabase log_data JSON to the application's data object format
  * @param {Object} logData - The log_data JSON from Supabase
@@ -214,6 +251,32 @@ async function fetchLatestLongTermEntry() {
 }
 
 /**
+ * Fetches all short-term entries newer than the provided created_at cursor.
+ * Results are returned oldest-first so callers can rebuild in-memory caches in order.
+ */
+async function fetchShortTermEntriesSince(cursor) {
+  try {
+    return await fetchEntriesSince('short_term_logs', 'created_at, data', 'created_at', cursor);
+  } catch (err) {
+    console.error('Error fetching short-term entries since cursor:', err);
+    return [];
+  }
+}
+
+/**
+ * Fetches all long-term entries newer than the provided recorded_at cursor.
+ * Results are returned oldest-first so callers can rebuild in-memory caches in order.
+ */
+async function fetchLongTermEntriesSince(cursor) {
+  try {
+    return await fetchEntriesSince('long_term_logs', 'recorded_at, avg_pressure', 'recorded_at', cursor);
+  } catch (err) {
+    console.error('Error fetching long-term entries since cursor:', err);
+    return [];
+  }
+}
+
+/**
  * Backfills the CCS clamp temperature graphs from the last hour of short_term_logs.
  * Time window: 1h (matches the CCS ring buffer capacity of 1200 points @ 3s ≈ 1h).
  * @param {Object} graphA - CCS graph object for cathode A
@@ -276,4 +339,6 @@ module.exports = {
   backfillCCSGraphs,
   fetchLatestShortTermEntry,
   fetchLatestLongTermEntry,
+  fetchShortTermEntriesSince,
+  fetchLongTermEntriesSince,
 };

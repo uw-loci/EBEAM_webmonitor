@@ -38,6 +38,12 @@ npm install
 npm start
 ```
 
+### Running Tests
+
+```bash
+npm test
+```
+
 On startup the server will:
 1. Backfill both pressure graph caches from Supabase
 2. Begin polling for new data

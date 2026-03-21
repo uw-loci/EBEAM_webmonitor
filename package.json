@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node --test --test-isolation=none"
+    "test": "node --test"
   },
   "author": "Your Name",
   "license": "ISC",

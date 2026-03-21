@@ -313,8 +313,7 @@ async function fetchAndUpdateFile() {
       resetData();
       return;
     }
-
-    await pollShortTerm();
+    const latestCursor = buildCursor(latestEntry.created_at, latestEntry.id);
 
     const experimentTime = new Date(latestEntry.created_at);
     const experimentTimestamp = experimentTime.getTime();
@@ -324,10 +323,15 @@ async function fetchAndUpdateFile() {
 
     if (now - experimentTimestamp > INACTIVE_THRESHOLD) {
       console.log('Experiment inactive - last update too old');
+      if (isCursorAfter(latestCursor, state.lastShortTermCursor)) {
+        state.lastShortTermCursor = latestCursor;
+      }
       state.experimentRunning = false;
       resetData();
       return;
     }
+
+    await pollShortTerm();
 
     const mappedData = mapSupabaseDataToAppFormat(latestEntry.data);
 

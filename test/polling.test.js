@@ -267,12 +267,14 @@ const {
   ccsGraphC,
 } = require('../services/graphs');
 const {
+  backfillShortTermGraph,
   fetchShortTermEntriesSince,
   fetchLongTermEntriesSince,
 } = require('../services/supabase');
 const {
   applyShortTermEntries,
   applyLongTermEntries,
+  fetchAndUpdateFile,
   pollLongTerm,
 } = require('../services/polling');
 
@@ -586,6 +588,81 @@ test('pollLongTerm skips overlapping runs instead of fetching the same batch twi
     timestamp: entries.at(-1).recorded_at,
     id: entries.at(-1).id,
   });
+});
+
+test('fetchAndUpdateFile seeds the short-term cursor from a stale latest row without draining history', async () => {
+  const staleEntries = buildShortTermEntries(5, {
+    startMs: Date.now() - (25 * 60 * 60 * 1000) - (4 * 3_000),
+  });
+  setSupabaseTableRows('short_term_logs', staleEntries);
+
+  state.lastShortTermCursor = await backfillShortTermGraph(shortTermPressureGraph);
+
+  assert.equal(state.lastShortTermCursor, null);
+  assert.equal(shortTermPressureGraph.fullXVals.length, 0);
+
+  await fetchAndUpdateFile();
+
+  assert.equal(getSupabaseQueryCount('short_term_logs'), 2);
+  assert.equal(state.experimentRunning, false);
+  assert.deepEqual(state.lastShortTermCursor, {
+    timestamp: staleEntries.at(-1).created_at,
+    id: staleEntries.at(-1).id,
+  });
+  assert.equal(state.webMonitorLastModified?.toISOString(), staleEntries.at(-1).created_at);
+  assert.equal(shortTermPressureGraph.fullXVals.length, 0);
+  assert.equal(shortTermPressureGraph.displayXVals.length, 0);
+  assert.equal(ccsGraphA.xVals.length, 0);
+  assert.equal(ccsGraphB.xVals.length, 0);
+  assert.equal(ccsGraphC.xVals.length, 0);
+  assert.equal(state.data.pressure, null);
+});
+
+test('fetchAndUpdateFile only catches up fresh rows after a stale baseline seeds the cursor', async () => {
+  const staleEntries = buildShortTermEntries(5, {
+    startMs: Date.now() - (25 * 60 * 60 * 1000) - (4 * 3_000),
+  });
+  setSupabaseTableRows('short_term_logs', staleEntries);
+
+  state.lastShortTermCursor = await backfillShortTermGraph(shortTermPressureGraph);
+  await fetchAndUpdateFile();
+
+  assert.equal(getSupabaseQueryCount('short_term_logs'), 2);
+  assert.deepEqual(state.lastShortTermCursor, {
+    timestamp: staleEntries.at(-1).created_at,
+    id: staleEntries.at(-1).id,
+  });
+
+  const freshEntries = buildShortTermEntries(3, {
+    startMs: Date.now() - 9_000,
+    idFactory: (index) => `fresh-${String(index).padStart(6, '0')}`,
+  });
+  setSupabaseTableRows('short_term_logs', [...staleEntries, ...freshEntries]);
+
+  await fetchAndUpdateFile();
+
+  assert.equal(getSupabaseQueryCount('short_term_logs'), 4);
+  assert.equal(state.experimentRunning, true);
+  assert.deepEqual(state.lastShortTermCursor, {
+    timestamp: freshEntries.at(-1).created_at,
+    id: freshEntries.at(-1).id,
+  });
+  assert.deepEqual(
+    shortTermPressureGraph.fullXVals,
+    freshEntries.map((entry) => Math.floor(Date.parse(entry.created_at) / 1000))
+  );
+  assert.deepEqual(
+    shortTermPressureGraph.fullYVals,
+    freshEntries.map((entry) => Number.parseFloat(entry.data.pressure))
+  );
+  assert.deepEqual(
+    ccsGraphA.xVals,
+    freshEntries.map((entry) => Math.floor(Date.parse(entry.created_at) / 1000))
+  );
+  assert.equal(ccsGraphB.xVals.length, freshEntries.length);
+  assert.equal(ccsGraphC.xVals.length, freshEntries.length);
+  assert.equal(state.data.pressure, freshEntries.at(-1).data.pressure);
+  assert.equal(state.webMonitorLastModified?.toISOString(), freshEntries.at(-1).created_at);
 });
 
 test('fetchShortTermEntriesSince paginates tied timestamps deterministically across pages', async () => {

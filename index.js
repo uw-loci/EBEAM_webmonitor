@@ -27,10 +27,10 @@ registerRoutes(app);
 (async function start() {
   // 1) Backfill both pressure graph caches from Supabase
   console.log('Backfilling short-term pressure cache...');
-  state.lastShortTermTimestamp = await backfillShortTermGraph(shortTermPressureGraph);
+  state.lastShortTermCursor = await backfillShortTermGraph(shortTermPressureGraph);
 
   console.log('Backfilling long-term pressure cache...');
-  state.lastLongTermTimestamp = await backfillLongTermGraph(longTermPressureGraph);
+  state.lastLongTermCursor = await backfillLongTermGraph(longTermPressureGraph);
 
   console.log('Backfilling CCS temperature graphs...');
   await backfillCCSGraphs(ccsGraphA, ccsGraphB, ccsGraphC);

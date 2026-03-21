@@ -96,9 +96,9 @@ Google Drive                   │  ├─ GET /              │           │ 
 
 1. **Startup backfill** (`index.js` → `supabase.js`): On boot, the server pulls all rows from `short_term_logs` and `long_term_logs` into in-memory graph arrays. The HTTP port opens only after backfill completes.
 
-2. **Short-term polling** (every 3s in `polling.js`): `fetchAndUpdateFile()` fetches the latest row from `short_term_logs`. It updates both the scalar `state.data` (interlocks, temps, pressure, heater values) and appends to `shortTermPressureGraph`. Timestamp comparison prevents duplicate processing.
+2. **Short-term polling** (every 3s in `polling.js`): `fetchAndUpdateFile()` fetches the latest row from `short_term_logs`. It updates both the scalar `state.data` (interlocks, temps, pressure, heater values) and appends to `shortTermPressureGraph`. A composite `{ timestamp, id }` cursor prevents duplicate processing without dropping tied timestamps.
 
-3. **Long-term polling** (every 60s in `polling.js`): `pollLongTerm()` fetches the latest row from `long_term_logs` and appends to `longTermPressureGraph`. Also uses timestamp dedup.
+3. **Long-term polling** (every 60s in `polling.js`): `pollLongTerm()` catches up every unseen row from `long_term_logs` and appends to `longTermPressureGraph`. It uses the same composite `{ timestamp, id }` cursor so rows that share a minute-level timestamp are still drained in order.
 
 4. **Client updates**: The browser polls `GET /data` every 3s to update scalar DOM elements (indicator circles, temperature readings, etc.). It also polls `GET /chart-data?view=short|long` to live-update the uPlot pressure chart via `setData()`.
 

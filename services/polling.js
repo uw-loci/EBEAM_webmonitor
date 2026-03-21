@@ -29,6 +29,21 @@ function parseTimestampMs(timestamp) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function getCursorTimestamp(cursor) {
+  return cursor?.timestamp ?? null;
+}
+
+function buildCursor(timestamp, id) {
+  if (!timestamp) {
+    return null;
+  }
+
+  return {
+    timestamp,
+    id: id ?? null,
+  };
+}
+
 function logGapIfNeeded({
   logger,
   label,
@@ -80,15 +95,16 @@ function applyShortTermEntries(entries, options = {}) {
     appendedCount: 0,
     skippedCount: 0,
     firstTimestamp: null,
-    lastTimestamp: stateRef.lastShortTermTimestamp,
+    lastTimestamp: getCursorTimestamp(stateRef.lastShortTermCursor),
   };
 
-  let previousTimestamp = stateRef.lastShortTermTimestamp;
+  let previousTimestamp = getCursorTimestamp(stateRef.lastShortTermCursor);
   let previousMs = parseTimestampMs(previousTimestamp);
 
   for (const entry of entries) {
     const entryTimestamp = entry?.created_at;
     const entryMs = parseTimestampMs(entryTimestamp);
+    const entryCursor = buildCursor(entryTimestamp, entry?.id);
 
     if (!entryTimestamp || entryMs == null) {
       logger.warn('Skipping short-term row with invalid timestamp');
@@ -119,7 +135,7 @@ function applyShortTermEntries(entries, options = {}) {
     if (!Number.isFinite(pressure)) {
       summary.skippedCount++;
       logger.warn(`Skipping short-term pressure row at ${entryTimestamp}: invalid pressure value`);
-      stateRef.lastShortTermTimestamp = entryTimestamp;
+      stateRef.lastShortTermCursor = entryCursor;
       previousTimestamp = entryTimestamp;
       previousMs = entryMs;
       summary.lastTimestamp = entryTimestamp;
@@ -131,7 +147,7 @@ function applyShortTermEntries(entries, options = {}) {
     graphUpdater(graph);
 
     summary.appendedCount++;
-    stateRef.lastShortTermTimestamp = entryTimestamp;
+    stateRef.lastShortTermCursor = entryCursor;
     previousTimestamp = entryTimestamp;
     previousMs = entryMs;
     summary.lastTimestamp = entryTimestamp;
@@ -155,15 +171,16 @@ function applyLongTermEntries(entries, options = {}) {
     appendedCount: 0,
     skippedCount: 0,
     firstTimestamp: null,
-    lastTimestamp: stateRef.lastLongTermTimestamp,
+    lastTimestamp: getCursorTimestamp(stateRef.lastLongTermCursor),
   };
 
-  let previousTimestamp = stateRef.lastLongTermTimestamp;
+  let previousTimestamp = getCursorTimestamp(stateRef.lastLongTermCursor);
   let previousMs = parseTimestampMs(previousTimestamp);
 
   for (const entry of entries) {
     const entryTimestamp = entry?.recorded_at;
     const entryMs = parseTimestampMs(entryTimestamp);
+    const entryCursor = buildCursor(entryTimestamp, entry?.id);
 
     if (!entryTimestamp || entryMs == null) {
       logger.warn('Skipping long-term row with invalid timestamp');
@@ -188,7 +205,7 @@ function applyLongTermEntries(entries, options = {}) {
     if (!Number.isFinite(pressure)) {
       summary.skippedCount++;
       logger.warn(`Skipping long-term pressure row at ${entryTimestamp}: invalid avg_pressure`);
-      stateRef.lastLongTermTimestamp = entryTimestamp;
+      stateRef.lastLongTermCursor = entryCursor;
       previousTimestamp = entryTimestamp;
       previousMs = entryMs;
       summary.lastTimestamp = entryTimestamp;
@@ -201,7 +218,7 @@ function applyLongTermEntries(entries, options = {}) {
     graphUpdater(graph);
 
     summary.appendedCount++;
-    stateRef.lastLongTermTimestamp = entryTimestamp;
+    stateRef.lastLongTermCursor = entryCursor;
     previousTimestamp = entryTimestamp;
     previousMs = entryMs;
     summary.lastTimestamp = entryTimestamp;
@@ -216,7 +233,7 @@ function applyLongTermEntries(entries, options = {}) {
  */
 async function pollShortTerm() {
   try {
-    const entries = await fetchShortTermEntriesSince(state.lastShortTermTimestamp);
+    const entries = await fetchShortTermEntriesSince(state.lastShortTermCursor);
     return applyShortTermEntries(entries);
   } catch (err) {
     console.error('Error in pollShortTerm:', err);
@@ -229,7 +246,7 @@ async function pollShortTerm() {
  */
 async function pollLongTerm() {
   try {
-    const entries = await fetchLongTermEntriesSince(state.lastLongTermTimestamp);
+    const entries = await fetchLongTermEntriesSince(state.lastLongTermCursor);
     return applyLongTermEntries(entries);
   } catch (err) {
     console.error('Error in pollLongTerm:', err);

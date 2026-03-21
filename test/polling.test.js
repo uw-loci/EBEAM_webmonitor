@@ -315,8 +315,8 @@ function resetCCSGraph(graph) {
 }
 
 function resetSingletonState() {
-  state.lastShortTermTimestamp = null;
-  state.lastLongTermTimestamp = null;
+  state.lastShortTermCursor = null;
+  state.lastLongTermCursor = null;
   state.webMonitorLastModified = null;
   state.displayLogLastModified = null;
   state.experimentRunning = false;
@@ -389,7 +389,7 @@ test('applyShortTermEntries catches up every unseen short-term row in order', ()
   const ccsA = createCCSGraph();
   const ccsB = createCCSGraph();
   const ccsC = createCCSGraph();
-  const stateRef = { lastShortTermTimestamp: null };
+  const stateRef = { lastShortTermCursor: null };
   const entries = buildShortTermEntries(10);
   const { logger, logs, warns } = createLogger();
 
@@ -413,7 +413,10 @@ test('applyShortTermEntries catches up every unseen short-term row in order', ()
     entries.map((entry) => Math.floor(Date.parse(entry.created_at) / 1000))
   );
   assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).created_at) / 1000));
-  assert.equal(stateRef.lastShortTermTimestamp, entries.at(-1).created_at);
+  assert.deepEqual(stateRef.lastShortTermCursor, {
+    timestamp: entries.at(-1).created_at,
+    id: entries.at(-1).id,
+  });
   assert.equal(ccsA.xVals.length, 10);
   assert.equal(ccsB.xVals.length, 10);
   assert.equal(ccsC.xVals.length, 10);
@@ -426,7 +429,7 @@ test('applyShortTermEntries skips malformed pressure rows but still advances the
   const ccsA = createCCSGraph();
   const ccsB = createCCSGraph();
   const ccsC = createCCSGraph();
-  const stateRef = { lastShortTermTimestamp: null };
+  const stateRef = { lastShortTermCursor: null };
   const entries = buildShortTermEntries(3, {
     pressureFactory: (index) => (index === 1 ? null : `${1e-6 + index * 1e-7}`),
   });
@@ -451,14 +454,17 @@ test('applyShortTermEntries skips malformed pressure rows but still advances the
     graph.fullXVals,
     [entries[0], entries[2]].map((entry) => Math.floor(Date.parse(entry.created_at) / 1000))
   );
-  assert.equal(stateRef.lastShortTermTimestamp, entries[2].created_at);
+  assert.deepEqual(stateRef.lastShortTermCursor, {
+    timestamp: entries[2].created_at,
+    id: entries[2].id,
+  });
   assert.equal(ccsA.xVals.length, 3);
   assert.ok(warns.some((line) => line.includes('invalid pressure value')));
 });
 
 test('applyLongTermEntries drains missed long-term rows in order', () => {
   const graph = createGraphObj({ maxDisplayPoints: 256 });
-  const stateRef = { lastLongTermTimestamp: null };
+  const stateRef = { lastLongTermCursor: null };
   const entries = buildLongTermEntries(6);
   const { logger, warns, logs } = createLogger();
 
@@ -478,7 +484,10 @@ test('applyLongTermEntries drains missed long-term rows in order', () => {
     entries.map((entry) => Math.floor(Date.parse(entry.recorded_at) / 1000))
   );
   assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).recorded_at) / 1000));
-  assert.equal(stateRef.lastLongTermTimestamp, entries.at(-1).recorded_at);
+  assert.deepEqual(stateRef.lastLongTermCursor, {
+    timestamp: entries.at(-1).recorded_at,
+    id: entries.at(-1).id,
+  });
   assert.equal(warns.length, 0);
   assert.match(logs[0], /Long-term sync processed 6 rows/);
 });
@@ -503,6 +512,27 @@ test('fetchShortTermEntriesSince paginates tied timestamps deterministically acr
   );
 });
 
+test('fetchShortTermEntriesSince resumes within a tied timestamp using the id cursor', async () => {
+  const entries = buildShortTermEntries(1_005);
+  const boundaryTimestamp = entries[998].created_at;
+
+  for (const index of [999, 1000, 1001, 1002]) {
+    entries[index].created_at = boundaryTimestamp;
+  }
+
+  setSupabaseTableRows('short_term_logs', entries);
+
+  const fetched = await fetchShortTermEntriesSince({
+    timestamp: boundaryTimestamp,
+    id: entries[998].id,
+  });
+
+  assert.deepEqual(
+    fetched.map((entry) => entry.id),
+    entries.slice(999).map((entry) => entry.id)
+  );
+});
+
 test('fetchLongTermEntriesSince paginates tied timestamps deterministically across pages', async () => {
   const entries = buildLongTermEntries(1_005);
   const boundaryTimestamp = entries[998].recorded_at;
@@ -523,6 +553,27 @@ test('fetchLongTermEntriesSince paginates tied timestamps deterministically acro
   );
 });
 
+test('fetchLongTermEntriesSince resumes within a tied timestamp using the id cursor', async () => {
+  const entries = buildLongTermEntries(1_005);
+  const boundaryTimestamp = entries[998].recorded_at;
+
+  for (const index of [999, 1000, 1001, 1002]) {
+    entries[index].recorded_at = boundaryTimestamp;
+  }
+
+  setSupabaseTableRows('long_term_logs', entries);
+
+  const fetched = await fetchLongTermEntriesSince({
+    timestamp: boundaryTimestamp,
+    id: entries[998].id,
+  });
+
+  assert.deepEqual(
+    fetched.map((entry) => entry.id),
+    entries.slice(999).map((entry) => entry.id)
+  );
+});
+
 test('24-hour short-term data keeps a denser live display than the old 256-point cap', () => {
   const graph = createGraphObj({
     maxDisplayPoints: 1024,
@@ -531,7 +582,7 @@ test('24-hour short-term data keeps a denser live display than the old 256-point
   const ccsA = createCCSGraph();
   const ccsB = createCCSGraph();
   const ccsC = createCCSGraph();
-  const stateRef = { lastShortTermTimestamp: null };
+  const stateRef = { lastShortTermCursor: null };
   const entries = buildShortTermEntries(28_800);
   const { logger } = createLogger();
 
@@ -556,7 +607,7 @@ test('long-term data remains capped at the lower historical display density', ()
     maxDisplayPoints: 256,
     sourceResolutionLabel: '1-min averaged source data',
   });
-  const stateRef = { lastLongTermTimestamp: null };
+  const stateRef = { lastLongTermCursor: null };
   const entries = buildLongTermEntries(1_440);
   const { logger } = createLogger();
 

@@ -4,9 +4,58 @@ const { updateDisplayData, addCCSPoint } = require('./graphs');
 
 const PAGE_SIZE = 1000;
 
+function normalizeCursor(cursor) {
+  if (!cursor?.timestamp) {
+    return null;
+  }
+
+  return {
+    timestamp: cursor.timestamp,
+    id: cursor.id ?? null,
+  };
+}
+
+function buildCursorFromRow(row, timestampColumn) {
+  const timestamp = row?.[timestampColumn];
+  if (!timestamp) {
+    return null;
+  }
+
+  return {
+    timestamp,
+    id: row?.id ?? null,
+  };
+}
+
+function isRowAfterCursor(row, timestampColumn, cursor) {
+  if (!cursor) {
+    return true;
+  }
+
+  const rowTimestamp = row?.[timestampColumn];
+  if (!rowTimestamp) {
+    return false;
+  }
+
+  if (rowTimestamp > cursor.timestamp) {
+    return true;
+  }
+
+  if (rowTimestamp < cursor.timestamp) {
+    return false;
+  }
+
+  if (cursor.id == null) {
+    return false;
+  }
+
+  return row?.id > cursor.id;
+}
+
 async function fetchEntriesSince(tableName, columns, timestampColumn, cursor) {
   const rows = [];
   let from = 0;
+  const normalizedCursor = normalizeCursor(cursor);
 
   while (true) {
     let query = supabase
@@ -16,8 +65,8 @@ async function fetchEntriesSince(tableName, columns, timestampColumn, cursor) {
       .order('id', { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
 
-    if (cursor) {
-      query = query.gt(timestampColumn, cursor);
+    if (normalizedCursor) {
+      query = query.gte(timestampColumn, normalizedCursor.timestamp);
     }
 
     const { data, error } = await query;
@@ -30,7 +79,11 @@ async function fetchEntriesSince(tableName, columns, timestampColumn, cursor) {
       break;
     }
 
-    rows.push(...data);
+    const unseenRows = normalizedCursor
+      ? data.filter((row) => isRowAfterCursor(row, timestampColumn, normalizedCursor))
+      : data;
+
+    rows.push(...unseenRows);
 
     if (data.length < PAGE_SIZE) {
       break;
@@ -102,13 +155,13 @@ function resetData() {
  * Backfills the short-term pressure graph from the last 24 hours of short_term_logs.
  * Time window: 24h (matches the "Last 24h" chart label and maxDataPoints: 30000 @ 3s ≈ 25h capacity).
  * @param {Object} graph - The graph object to populate
- * @returns {string|null} The created_at of the last row, or null if no data
+ * @returns {{ timestamp: string, id: string|null }|null} Cursor for the last row, or null if no data
  */
 async function backfillShortTermGraph(graph) {
   try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     let from = 0;
-    let lastTimestamp = null;
+    let lastCursor = null;
 
     while (true) {
       const { data, error } = await supabase
@@ -134,19 +187,19 @@ async function backfillShortTermGraph(graph) {
         updateDisplayData(graph);
       }
 
-      lastTimestamp = data[data.length - 1].created_at;
+      lastCursor = buildCursorFromRow(data[data.length - 1], 'created_at');
 
       if (data.length < PAGE_SIZE) break;
       if (graph.fullXVals.length >= graph.maxDataPoints) break;
       from += PAGE_SIZE;
     }
 
-    if (lastTimestamp === null) {
+    if (lastCursor === null) {
       console.log('No short-term data to backfill');
       return null;
     }
     console.log(`Backfilled ${graph.fullXVals.length} short-term points`);
-    return lastTimestamp;
+    return lastCursor;
   } catch (err) {
     console.error('Error backfilling short-term graph:', err);
     return null;
@@ -157,12 +210,12 @@ async function backfillShortTermGraph(graph) {
  * Backfills the long-term pressure graph from long_term_logs.
  * Time window: all-time (matches the "Historical / All-time" chart label; 1-min averaged rows).
  * @param {Object} graph - The graph object to populate
- * @returns {string|null} The recorded_at of the last row, or null if no data
+ * @returns {{ timestamp: string, id: string|null }|null} Cursor for the last row, or null if no data
  */
 async function backfillLongTermGraph(graph) {
   try {
     let from = 0;
-    let lastTimestamp = null;
+    let lastCursor = null;
 
     while (true) {
       const { data, error } = await supabase
@@ -186,19 +239,19 @@ async function backfillLongTermGraph(graph) {
         updateDisplayData(graph);
       }
 
-      lastTimestamp = data[data.length - 1].recorded_at;
+      lastCursor = buildCursorFromRow(data[data.length - 1], 'recorded_at');
 
       if (data.length < PAGE_SIZE) break;
       if (graph.fullXVals.length >= graph.maxDataPoints) break;
       from += PAGE_SIZE;
     }
 
-    if (lastTimestamp === null) {
+    if (lastCursor === null) {
       console.log('No long-term data to backfill');
       return null;
     }
     console.log(`Backfilled ${graph.fullXVals.length} long-term points`);
-    return lastTimestamp;
+    return lastCursor;
   } catch (err) {
     console.error('Error backfilling long-term graph:', err);
     return null;
@@ -256,7 +309,7 @@ async function fetchLatestLongTermEntry() {
 }
 
 /**
- * Fetches all short-term entries newer than the provided created_at cursor.
+ * Fetches all short-term entries newer than the provided created_at/id cursor.
  * Results are returned oldest-first so callers can rebuild in-memory caches in order.
  */
 async function fetchShortTermEntriesSince(cursor) {
@@ -269,7 +322,7 @@ async function fetchShortTermEntriesSince(cursor) {
 }
 
 /**
- * Fetches all long-term entries newer than the provided recorded_at cursor.
+ * Fetches all long-term entries newer than the provided recorded_at/id cursor.
  * Results are returned oldest-first so callers can rebuild in-memory caches in order.
  */
 async function fetchLongTermEntriesSince(cursor) {

@@ -140,7 +140,6 @@ The browser then:
 |   `-- refresh.png          # Refresh icon used by the dashboard
 |-- render.yaml              # Render deployment config
 |-- SUPABASE-README.md       # Database architecture and maintenance notes
-|-- Graph-README.md          # Additional graph-specific notes
 `-- README.md                # Project overview and developer setup
 ```
 
@@ -169,6 +168,8 @@ The dashboard treats the experiment as inactive when the newest short-term row i
 ### Pressure graph density
 
 The server keeps the full in-memory pressure arrays separately from the display arrays sent to the browser. Short-term pressure data keeps a denser live view (`maxDisplayPoints: 1024`) because it represents recent ~3 second data over the last 24 hours, while the long-term historical view stays capped at a lower display density (`maxDisplayPoints: 256`) because it already uses 1-minute averaged source data.
+
+When a pressure graph would exceed its display cap, the server re-samples older points using a larger power-of-two stride while still keeping the newest point visible. That lets the UI stay responsive without hiding the latest reading, and it applies to both pressure views even though they use different source resolutions and display limits.
 
 `/chart-data` now returns both the plotted points and graph metadata such as `rawPointCount`, `displayPointCount`, `downsampleFactor`, and `sourceResolutionLabel`, allowing the UI to explain what the chart is showing.
 

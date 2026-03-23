@@ -3,7 +3,14 @@ const { supabase, REVERSED_FILE_PATH } = require('./config');
 const state = require('./services/state');
 const { computeAllColors } = require('./services/interlocks');
 const { fetchDisplayFileContents } = require('./services/gdrive');
-const { shortTermPressureGraph, longTermPressureGraph, ccsGraphA, ccsGraphB, ccsGraphC } = require('./services/graphs');
+const {
+  shortTermPressureGraph,
+  longTermPressureGraph,
+  ccsGraphA,
+  ccsGraphB,
+  ccsGraphC,
+  getGraphMetadata,
+} = require('./services/graphs');
 const { renderDashboard } = require('./views/dashboard');
 
 const codeLastUpdated = new Date().toLocaleString('en-US', {
@@ -105,6 +112,7 @@ function registerRoutes(app) {
       view,
       xVals: graph.displayXVals,
       yVals: graph.displayYVals,
+      ...getGraphMetadata(graph),
     });
   });
 
@@ -115,6 +123,43 @@ function registerRoutes(app) {
       B: { xVals: ccsGraphB.xVals, yVals: ccsGraphB.yVals },
       C: { xVals: ccsGraphC.xVals, yVals: ccsGraphC.yVals },
     });
+  });
+
+  // Experiment reset — deletes all log data
+  app.post('/experiment-reset', async (req, res) => {
+    const resetPassword = process.env.EXPERIMENT_RESET_PASSWORD;
+    if (!resetPassword) {
+      return res.status(503).json({ error: 'Experiment reset is not configured on this server.' });
+    }
+
+    const { password } = req.body || {};
+    if (password !== resetPassword) {
+      return res.status(401).json({ error: 'Incorrect password.' });
+    }
+
+    const [longResult, shortResult] = await Promise.all([
+      supabase.from('long_term_logs').delete().gte('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('short_term_logs').delete().gte('id', 0),
+    ]);
+
+    if (longResult.error || shortResult.error) {
+      const msg = (longResult.error?.message || '') + ' ' + (shortResult.error?.message || '');
+      console.error('Experiment reset Supabase error:', msg.trim());
+      return res.status(500).json({ error: msg.trim() });
+    }
+
+    longTermPressureGraph.fullXVals.length = 0;
+    longTermPressureGraph.fullYVals.length = 0;
+    longTermPressureGraph.displayXVals.length = 0;
+    longTermPressureGraph.displayYVals.length = 0;
+
+    shortTermPressureGraph.fullXVals.length = 0;
+    shortTermPressureGraph.fullYVals.length = 0;
+    shortTermPressureGraph.displayXVals.length = 0;
+    shortTermPressureGraph.displayYVals.length = 0;
+
+    console.log('Experiment reset: long_term_logs and short_term_logs cleared.');
+    return res.status(200).json({ success: true });
   });
 
   // Raw reversed log file

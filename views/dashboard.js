@@ -1,3 +1,5 @@
+const { getGraphMetadata } = require('../services/graphs');
+
 /**
  * Renders the full HTML dashboard page.
  *
@@ -55,6 +57,25 @@ function renderDashboard(opts) {
     oilLowColor, oilHighColor, estopIntColor, estopExtColor,
     allInterlocksColor, G9OutputColor, hvoltColor
   ] = sicColors;
+
+  const shortTermChartMeta = getGraphMetadata(shortTermPressureGraph);
+
+  function formatPressureChartStatus(meta) {
+    const rawPointCount = Number(meta.rawPointCount ?? 0);
+    const displayPointCount = Number(meta.displayPointCount ?? 0);
+    const downsampleFactor = Math.max(1, Number(meta.downsampleFactor ?? 1));
+    const sourceResolutionLabel = meta.sourceResolutionLabel || 'source data';
+
+    if (rawPointCount === 0) {
+      return `Showing 0 of 0 raw points (${sourceResolutionLabel})`;
+    }
+
+    if (downsampleFactor === 1 && rawPointCount === displayPointCount) {
+      return `Showing all ${displayPointCount.toLocaleString()} raw points (${sourceResolutionLabel})`;
+    }
+
+    return `Showing ${displayPointCount.toLocaleString()} of ${rawPointCount.toLocaleString()} raw points (downsample x${downsampleFactor}, ${sourceResolutionLabel})`;
+  }
 
   return `
     <!DOCTYPE html>
@@ -478,8 +499,13 @@ function renderDashboard(opts) {
       <div class="container-fluid mt-4">
         <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 24px 10px; border-bottom:1px solid var(--border-subtle); margin-bottom:12px;">
           <h2 style="font-size:1.4rem; font-weight:700; color:#d6eaff; margin:0;">E-beam Web Monitor</h2>
-          <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'}" style="padding:4px 10px; font-size:0.7em; border-radius:8px; color:white; font-weight:bold;">
-            Dashboard is ${!experimentRunning ? 'not ' : ''}running
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'}" style="padding:4px 10px; font-size:0.7em; border-radius:8px; color:white; font-weight:bold;">
+              Dashboard is ${!experimentRunning ? 'not ' : ''}running
+            </div>
+            <button id="open-reset-modal" style="padding:4px 10px; font-size:0.7em; border-radius:8px; font-weight:bold; background:#7f1d1d; border:1px solid #ef4444; color:#fca5a5; cursor:pointer;">
+              Experiment Reset
+            </button>
           </div>
         </div>
         <p style="text-align:center; font-size:0.75rem; color:var(--text-secondary); margin:0 0 12px 0;">
@@ -675,11 +701,14 @@ function renderDashboard(opts) {
       <div id="pressure-chart-section">
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 98%; margin: 0 auto 0 auto;">
           <span id="pressure-chart-label" style="color:#94a3b8; font-size:14px;">
-            Short-Term (Last 24h, ~3s resolution)
+            Short-Term (Last 24h, ~3s source data, downsampled for display)
           </span>
           <button id="pressure-view-toggle" class="btn-toggle" style="float:none; margin:0;">
             Switch to Historical View
           </button>
+        </div>
+        <div id="pressure-chart-status" class="chart-info-text" style="width:98%; margin:0 auto 6px auto; text-align:left; color:#94a3b8;">
+          ${formatPressureChartStatus(shortTermChartMeta)}
         </div>
         <div id="chart-root-3" style="margin-top: 0;"></div>
       </div>
@@ -721,7 +750,7 @@ function renderDashboard(opts) {
                   return v.toExponential(4);
                 },
                 stroke: '#38bdf8',
-                points: { show: true, size: 5, fill: '#38bdf8', stroke: '#38bdf8' }
+                points: { show: true, size: 2, fill: '#38bdf8', stroke: '#38bdf8' }
               }
             ],
             scales: { x: { time: true } },
@@ -785,22 +814,55 @@ function renderDashboard(opts) {
 
         const pressureViewToggle = document.getElementById('pressure-view-toggle');
         const pressureChartLabel = document.getElementById('pressure-chart-label');
+        const pressureChartStatus = document.getElementById('pressure-chart-status');
+        const pressureViewConfig = {
+          short: {
+            label: 'Short-Term (Last 24h, ~3s source data, downsampled for display)',
+            buttonText: 'Switch to Historical View',
+          },
+          long: {
+            label: 'Historical (All-time, 1-min averaged source data)',
+            buttonText: 'Switch to Live View',
+          },
+        };
+
+        function formatPressureChartStatus(meta) {
+          const rawPointCount = Number(meta.rawPointCount ?? 0);
+          const displayPointCount = Number(meta.displayPointCount ?? 0);
+          const downsampleFactor = Math.max(1, Number(meta.downsampleFactor ?? 1));
+          const sourceResolutionLabel = meta.sourceResolutionLabel || 'source data';
+
+          if (rawPointCount === 0) {
+            return 'Showing 0 of 0 raw points (' + sourceResolutionLabel + ')';
+          }
+
+          if (downsampleFactor === 1 && rawPointCount === displayPointCount) {
+            return 'Showing all ' + rawPointCount.toLocaleString() + ' raw points (' + sourceResolutionLabel + ')';
+          }
+
+          return 'Showing ' + displayPointCount.toLocaleString() + ' of ' + rawPointCount.toLocaleString() +
+            ' raw points (downsample x' + downsampleFactor + ', ' + sourceResolutionLabel + ')';
+        }
+
+        function applyPressureChartData(chartData) {
+          pressureChart.setData([chartData.xVals, chartData.yVals]);
+          pressureChartStatus.textContent = formatPressureChartStatus(chartData);
+        }
+
+        function updatePressureChartViewText() {
+          const config = pressureViewConfig[currentPressureView];
+          pressureViewToggle.textContent = config.buttonText;
+          pressureChartLabel.textContent = config.label;
+        }
 
         pressureViewToggle.addEventListener('click', async () => {
           currentPressureView = currentPressureView === 'short' ? 'long' : 'short';
-
-          if (currentPressureView === 'short') {
-            pressureViewToggle.textContent = 'Switch to Historical View';
-            pressureChartLabel.textContent = 'Short-Term (Last 24h, ~3s resolution)';
-          } else {
-            pressureViewToggle.textContent = 'Switch to Live View';
-            pressureChartLabel.textContent = 'Historical (All-time, 1-min averages)';
-          }
+          updatePressureChartViewText();
 
           try {
             const res = await fetch('/chart-data?view=' + currentPressureView);
             const chartData = await res.json();
-            pressureChart.setData([chartData.xVals, chartData.yVals]);
+            applyPressureChartData(chartData);
           } catch (e) {
             console.error('Failed to load chart data:', e);
           }
@@ -1056,7 +1118,7 @@ function renderDashboard(opts) {
             try {
               const chartRes = await fetch('/chart-data?view=' + currentPressureView);
               const chartData = await chartRes.json();
-              pressureChart.setData([chartData.xVals, chartData.yVals]);
+              applyPressureChartData(chartData);
             } catch (e) {
               console.error('Chart data update failed:', e);
             }
@@ -1093,6 +1155,96 @@ function renderDashboard(opts) {
           showingFull = !showingFull;
           sessionStorage.setItem('showingFull', showingFull);
         })
+      </script>
+
+      <!-- Experiment Reset Modal -->
+      <div id="reset-modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#1e293b; border:1px solid #ef4444; border-radius:12px; padding:28px 32px; max-width:420px; width:90%; text-align:left; box-shadow:0 0 32px rgba(239,68,68,0.4);">
+          <h3 style="color:#fca5a5; margin:0 0 12px 0; font-size:1.1rem; font-weight:700;">Experiment Reset</h3>
+          <p style="color:#cbd5e1; font-size:0.85rem; margin:0 0 18px 0;">
+            This will permanently delete all data from the long-term pressure log.
+            This action <strong style="color:#ef4444;">cannot be undone</strong>.
+          </p>
+          <input id="reset-password-input" type="password" placeholder='Password'
+            style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:0.85rem; margin-bottom:16px; box-sizing:border-box;" />
+          <div id="reset-modal-message" style="font-size:0.8rem; margin-bottom:12px; min-height:1em;"></div>
+          <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button id="reset-cancel-btn" style="padding:7px 18px; border-radius:6px; border:1px solid #475569; background:transparent; color:#94a3b8; cursor:pointer; font-size:0.85rem;">Cancel</button>
+            <button id="reset-confirm-btn" disabled style="padding:7px 18px; border-radius:6px; border:1px solid #ef4444; background:#7f1d1d; color:#fca5a5; cursor:not-allowed; font-size:0.85rem; font-weight:bold; opacity:0.5;">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (function () {
+          const overlay = document.getElementById('reset-modal-overlay');
+          const openBtn = document.getElementById('open-reset-modal');
+          const cancelBtn = document.getElementById('reset-cancel-btn');
+          const confirmBtn = document.getElementById('reset-confirm-btn');
+          const passwordInput = document.getElementById('reset-password-input');
+          const msg = document.getElementById('reset-modal-message');
+
+          function setReady() {
+            const ready = passwordInput.value.length > 0;
+            confirmBtn.disabled = !ready;
+            confirmBtn.style.opacity = ready ? '1' : '0.5';
+            confirmBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+          }
+
+          function openModal() {
+            passwordInput.value = '';
+            msg.textContent = '';
+            msg.style.color = '';
+            confirmBtn.disabled = true;
+            confirmBtn.style.opacity = '0.5';
+            confirmBtn.style.cursor = 'not-allowed';
+            overlay.style.display = 'flex';
+          }
+
+          function closeModal() {
+            overlay.style.display = 'none';
+          }
+
+          openBtn.addEventListener('click', openModal);
+          cancelBtn.addEventListener('click', closeModal);
+          overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) closeModal();
+          });
+
+          passwordInput.addEventListener('input', setReady);
+
+          confirmBtn.addEventListener('click', async function () {
+            confirmBtn.disabled = true;
+            confirmBtn.style.opacity = '0.5';
+            msg.style.color = '#94a3b8';
+            msg.textContent = 'Resetting…';
+            try {
+              const res = await fetch('/experiment-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: passwordInput.value }),
+              });
+              if (res.ok) {
+                msg.style.color = '#22c55e';
+                msg.textContent = 'Reset successful. Short-term and long-term pressure logs cleared.';
+                setTimeout(closeModal, 1500);
+              } else {
+                const body = await res.json().catch(() => ({}));
+                msg.style.color = '#ef4444';
+                msg.textContent = 'Error: ' + (body.error || res.statusText);
+                confirmBtn.disabled = false;
+                confirmBtn.style.opacity = '1';
+                confirmBtn.style.cursor = 'pointer';
+              }
+            } catch (err) {
+              msg.style.color = '#ef4444';
+              msg.textContent = 'Network error: ' + err.message;
+              confirmBtn.disabled = false;
+              confirmBtn.style.opacity = '1';
+              confirmBtn.style.cursor = 'pointer';
+            }
+          });
+        })();
       </script>
     </body>
     </html>

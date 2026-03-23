@@ -6,6 +6,7 @@ function createGraphObj(options = {}) {
     displayYVals: options.displayYVals || [],
     maxDataPoints: options.maxDataPoints ?? 1000,
     maxDisplayPoints: options.maxDisplayPoints ?? 256,
+    sourceResolutionLabel: options.sourceResolutionLabel || 'source data',
     lastUsedFactor: options.lastUsedFactor ?? 1,
     lastPermanentIndex: options.lastPermanentIndex ?? -1,
     chartDataIntervalCount: options.chartDataIntervalCount ?? 0,
@@ -13,8 +14,16 @@ function createGraphObj(options = {}) {
   };
 }
 
-const shortTermPressureGraph = createGraphObj({ maxDataPoints: 30000, maxDisplayPoints: 256 });
-const longTermPressureGraph = createGraphObj({ maxDataPoints: 100000, maxDisplayPoints: 256 });
+const shortTermPressureGraph = createGraphObj({
+  maxDataPoints: 30000,
+  maxDisplayPoints: 1024,
+  sourceResolutionLabel: '~3s source data',
+});
+const longTermPressureGraph = createGraphObj({
+  maxDataPoints: 100000,
+  maxDisplayPoints: 256,
+  sourceResolutionLabel: '1-min averaged source data',
+});
 
 function updateDisplayData(graph) {
   const len = graph.fullXVals.length;
@@ -54,6 +63,15 @@ function updateDisplayData(graph) {
   }
 }
 
+function getGraphMetadata(graph) {
+  return {
+    rawPointCount: graph.fullXVals.length,
+    displayPointCount: graph.displayXVals.length,
+    downsampleFactor: Math.max(1, graph.lastUsedFactor ?? 1),
+    sourceResolutionLabel: graph.sourceResolutionLabel || 'source data',
+  };
+}
+
 const CCS_MAX_POINTS = 1200; // ~1 hour at 3s polling
 
 function createCCSGraphObj() {
@@ -76,6 +94,7 @@ const ccsGraphC = createCCSGraphObj();
 module.exports = {
   createGraphObj,
   updateDisplayData,
+  getGraphMetadata,
   shortTermPressureGraph,
   longTermPressureGraph,
   addCCSPoint,

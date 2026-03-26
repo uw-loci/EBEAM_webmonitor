@@ -4,6 +4,7 @@ const state = {
   lastModifiedTime: null,
   webMonitorLastModified: null,
   displayLogLastModified: null,
+  displayLogFileId: null,
   experimentRunning: false,
   lastShortTermCursor: null,
   lastLongTermCursor: null,

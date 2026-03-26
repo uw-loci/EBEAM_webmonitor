@@ -14,6 +14,15 @@ function createGraphObj(options = {}) {
   };
 }
 
+function resetPressureGraphDisplayState(graph) {
+  graph.displayXVals.length = 0;
+  graph.displayYVals.length = 0;
+  graph.lastUsedFactor = 1;
+  graph.lastPermanentIndex = -1;
+  graph.chartDataIntervalCount = 0;
+  graph.chartDataIntervalDuration = 1;
+}
+
 const shortTermPressureGraph = createGraphObj({
   maxDataPoints: 30000,
   maxDisplayPoints: 1024,
@@ -27,6 +36,10 @@ const longTermPressureGraph = createGraphObj({
 
 function updateDisplayData(graph) {
   const len = graph.fullXVals.length;
+  if (len === 0) {
+    resetPressureGraphDisplayState(graph);
+    return;
+  }
 
   const predictedPoints = Math.ceil((len - 1) / graph.lastUsedFactor) + 1;
 
@@ -63,6 +76,62 @@ function updateDisplayData(graph) {
   }
 }
 
+function rebuildDisplayData(graph) {
+  const len = graph.fullXVals.length;
+  resetPressureGraphDisplayState(graph);
+
+  if (len === 0) {
+    return;
+  }
+
+  let downsampleFactor = 1;
+  let predictedPoints = len;
+
+  while (predictedPoints > graph.maxDisplayPoints) {
+    downsampleFactor *= 2;
+    predictedPoints = Math.ceil((len - 1) / downsampleFactor) + 1;
+  }
+
+  graph.lastUsedFactor = downsampleFactor;
+
+  if (downsampleFactor === 1) {
+    graph.displayXVals.push(...graph.fullXVals);
+    graph.displayYVals.push(...graph.fullYVals);
+    graph.lastPermanentIndex = len - 2;
+    return;
+  }
+
+  for (let i = 0; i < len - 1; i += downsampleFactor) {
+    graph.displayXVals.push(graph.fullXVals[i]);
+    graph.displayYVals.push(graph.fullYVals[i]);
+    graph.lastPermanentIndex = i;
+  }
+
+  graph.displayXVals.push(graph.fullXVals[len - 1]);
+  graph.displayYVals.push(graph.fullYVals[len - 1]);
+}
+
+function appendPressurePoint(graph, tSec, pressure) {
+  graph.fullXVals.push(tSec);
+  graph.fullYVals.push(pressure);
+
+  const overflowCount = graph.fullXVals.length - graph.maxDataPoints;
+  if (overflowCount > 0) {
+    graph.fullXVals.splice(0, overflowCount);
+    graph.fullYVals.splice(0, overflowCount);
+    rebuildDisplayData(graph);
+    return;
+  }
+
+  updateDisplayData(graph);
+}
+
+function clearPressureGraph(graph) {
+  graph.fullXVals.length = 0;
+  graph.fullYVals.length = 0;
+  resetPressureGraphDisplayState(graph);
+}
+
 function getGraphMetadata(graph) {
   return {
     rawPointCount: graph.fullXVals.length,
@@ -93,7 +162,11 @@ const ccsGraphC = createCCSGraphObj();
 
 module.exports = {
   createGraphObj,
+  resetPressureGraphDisplayState,
   updateDisplayData,
+  rebuildDisplayData,
+  appendPressurePoint,
+  clearPressureGraph,
   getGraphMetadata,
   shortTermPressureGraph,
   longTermPressureGraph,

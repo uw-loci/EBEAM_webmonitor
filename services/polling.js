@@ -11,7 +11,7 @@ const { fetchDisplayFileContents } = require('./gdrive');
 const {
   shortTermPressureGraph,
   longTermPressureGraph,
-  updateDisplayData,
+  appendPressurePoint,
   addCCSPoint,
   ccsGraphA,
   ccsGraphB,
@@ -106,7 +106,7 @@ function applyShortTermEntries(entries, options = {}) {
   const {
     stateRef = state,
     graph = shortTermPressureGraph,
-    graphUpdater = updateDisplayData,
+    pressurePointAppender = appendPressurePoint,
     ccsA = ccsGraphA,
     ccsB = ccsGraphB,
     ccsC = ccsGraphC,
@@ -167,9 +167,7 @@ function applyShortTermEntries(entries, options = {}) {
       continue;
     }
 
-    graph.fullXVals.push(tSec);
-    graph.fullYVals.push(pressure);
-    graphUpdater(graph);
+    pressurePointAppender(graph, tSec, pressure);
 
     summary.appendedCount++;
     stateRef.lastShortTermCursor = entryCursor;
@@ -186,7 +184,7 @@ function applyLongTermEntries(entries, options = {}) {
   const {
     stateRef = state,
     graph = longTermPressureGraph,
-    graphUpdater = updateDisplayData,
+    pressurePointAppender = appendPressurePoint,
     logger = console,
     expectedIntervalMs = LONG_TERM_EXPECTED_INTERVAL_MS,
   } = options;
@@ -243,9 +241,7 @@ function applyLongTermEntries(entries, options = {}) {
     }
 
     const tSec = Math.floor(entryMs / 1000);
-    graph.fullXVals.push(tSec);
-    graph.fullYVals.push(pressure);
-    graphUpdater(graph);
+    pressurePointAppender(graph, tSec, pressure);
 
     summary.appendedCount++;
     stateRef.lastLongTermCursor = entryCursor;

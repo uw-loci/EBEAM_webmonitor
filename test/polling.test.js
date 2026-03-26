@@ -259,7 +259,7 @@ const state = require('../services/state');
 const registerRoutes = require('../routes');
 const {
   createGraphObj,
-  updateDisplayData,
+  appendPressurePoint,
   shortTermPressureGraph,
   longTermPressureGraph,
   ccsGraphA,
@@ -268,6 +268,7 @@ const {
 } = require('../services/graphs');
 const {
   backfillShortTermGraph,
+  backfillLongTermGraph,
   fetchShortTermEntriesSince,
   fetchLongTermEntriesSince,
 } = require('../services/supabase');
@@ -277,6 +278,14 @@ const {
   fetchAndUpdateFile,
   pollLongTerm,
 } = require('../services/polling');
+const {
+  FALLBACK_SNIPPET_LINES,
+  MAX_SNIPPET_BYTES,
+  MAX_SNIPPET_LINES,
+  RECENT_LOG_WINDOW_MS,
+  collectRecentLogSnippet,
+  fetchDisplayFileContents,
+} = require('../services/gdrive');
 
 function createLogger() {
   const logs = [];
@@ -353,11 +362,39 @@ function resetCCSGraph(graph) {
   graph.yVals.length = 0;
 }
 
+function assertPressureGraphDisplayIntegrity(graph) {
+  assert.equal(
+    graph.displayXVals.length,
+    graph.displayYVals.length,
+    'expected pressure display x/y arrays to stay aligned'
+  );
+  assert.ok(
+    graph.displayXVals.length <= graph.maxDisplayPoints,
+    `expected display points to stay within cap, got ${graph.displayXVals.length}`
+  );
+
+  for (let index = 1; index < graph.displayXVals.length; index++) {
+    assert.ok(
+      graph.displayXVals[index] > graph.displayXVals[index - 1],
+      `expected strictly increasing display x values at index ${index}`
+    );
+  }
+
+  if (graph.fullXVals.length === 0) {
+    assert.equal(graph.displayXVals.length, 0);
+    return;
+  }
+
+  assert.equal(graph.displayXVals.at(-1), graph.fullXVals.at(-1));
+  assert.equal(graph.displayYVals.at(-1), graph.fullYVals.at(-1));
+}
+
 function resetSingletonState() {
   state.lastShortTermCursor = null;
   state.lastLongTermCursor = null;
   state.webMonitorLastModified = null;
   state.displayLogLastModified = null;
+  state.displayLogFileId = null;
   state.experimentRunning = false;
   state.data = {
     pressure: null,
@@ -398,8 +435,13 @@ function createResponseRecorder() {
   return {
     statusCode: 200,
     payload: null,
+    contentType: null,
     status(code) {
       this.statusCode = code;
+      return this;
+    },
+    type(value) {
+      this.contentType = value;
       return this;
     },
     json(body) {
@@ -436,7 +478,6 @@ test('applyShortTermEntries catches up every unseen short-term row in order', ()
   const summary = applyShortTermEntries(entries, {
     stateRef,
     graph,
-    graphUpdater: updateDisplayData,
     ccsA,
     ccsB,
     ccsC,
@@ -478,7 +519,6 @@ test('applyShortTermEntries skips malformed pressure rows but still advances the
   const summary = applyShortTermEntries(entries, {
     stateRef,
     graph,
-    graphUpdater: updateDisplayData,
     ccsA,
     ccsB,
     ccsC,
@@ -511,7 +551,6 @@ test('applyLongTermEntries drains missed long-term rows in order', () => {
   const summary = applyLongTermEntries(entries, {
     stateRef,
     graph,
-    graphUpdater: updateDisplayData,
     logger,
   });
 
@@ -541,14 +580,12 @@ test('applyLongTermEntries ignores stale long-term rows that were already covere
   applyLongTermEntries(entries.slice(0, 2), {
     stateRef,
     graph,
-    graphUpdater: updateDisplayData,
     logger,
   });
 
   const summary = applyLongTermEntries(entries, {
     stateRef,
     graph,
-    graphUpdater: updateDisplayData,
     logger,
   });
 
@@ -665,6 +702,117 @@ test('fetchAndUpdateFile only catches up fresh rows after a stale baseline seeds
   assert.equal(state.webMonitorLastModified?.toISOString(), freshEntries.at(-1).created_at);
 });
 
+test('collectRecentLogSnippet keeps the newest timestamped window newest-first', () => {
+  const lines = [
+    '2026-03-26 07:20:00 old event',
+    '2026-03-26 07:31:00 keep earliest',
+    'detail line for the 07:31 event',
+    '2026-03-26 07:45:00 keep later',
+    '2026-03-26 08:00:00 newest event',
+  ];
+
+  const snippet = collectRecentLogSnippet(lines, {
+    recentWindowMs: RECENT_LOG_WINDOW_MS,
+  });
+
+  assert.deepEqual(snippet.lines, [
+    '2026-03-26 08:00:00 newest event',
+    '2026-03-26 07:45:00 keep later',
+    'detail line for the 07:31 event',
+    '2026-03-26 07:31:00 keep earliest',
+  ]);
+  assert.equal(snippet.lineCount, 4);
+  assert.equal(snippet.newestTimestampMs, Date.parse('2026-03-26T08:00:00'));
+});
+
+test('collectRecentLogSnippet falls back to the last 5000 lines without timestamps', () => {
+  const totalLines = FALLBACK_SNIPPET_LINES + 25;
+  const lines = Array.from({ length: totalLines }, (_, index) => `line ${index}`);
+
+  const snippet = collectRecentLogSnippet(lines);
+
+  assert.equal(snippet.lineCount, FALLBACK_SNIPPET_LINES);
+  assert.equal(snippet.lines[0], `line ${totalLines - 1}`);
+  assert.equal(snippet.lines.at(-1), 'line 25');
+  assert.equal(snippet.newestTimestampMs, null);
+  assert.ok(snippet.lineCount <= MAX_SNIPPET_LINES);
+});
+
+test('collectRecentLogSnippet respects the byte cap for large unparseable logs', () => {
+  const largePayload = 'x'.repeat(2_048);
+  const lines = Array.from({ length: 2_000 }, (_, index) => `line-${index} ${largePayload}`);
+
+  const snippet = collectRecentLogSnippet(lines);
+
+  assert.ok(snippet.lineCount < FALLBACK_SNIPPET_LINES);
+  assert.ok(snippet.lineCount <= MAX_SNIPPET_LINES);
+  assert.ok(snippet.byteLength <= MAX_SNIPPET_BYTES);
+});
+
+test('fetchDisplayFileContents skips downloading an unchanged Drive file', async () => {
+  const { logger, logs } = createLogger();
+  state.displayLogFileId = 'file-1';
+  state.displayLogLastModified = '2026-03-26T08:00:00.000Z';
+  let fetchCallCount = 0;
+  let writeCallCount = 0;
+
+  const result = await fetchDisplayFileContents({
+    logger,
+    stateRef: state,
+    getMostRecentFileFn: async () => ({
+      displayFile: {
+        id: 'file-1',
+        modifiedTime: '2026-03-26T08:00:00.000Z',
+      },
+    }),
+    fetchRecentLogSnippetFn: async () => {
+      fetchCallCount++;
+      return { lines: ['newest line'] };
+    },
+    writeToFileFn: async () => {
+      writeCallCount++;
+      return true;
+    },
+  });
+
+  assert.equal(result, true);
+  assert.equal(fetchCallCount, 0);
+  assert.equal(writeCallCount, 0);
+  assert.ok(logs.some((line) => line.includes('Display log unchanged')));
+});
+
+test('fetchDisplayFileContents writes a recent snippet and stores the file metadata', async () => {
+  const { logger } = createLogger();
+  const stateRef = {
+    displayLogFileId: null,
+    displayLogLastModified: null,
+  };
+  let writtenLines = null;
+
+  const result = await fetchDisplayFileContents({
+    logger,
+    stateRef,
+    getMostRecentFileFn: async () => ({
+      displayFile: {
+        id: 'file-2',
+        modifiedTime: '2026-03-26T08:30:00.000Z',
+      },
+    }),
+    fetchRecentLogSnippetFn: async () => ({
+      lines: ['newest event', 'older event'],
+    }),
+    writeToFileFn: async (lines) => {
+      writtenLines = [...lines];
+      return true;
+    },
+  });
+
+  assert.equal(result, true);
+  assert.deepEqual(writtenLines, ['newest event', 'older event']);
+  assert.equal(stateRef.displayLogFileId, 'file-2');
+  assert.equal(stateRef.displayLogLastModified, '2026-03-26T08:30:00.000Z');
+});
+
 test('fetchShortTermEntriesSince paginates tied timestamps deterministically across pages', async () => {
   const entries = buildShortTermEntries(1_005);
   const boundaryTimestamp = entries[998].created_at;
@@ -747,8 +895,32 @@ test('fetchLongTermEntriesSince resumes within a tied timestamp using the id cur
   );
 });
 
+test('backfillLongTermGraph retains the newest points within the configured cap', async () => {
+  const graph = createGraphObj({
+    maxDataPoints: 5,
+    maxDisplayPoints: 4,
+    sourceResolutionLabel: '1-min averaged source data',
+  });
+  const entries = buildLongTermEntries(8);
+  setSupabaseTableRows('long_term_logs', entries);
+
+  const lastCursor = await backfillLongTermGraph(graph);
+
+  assert.deepEqual(lastCursor, {
+    timestamp: entries.at(-1).recorded_at,
+    id: entries.at(-1).id,
+  });
+  assert.equal(graph.fullXVals.length, 5);
+  assert.deepEqual(
+    graph.fullXVals,
+    entries.slice(-5).map((entry) => Math.floor(Date.parse(entry.recorded_at) / 1000))
+  );
+  assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).recorded_at) / 1000));
+});
+
 test('24-hour short-term data keeps a denser live display than the old 256-point cap', () => {
   const graph = createGraphObj({
+    maxDataPoints: 30_000,
     maxDisplayPoints: 1024,
     sourceResolutionLabel: '~3s source data',
   });
@@ -762,7 +934,6 @@ test('24-hour short-term data keeps a denser live display than the old 256-point
   applyShortTermEntries(entries, {
     stateRef,
     graph,
-    graphUpdater: updateDisplayData,
     ccsA,
     ccsB,
     ccsC,
@@ -775,8 +946,63 @@ test('24-hour short-term data keeps a denser live display than the old 256-point
   assert.ok(graph.displayXVals.length <= 1024);
 });
 
+test('applyShortTermEntries caps raw points at maxDataPoints and keeps the newest rows', () => {
+  const graph = createGraphObj({
+    maxDataPoints: 5,
+    maxDisplayPoints: 4,
+    sourceResolutionLabel: '~3s source data',
+  });
+  const ccsA = createCCSGraph();
+  const ccsB = createCCSGraph();
+  const ccsC = createCCSGraph();
+  const stateRef = { lastShortTermCursor: null };
+  const entries = buildShortTermEntries(8);
+  const { logger } = createLogger();
+
+  applyShortTermEntries(entries, {
+    stateRef,
+    graph,
+    ccsA,
+    ccsB,
+    ccsC,
+    ccsPointAdder: addCCSPointForTest,
+    logger,
+  });
+
+  assert.equal(graph.fullXVals.length, 5);
+  assert.deepEqual(
+    graph.fullXVals,
+    entries.slice(-5).map((entry) => Math.floor(Date.parse(entry.created_at) / 1000))
+  );
+  assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).created_at) / 1000));
+  assertPressureGraphDisplayIntegrity(graph);
+});
+
+test('appendPressurePoint preserves graph array references and display invariants after repeated cap trims', () => {
+  const graph = createGraphObj({
+    maxDataPoints: 5,
+    maxDisplayPoints: 4,
+    sourceResolutionLabel: '~3s source data',
+  });
+  const fullXRef = graph.fullXVals;
+  const fullYRef = graph.fullYVals;
+
+  for (let index = 0; index < 12; index++) {
+    appendPressurePoint(graph, 1_000 + index, index);
+
+    assert.strictEqual(graph.fullXVals, fullXRef);
+    assert.strictEqual(graph.fullYVals, fullYRef);
+    assert.ok(graph.fullXVals.length <= graph.maxDataPoints);
+    assertPressureGraphDisplayIntegrity(graph);
+  }
+
+  assert.deepEqual(graph.fullXVals, [1007, 1008, 1009, 1010, 1011]);
+  assert.deepEqual(graph.fullYVals, [7, 8, 9, 10, 11]);
+});
+
 test('long-term data remains capped at the lower historical display density', () => {
   const graph = createGraphObj({
+    maxDataPoints: 100_000,
     maxDisplayPoints: 256,
     sourceResolutionLabel: '1-min averaged source data',
   });
@@ -787,13 +1013,37 @@ test('long-term data remains capped at the lower historical display density', ()
   applyLongTermEntries(entries, {
     stateRef,
     graph,
-    graphUpdater: updateDisplayData,
     logger,
   });
 
   assert.equal(graph.lastUsedFactor, 8);
   assert.ok(graph.displayXVals.length >= 180 && graph.displayXVals.length <= 181);
   assert.ok(graph.displayXVals.length <= 256);
+});
+
+test('applyLongTermEntries caps raw points at maxDataPoints and keeps the newest rows', () => {
+  const graph = createGraphObj({
+    maxDataPoints: 5,
+    maxDisplayPoints: 4,
+    sourceResolutionLabel: '1-min averaged source data',
+  });
+  const stateRef = { lastLongTermCursor: null };
+  const entries = buildLongTermEntries(8);
+  const { logger } = createLogger();
+
+  applyLongTermEntries(entries, {
+    stateRef,
+    graph,
+    logger,
+  });
+
+  assert.equal(graph.fullXVals.length, 5);
+  assert.deepEqual(
+    graph.fullXVals,
+    entries.slice(-5).map((entry) => Math.floor(Date.parse(entry.recorded_at) / 1000))
+  );
+  assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).recorded_at) / 1000));
+  assertPressureGraphDisplayIntegrity(graph);
 });
 
 test('chart-data returns density metadata for both short and long views', () => {
@@ -840,4 +1090,28 @@ test('chart-data returns density metadata for both short and long views', () => 
   assert.equal(longResponse.payload.sourceResolutionLabel, longTermPressureGraph.sourceResolutionLabel);
   assert.deepEqual(longResponse.payload.xVals, longTermPressureGraph.displayXVals);
   assert.deepEqual(longResponse.payload.yVals, longTermPressureGraph.displayYVals);
+});
+
+test('dashboard HTML uses the recent-log viewer and does not force refresh on open', async () => {
+  const app = createFakeApp();
+  registerRoutes(app);
+
+  const dashboardRoute = app.routes.find((route) => route.method === 'GET' && route.path === '/');
+  assert.ok(dashboardRoute, 'expected / route to be registered');
+
+  const response = createResponseRecorder();
+  await dashboardRoute.handler({}, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.match(response.payload, /Recent Log \(last 30 min\)/);
+  assert.match(response.payload, /Show Recent Log/);
+  assert.match(response.payload, /class="log-viewer-header"/);
+  assert.match(response.payload, /class="btn-toggle log-toggle-button"/);
+  assert.match(response.payload, /class="btn-toggle pressure-toggle-button"/);
+  assert.match(response.payload, /chartEl\.getBoundingClientRect\(\)\.width/);
+  assert.match(response.payload, /overflow:\s*hidden;/);
+  assert.match(response.payload, /fetch\('\/raw'\)/);
+  assert.doesNotMatch(response.payload, /fetch\('\/refresh-display'\)/);
+  assert.doesNotMatch(response.payload, /margin-top:\s*-3\.5em/);
+  assert.doesNotMatch(response.payload, /float:\s*right/);
 });

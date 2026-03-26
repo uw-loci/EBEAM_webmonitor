@@ -259,6 +259,7 @@ const state = require('../services/state');
 const registerRoutes = require('../routes');
 const {
   createGraphObj,
+  appendPressurePoint,
   shortTermPressureGraph,
   longTermPressureGraph,
   ccsGraphA,
@@ -359,6 +360,33 @@ function resetPressureGraph(graph) {
 function resetCCSGraph(graph) {
   graph.xVals.length = 0;
   graph.yVals.length = 0;
+}
+
+function assertPressureGraphDisplayIntegrity(graph) {
+  assert.equal(
+    graph.displayXVals.length,
+    graph.displayYVals.length,
+    'expected pressure display x/y arrays to stay aligned'
+  );
+  assert.ok(
+    graph.displayXVals.length <= graph.maxDisplayPoints,
+    `expected display points to stay within cap, got ${graph.displayXVals.length}`
+  );
+
+  for (let index = 1; index < graph.displayXVals.length; index++) {
+    assert.ok(
+      graph.displayXVals[index] > graph.displayXVals[index - 1],
+      `expected strictly increasing display x values at index ${index}`
+    );
+  }
+
+  if (graph.fullXVals.length === 0) {
+    assert.equal(graph.displayXVals.length, 0);
+    return;
+  }
+
+  assert.equal(graph.displayXVals.at(-1), graph.fullXVals.at(-1));
+  assert.equal(graph.displayYVals.at(-1), graph.fullYVals.at(-1));
 }
 
 function resetSingletonState() {
@@ -947,6 +975,29 @@ test('applyShortTermEntries caps raw points at maxDataPoints and keeps the newes
     entries.slice(-5).map((entry) => Math.floor(Date.parse(entry.created_at) / 1000))
   );
   assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).created_at) / 1000));
+  assertPressureGraphDisplayIntegrity(graph);
+});
+
+test('appendPressurePoint preserves graph array references and display invariants after repeated cap trims', () => {
+  const graph = createGraphObj({
+    maxDataPoints: 5,
+    maxDisplayPoints: 4,
+    sourceResolutionLabel: '~3s source data',
+  });
+  const fullXRef = graph.fullXVals;
+  const fullYRef = graph.fullYVals;
+
+  for (let index = 0; index < 12; index++) {
+    appendPressurePoint(graph, 1_000 + index, index);
+
+    assert.strictEqual(graph.fullXVals, fullXRef);
+    assert.strictEqual(graph.fullYVals, fullYRef);
+    assert.ok(graph.fullXVals.length <= graph.maxDataPoints);
+    assertPressureGraphDisplayIntegrity(graph);
+  }
+
+  assert.deepEqual(graph.fullXVals, [1007, 1008, 1009, 1010, 1011]);
+  assert.deepEqual(graph.fullYVals, [7, 8, 9, 10, 11]);
 });
 
 test('long-term data remains capped at the lower historical display density', () => {
@@ -992,6 +1043,7 @@ test('applyLongTermEntries caps raw points at maxDataPoints and keeps the newest
     entries.slice(-5).map((entry) => Math.floor(Date.parse(entry.recorded_at) / 1000))
   );
   assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).recorded_at) / 1000));
+  assertPressureGraphDisplayIntegrity(graph);
 });
 
 test('chart-data returns density metadata for both short and long views', () => {
@@ -1053,6 +1105,13 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.equal(response.statusCode, 200);
   assert.match(response.payload, /Recent Log \(last 30 min\)/);
   assert.match(response.payload, /Show Recent Log/);
+  assert.match(response.payload, /class="log-viewer-header"/);
+  assert.match(response.payload, /class="btn-toggle log-toggle-button"/);
+  assert.match(response.payload, /class="btn-toggle pressure-toggle-button"/);
+  assert.match(response.payload, /chartEl\.getBoundingClientRect\(\)\.width/);
+  assert.match(response.payload, /overflow:\s*hidden;/);
   assert.match(response.payload, /fetch\('\/raw'\)/);
   assert.doesNotMatch(response.payload, /fetch\('\/refresh-display'\)/);
+  assert.doesNotMatch(response.payload, /margin-top:\s*-3\.5em/);
+  assert.doesNotMatch(response.payload, /float:\s*right/);
 });

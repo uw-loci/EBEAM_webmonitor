@@ -370,9 +370,37 @@ function renderDashboard(opts) {
           font-size: 0.75em;
           border-radius: 5px;
           transition: background-color 0.3s ease;
-          float: right;
-          margin-top: -3.5em;
-          margin-bottom: 5px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .pressure-chart-toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          padding: 0 10px 8px;
+          width: 98%;
+          margin: 0 auto;
+        }
+        .pressure-toggle-button {
+          flex-shrink: 0;
+        }
+        .log-viewer-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .log-viewer-title {
+          flex: 1 1 320px;
+          margin: 0;
+        }
+        .log-toggle-button {
+          flex-shrink: 0;
         }
         .btn-refresh {
           width: 22px;
@@ -449,6 +477,8 @@ function renderDashboard(opts) {
           padding: 10px;
           margin: 14px auto;
           width: 98%;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         #ccs-charts-section .chart-container { margin: 0; width: 100%; }
@@ -699,11 +729,11 @@ function renderDashboard(opts) {
 
       <div id="chart-root-2"></div>
       <div id="pressure-chart-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 98%; margin: 0 auto 0 auto;">
+        <div class="pressure-chart-toolbar">
           <span id="pressure-chart-label" style="color:#94a3b8; font-size:14px;">
             Short-Term (Last 24h, ~3s source data, downsampled for display)
           </span>
-          <button id="pressure-view-toggle" class="btn-toggle" style="float:none; margin:0;">
+          <button id="pressure-view-toggle" class="btn-toggle pressure-toggle-button">
             Switch to Historical View
           </button>
         </div>
@@ -737,9 +767,22 @@ function renderDashboard(opts) {
           container.appendChild(wrapper);
 
           const chartEl = wrapper.querySelector('.chart');
+          const getChartWidth = () => {
+            const measuredWidth = Math.floor(chartEl.getBoundingClientRect().width || chartEl.clientWidth || 0);
+            if (measuredWidth > 0) {
+              return measuredWidth;
+            }
+
+            const wrapperStyles = window.getComputedStyle(wrapper);
+            const horizontalPadding =
+              Number.parseFloat(wrapperStyles.paddingLeft || '0') +
+              Number.parseFloat(wrapperStyles.paddingRight || '0');
+
+            return Math.max(1, Math.floor(wrapper.clientWidth - horizontalPadding));
+          };
 
           const uplot = new uPlot({
-            width: wrapper.clientWidth,
+            width: getChartWidth(),
             height: 300,
             series: [
               {},
@@ -784,8 +827,7 @@ function renderDashboard(opts) {
           }, data, chartEl);
 
           window.addEventListener('resize', () => {
-            const newWidth = wrapper.clientWidth;
-            uplot.setSize({ width: newWidth, height: 300 });
+            uplot.setSize({ width: getChartWidth(), height: 300 });
           });
 
           chartEl.ondblclick = () => {
@@ -967,15 +1009,17 @@ function renderDashboard(opts) {
 
       <!-- Log Viewer -->
       <div class="env-section">
-        <h3 class="dashboard-subtitle env-title">Recent Log (last 30 min); Last Update: <span id="display-last-updated">${
-            state.displayLogLastModified
-              ? new Date(state.displayLogLastModified).toLocaleString("en-US", {
-                  hour12: true,
-                  timeZone: "America/Chicago"
-                })
-              : "N/A"
-        }</span></h3>
-        <button id="toggleButton" class="btn-toggle">Show Recent Log</button>
+        <div class="log-viewer-header">
+          <h3 class="dashboard-subtitle env-title log-viewer-title">Recent Log (last 30 min); Last Update: <span id="display-last-updated">${
+              state.displayLogLastModified
+                ? new Date(state.displayLogLastModified).toLocaleString("en-US", {
+                    hour12: true,
+                    timeZone: "America/Chicago"
+                  })
+                : "N/A"
+          }</span></h3>
+          <button id="toggleButton" class="btn-toggle log-toggle-button">Show Recent Log</button>
+        </div>
         <div id="fullContent" class="content-section">
           <pre></pre>
         </div>

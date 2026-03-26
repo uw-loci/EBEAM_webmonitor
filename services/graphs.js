@@ -115,9 +115,10 @@ function appendPressurePoint(graph, tSec, pressure) {
   graph.fullXVals.push(tSec);
   graph.fullYVals.push(pressure);
 
-  if (graph.fullXVals.length > graph.maxDataPoints) {
-    graph.fullXVals = graph.fullXVals.slice(-graph.maxDataPoints);
-    graph.fullYVals = graph.fullYVals.slice(-graph.maxDataPoints);
+  const overflowCount = graph.fullXVals.length - graph.maxDataPoints;
+  if (overflowCount > 0) {
+    graph.fullXVals.splice(0, overflowCount);
+    graph.fullYVals.splice(0, overflowCount);
     rebuildDisplayData(graph);
     return;
   }

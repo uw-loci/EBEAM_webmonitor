@@ -967,15 +967,15 @@ function renderDashboard(opts) {
 
       <!-- Log Viewer -->
       <div class="env-section">
-        <h3 class="dashboard-subtitle env-title">System Logs; Last Update: <span id="display-last-updated">${
-            data.displayLogLastModified
-              ? new Date(data.displayLogLastModified).toLocaleString("en-US", {
+        <h3 class="dashboard-subtitle env-title">Recent Log (last 30 min); Last Update: <span id="display-last-updated">${
+            state.displayLogLastModified
+              ? new Date(state.displayLogLastModified).toLocaleString("en-US", {
                   hour12: true,
                   timeZone: "America/Chicago"
                 })
               : "N/A"
         }</span></h3>
-        <button id="toggleButton" class="btn-toggle">Show Full Log</button>
+        <button id="toggleButton" class="btn-toggle">Show Recent Log</button>
         <div id="fullContent" class="content-section">
           <pre></pre>
         </div>
@@ -988,14 +988,28 @@ function renderDashboard(opts) {
 
          const toggleButton = document.getElementById('toggleButton');
          const fullSection = document.getElementById('fullContent');
-         const pre = fullSection.querySelector('pre')
+          const pre = fullSection.querySelector('pre')
+
+         async function loadRecentLogSnippet() {
+          try {
+            const response = await fetch('/raw');
+            if (!response.ok) {
+              pre.textContent = 'No recent log snippet cached yet.';
+              return;
+            }
+
+            const text = await response.text();
+            pre.textContent = text || 'No recent log snippet cached yet.';
+          } catch (error) {
+            console.error('Failed to load recent log snippet:', error);
+            pre.textContent = 'Unable to load recent log snippet.';
+          }
+         }
 
          if (showingFull) {
-          fetch('/raw').then(resp => resp.text()).then(text => {
-          pre.textContent = text;
           fullSection.classList.add('active');
-          toggleButton.textContent = 'Collapse Log View';
-          });
+          toggleButton.textContent = 'Hide Recent Log';
+          loadRecentLogSnippet();
         }
 
         setInterval(async() => {
@@ -1142,15 +1156,13 @@ function renderDashboard(opts) {
 
         toggleButton.addEventListener('click', async () => {
           if (!showingFull) {
-            pre.textContent = ' Fetching file contents...';
+            pre.textContent = 'Loading recent log snippet...';
             fullSection.classList.add('active');
-            await fetch('/refresh-display');
-            const resp = await (await fetch('/raw')).text();
-            pre.textContent = resp;
-            toggleButton.textContent = 'Collapse Log View';
+            await loadRecentLogSnippet();
+            toggleButton.textContent = 'Hide Recent Log';
           } else {
             fullSection.classList.remove('active');
-            toggleButton.textContent = 'Show Full Log';
+            toggleButton.textContent = 'Show Recent Log';
           }
           showingFull = !showingFull;
           sessionStorage.setItem('showingFull', showingFull);

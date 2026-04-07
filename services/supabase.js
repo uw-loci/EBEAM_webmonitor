@@ -208,7 +208,7 @@ async function backfillShortTermGraph(graph) {
 
 /**
  * Backfills the long-term pressure graph from long_term_logs.
- * Time window: all-time (matches the "Historical / All-time" chart label; 1-min averaged rows).
+ * Time window: rolling 7-day window (1-min averaged rows). Capped to reduce Supabase egress on server restart.
  * @param {Object} graph - The graph object to populate
  * @returns {{ timestamp: string, id: string|null }|null} Cursor for the last row, or null if no data
  */
@@ -216,11 +216,13 @@ async function backfillLongTermGraph(graph) {
   try {
     let from = 0;
     let lastCursor = null;
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     while (true) {
       const { data, error } = await supabase
         .from('long_term_logs')
         .select('id, recorded_at, avg_pressure')
+        .gte('recorded_at', sevenDaysAgo)
         .order('recorded_at', { ascending: true })
         .order('id', { ascending: true })
         .range(from, from + PAGE_SIZE - 1);

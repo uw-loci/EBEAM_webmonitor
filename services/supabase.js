@@ -114,15 +114,15 @@ function mapSupabaseDataToAppFormat(logData) {
     vacuumBits: typeof logData.vacuumBits === 'string'
       ? logData.vacuumBits.split('').map(bit => bit === '1')
       : (logData.vacuumBits || null),
-    heaterCurrent_A: logData["Cathode A - Heater Current:"] ?? null,
-    heaterCurrent_B: logData["Cathode B - Heater Current:"] ?? null,
-    heaterCurrent_C: logData["Cathode C - Heater Current:"] ?? null,
-    heaterVoltage_A: logData["Cathode A - Heater Voltage:"] ?? null,
-    heaterVoltage_B: logData["Cathode B - Heater Voltage:"] ?? null,
-    heaterVoltage_C: logData["Cathode C - Heater Voltage:"] ?? null,
-    clamp_temperature_A: logData.clamp_temperature_A ?? null,
-    clamp_temperature_B: logData.clamp_temperature_B ?? null,
-    clamp_temperature_C: logData.clamp_temperature_C ?? null
+    heaterCurrent_A: logData.cathode?.A?.heater_current ?? null,
+    heaterCurrent_B: logData.cathode?.B?.heater_current ?? null,
+    heaterCurrent_C: logData.cathode?.C?.heater_current ?? null,
+    heaterVoltage_A: logData.cathode?.A?.heater_voltage ?? null,
+    heaterVoltage_B: logData.cathode?.B?.heater_voltage ?? null,
+    heaterVoltage_C: logData.cathode?.C?.heater_voltage ?? null,
+    clamp_temperature_A: logData.cathode?.A?.clamp_temperature ?? null,
+    clamp_temperature_B: logData.cathode?.B?.clamp_temperature ?? null,
+    clamp_temperature_C: logData.cathode?.C?.clamp_temperature ?? null
   };
 }
 

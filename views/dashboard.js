@@ -141,6 +141,7 @@ function renderDashboard(opts) {
           padding: 12px 16px;
           margin: 14px auto;
           width: 90%;
+          box-sizing: border-box;
           border: 1px solid var(--border-subtle);
         }
 
@@ -448,7 +449,8 @@ function renderDashboard(opts) {
           border-radius: 15px;
           padding: 10px;
           margin: 14px auto;
-          width: 98%;
+          width: 90%;
+          box-sizing: border-box;
         }
 
         #ccs-charts-section .chart-container { margin: 0; width: 100%; }
@@ -460,23 +462,13 @@ function renderDashboard(opts) {
           width: 100%;
         }
 
-        #ccs-charts-section .chart {
-          min-height: 180px;
-          height: auto;
-        }
-
         #ccs-charts-section {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: 1fr;
           gap: 10px;
-          width: 98%;
+          width: 90%;
           margin: 10px auto;
           box-sizing: border-box;
-        }
-        @media (max-width: 900px) {
-          #ccs-charts-section {
-            grid-template-columns: 1fr;
-          }
         }
 
         .chart-title {
@@ -695,11 +687,11 @@ function renderDashboard(opts) {
                 <div class = "beam-energy-reading"><p>Current: --</p></div>
           </div>
         </div>
-      </div>
 
       <div id="chart-root-2"></div>
       <div id="pressure-chart-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 98%; margin: 0 auto 0 auto;">
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 90%; margin: 0 auto 0 auto;">
           <span id="pressure-chart-label" style="color:#94a3b8; font-size:14px;">
             Short-Term (Last 24h, ~3s source data, downsampled for display)
           </span>
@@ -707,7 +699,7 @@ function renderDashboard(opts) {
             Switch to Historical View
           </button>
         </div>
-        <div id="pressure-chart-status" class="chart-info-text" style="width:98%; margin:0 auto 6px auto; text-align:left; color:#94a3b8;">
+        <div id="pressure-chart-status" class="chart-info-text" style="width:90%; margin:0 auto 6px auto; text-align:left; color:#94a3b8;">
           ${formatPressureChartStatus(shortTermChartMeta)}
         </div>
         <div id="chart-root-3" style="margin-top: 0;"></div>
@@ -898,7 +890,7 @@ function renderDashboard(opts) {
 
           const uplot = new uPlot({
             width: wrapper.clientWidth,
-            height: 180,
+            height: 300,
             series: [
               {},
               {
@@ -935,7 +927,7 @@ function renderDashboard(opts) {
           }, data, chartEl);
 
           window.addEventListener('resize', () => {
-            uplot.setSize({ width: wrapper.clientWidth, height: 180 });
+            uplot.setSize({ width: wrapper.clientWidth, height: 300 });
           });
 
           chartEl.ondblclick = () => {
@@ -1246,6 +1238,7 @@ function renderDashboard(opts) {
           });
         })();
       </script>
+      </div>
     </body>
     </html>
   `;

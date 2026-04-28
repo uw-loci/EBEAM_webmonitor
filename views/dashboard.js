@@ -451,7 +451,7 @@ function renderDashboard(opts) {
           width: 90%;
         }
 
-        #ccs-charts-section .chart-container { margin: 0; width: 100%; }
+        #ccs-charts-section .chart-container { margin: 10px auto; }
 
         .chart {
           position: relative;
@@ -465,12 +465,7 @@ function renderDashboard(opts) {
         }
 
         #ccs-charts-section {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 10px;
-          width: 90%;
-          margin: 10px auto;
-          box-sizing: border-box;
+          margin: 10px 0;
         }
 
         .chart-title {

@@ -366,9 +366,9 @@ async function backfillCCSGraphs(graphA, graphB, graphC) {
 
       for (const row of data) {
         const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
-        addCCSPoint(graphA, tSec, row.data?.clamp_temperature_A ?? null);
-        addCCSPoint(graphB, tSec, row.data?.clamp_temperature_B ?? null);
-        addCCSPoint(graphC, tSec, row.data?.clamp_temperature_C ?? null);
+        addCCSPoint(graphA, tSec, row.data?.cathode?.A?.clamp_temperature ?? null);
+        addCCSPoint(graphB, tSec, row.data?.cathode?.B?.clamp_temperature ?? null);
+        addCCSPoint(graphC, tSec, row.data?.cathode?.C?.clamp_temperature ?? null);
       }
 
       totalPoints += data.length;

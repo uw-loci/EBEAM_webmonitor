@@ -315,9 +315,11 @@ function buildShortTermEntries(count, options = {}) {
     created_at: new Date(startMs + index * intervalMs).toISOString(),
     data: {
       pressure: pressureFactory(index),
-      clamp_temperature_A: 100 + index,
-      clamp_temperature_B: 200 + index,
-      clamp_temperature_C: 300 + index,
+      cathode: {
+        A: { clamp_temperature: 100 + index },
+        B: { clamp_temperature: 200 + index },
+        C: { clamp_temperature: 300 + index },
+      },
     },
   }));
 }

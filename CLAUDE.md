@@ -15,7 +15,7 @@
 
 ## Startup sequence (`index.js`) — port opens only after all caches warm
 1. backfill short-term pressure cache — last 24h from `short_term_logs`
-2. backfill long-term pressure cache — all-time from `long_term_logs`
+2. backfill long-term pressure cache — from `long_term_logs`, capped at `longTermPressureGraph.maxDataPoints` (100000 rows)
 3. backfill CCS ring buffers — last 1h from `short_term_logs`
 4. `fetchAndUpdateFile()` — scalar state + short-term sync
 5. `refreshDisplayLogs()` — Google Drive fetch → `reversed.txt`

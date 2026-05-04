@@ -208,7 +208,7 @@ async function backfillShortTermGraph(graph) {
 
 /**
  * Backfills the long-term pressure graph from long_term_logs.
- * Time window: all-time (matches the "Historical / All-time" chart label; 1-min averaged rows).
+ * Startup backfill is capped by graph.maxDataPoints; rows are read oldest-first from long_term_logs.
  * @param {Object} graph - The graph object to populate
  * @returns {{ timestamp: string, id: string|null }|null} Cursor for the last row, or null if no data
  */

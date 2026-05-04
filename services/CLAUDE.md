@@ -18,7 +18,8 @@
 
 ## Batch catch-up / paginated fetch (`fetchEntriesSince` in supabase.js)
 - `while(true)` loop drains ALL unseen rows since cursor
-- `PAGE_SIZE = 1000`; breaks on `data.length < PAGE_SIZE` or `fullXVals.length >= maxDataPoints`
+- `PAGE_SIZE = 1000`; breaks on empty page or `data.length < PAGE_SIZE`
+- Backfill caps separate: pressure backfills stop at `graph.fullXVals.length >= graph.maxDataPoints`
 - Always drains full backlog — never single-row polling
 
 ## Overlap guards (polling.js)

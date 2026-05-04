@@ -718,7 +718,7 @@ function renderDashboard(opts) {
 
       <div id="chart-root-2"></div>
       <div id="pressure-chart-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 98%; margin: 0 auto 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 90%; margin: 0 auto 0 auto;">
           <span id="pressure-chart-label" style="color:#94a3b8; font-size:14px;">
             Short-Term (Last 24h, ~3s source data, downsampled for display)
           </span>

@@ -9,6 +9,7 @@ const {
   ccsGraphA,
   ccsGraphB,
   ccsGraphC,
+  clearPressureGraph,
   getGraphMetadata,
 } = require('./services/graphs');
 const { renderDashboard } = require('./views/dashboard');
@@ -148,21 +149,14 @@ function registerRoutes(app) {
       return res.status(500).json({ error: msg.trim() });
     }
 
-    longTermPressureGraph.fullXVals.length = 0;
-    longTermPressureGraph.fullYVals.length = 0;
-    longTermPressureGraph.displayXVals.length = 0;
-    longTermPressureGraph.displayYVals.length = 0;
-
-    shortTermPressureGraph.fullXVals.length = 0;
-    shortTermPressureGraph.fullYVals.length = 0;
-    shortTermPressureGraph.displayXVals.length = 0;
-    shortTermPressureGraph.displayYVals.length = 0;
+    clearPressureGraph(longTermPressureGraph);
+    clearPressureGraph(shortTermPressureGraph);
 
     console.log('Experiment reset: long_term_logs and short_term_logs cleared.');
     return res.status(200).json({ success: true });
   });
 
-  // Raw reversed log file
+  // Raw cached recent log snippet
   app.get('/raw', async (req, res) => {
     try {
       if (fs.existsSync(REVERSED_FILE_PATH)) {

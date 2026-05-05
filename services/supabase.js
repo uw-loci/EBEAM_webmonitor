@@ -1,6 +1,6 @@
 const { supabase } = require('../config');
 const state = require('./state');
-const { updateDisplayData, addCCSPoint } = require('./graphs');
+const { appendPressurePoint, addCCSPoint } = require('./graphs');
 
 const PAGE_SIZE = 1000;
 
@@ -182,15 +182,12 @@ async function backfillShortTermGraph(graph) {
         const pressure = row.data?.pressure;
         if (pressure == null) continue;
         const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
-        graph.fullXVals.push(tSec);
-        graph.fullYVals.push(parseFloat(pressure));
-        updateDisplayData(graph);
+        appendPressurePoint(graph, tSec, parseFloat(pressure));
       }
 
       lastCursor = buildCursorFromRow(data[data.length - 1], 'created_at');
 
       if (data.length < PAGE_SIZE) break;
-      if (graph.fullXVals.length >= graph.maxDataPoints) break;
       from += PAGE_SIZE;
     }
 
@@ -208,7 +205,7 @@ async function backfillShortTermGraph(graph) {
 
 /**
  * Backfills the long-term pressure graph from long_term_logs.
- * Time window: all-time (matches the "Historical / All-time" chart label; 1-min averaged rows).
+ * Startup backfill is capped by graph.maxDataPoints; rows are read oldest-first from long_term_logs.
  * @param {Object} graph - The graph object to populate
  * @returns {{ timestamp: string, id: string|null }|null} Cursor for the last row, or null if no data
  */
@@ -234,15 +231,12 @@ async function backfillLongTermGraph(graph) {
       for (const row of data) {
         if (row.avg_pressure == null) continue;
         const tSec = Math.floor(new Date(row.recorded_at).getTime() / 1000);
-        graph.fullXVals.push(tSec);
-        graph.fullYVals.push(row.avg_pressure);
-        updateDisplayData(graph);
+        appendPressurePoint(graph, tSec, row.avg_pressure);
       }
 
       lastCursor = buildCursorFromRow(data[data.length - 1], 'recorded_at');
 
       if (data.length < PAGE_SIZE) break;
-      if (graph.fullXVals.length >= graph.maxDataPoints) break;
       from += PAGE_SIZE;
     }
 

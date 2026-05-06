@@ -152,9 +152,9 @@ function applyShortTermEntries(entries, options = {}) {
 
     const tSec = Math.floor(entryMs / 1000);
 
-    ccsPointAdder(ccsA, tSec, entry.data?.clamp_temperature_A ?? null);
-    ccsPointAdder(ccsB, tSec, entry.data?.clamp_temperature_B ?? null);
-    ccsPointAdder(ccsC, tSec, entry.data?.clamp_temperature_C ?? null);
+    ccsPointAdder(ccsA, tSec, entry.data?.cathode?.A?.clamp_temperature ?? null);
+    ccsPointAdder(ccsB, tSec, entry.data?.cathode?.B?.clamp_temperature ?? null);
+    ccsPointAdder(ccsC, tSec, entry.data?.cathode?.C?.clamp_temperature ?? null);
 
     const pressure = Number.parseFloat(entry.data?.pressure);
     if (!Number.isFinite(pressure)) {

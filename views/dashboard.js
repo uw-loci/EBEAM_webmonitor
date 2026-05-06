@@ -141,6 +141,7 @@ function renderDashboard(opts) {
           padding: 12px 16px;
           margin: 14px auto;
           width: 90%;
+          box-sizing: border-box;
           border: 1px solid var(--border-subtle);
         }
 
@@ -714,7 +715,6 @@ function renderDashboard(opts) {
                 <div class = "beam-energy-reading"><p>Current: --</p></div>
           </div>
         </div>
-      </div>
 
       <div id="chart-root-2"></div>
       <div id="pressure-chart-section">
@@ -1291,6 +1291,7 @@ function renderDashboard(opts) {
           });
         })();
       </script>
+      </div>
     </body>
     </html>
   `;

@@ -721,28 +721,64 @@ function renderDashboard(opts) {
           <h3 class="section-header">Beam Energy</h3>
           <div class="beam-energy-grid">
             <div class="power-supply-box">
-              <p class="power-supply-heading">-1kV Matsusada</p>
-              <div id="beamSetVoltageM1" class="beam-energy-reading">Set Voltage: --</div>
-              <div id="beamMeasuredVoltageM1" class="beam-energy-reading">Measured Voltage: --</div>
-              <div id="beamMeasuredCurrentM1" class="beam-energy-reading">Measured Current: --</div>
+              <p class="power-supply-heading">+1kV Matsusada</p>
+              <div id="beamSetVoltageM1" class="beam-energy-reading">Set Voltage:${data.pos_1kv_set != null && experimentRunning
+                ? data.pos_1kv_set.toFixed(2) + ' V'
+                : '--'}
+                </div>
+              <div id="beamMeasuredVoltageM1" class="beam-energy-reading">Measured Voltage: ${data.pos_1kv_hv != null && experimentRunning
+                ? data.pos_1kv_hv.toFixed(2) + ' V'
+                : '--'}
+              </div>
+              <div id="beamMeasuredCurrentM1" class="beam-energy-reading">Measured Current: ${data.pos_1kv_i != null && experimentRunning
+                ? data.pos_1kv_i.toFixed(2) + ' A'
+                : '--'}
+              </div>
             </div>
             <div class="power-supply-box">
-              <p class="power-supply-heading">+1kV Matsusada</p>
-              <div id="beamSetVoltageM2" class="beam-energy-reading">Set Voltage: --</div>
-              <div id="beamMeasuredVoltageM2" class="beam-energy-reading">Measured Voltage: --</div>
-              <div id="beamMeasuredCurrentM2" class="beam-energy-reading">Measured Current: --</div>
+              <p class="power-supply-heading">-1kV Matsusada</p>
+              <div id="beamSetVoltageM2" class="beam-energy-reading">Set Voltage: ${data.neg_1kv_set != null && experimentRunning
+                ? data.neg_1kv_set.toFixed(2) + ' V'
+                : '--'}
+              </div>
+              <div id="beamMeasuredVoltageM2" class="beam-energy-reading">Measured Voltage: ${data.neg_1kv_hv != null && experimentRunning
+                ? data.neg_1kv_hv.toFixed(2) + ' V'
+                : '--'}
+              </div>
+              <div id="beamMeasuredCurrentM2" class="beam-energy-reading">Measured Current: ${data.neg_1kv_i != null && experimentRunning
+                ? data.neg_1kv_i.toFixed(2) + ' A'
+                : '--'}
+              </div>
             </div>
             <div class="power-supply-box">
               <p class="power-supply-heading">20kV Bertan</p>
-              <div id="beamSetVoltageB20" class="beam-energy-reading">Set Voltage: --</div>
-              <div id="beamMeasuredVoltageB20" class="beam-energy-reading">Measured Voltage: --</div>
-              <div id="beamMeasuredCurrentB20" class="beam-energy-reading">Measured Current: --</div>
+              <div id="beamSetVoltageB20" class="beam-energy-reading">Set Voltage: ${data.pos_20kv_set != null && experimentRunning
+                ? data.pos_20kv_set.toFixed(2) + ' V'
+                : '--'}
+              </div>
+              <div id="beamMeasuredVoltageB20" class="beam-energy-reading">Measured Voltage: ${data.pos_20kv_hv != null && experimentRunning
+                ? data.pos_20kv_hv.toFixed(2) + ' V'
+                : '--'}
+              </div>
+              <div id="beamMeasuredCurrentB20" class="beam-energy-reading">Measured Current: ${data.pos_20kv_i != null && experimentRunning
+                ? data.pos_20kv_i.toFixed(2) + ' A'
+                : '--'}
+              </div>
             </div>
             <div class="power-supply-box">
               <p class="power-supply-heading">3kV Bertan</p>
-              <div id="beamSetVoltageB3" class="beam-energy-reading">Set Voltage: --</div>
-              <div id="beamMeasuredVoltageB3" class="beam-energy-reading">Measured Voltage: --</div>
-              <div id="beamMeasuredCurrentB3" class="beam-energy-reading">Measured Current: --</div>
+              <div id="beamSetVoltageB3" class="beam-energy-reading">Set Voltage: ${data.pos_3kv_set != null && experimentRunning
+                ? data.pos_3kv_set.toFixed(2) + ' V'
+                : '--'}
+              </div>
+              <div id="beamMeasuredVoltageB3" class="beam-energy-reading">Measured Voltage: ${data.pos_3kv_hv != null && experimentRunning
+                ? data.pos_3kv_hv.toFixed(2) + ' V'
+                : '--'}
+              </div>
+              <div id="beamMeasuredCurrentB3" class="beam-energy-reading">Measured Current: ${data.pos_3kv_i != null && experimentRunning
+                ? data.pos_3kv_i.toFixed(2) + ' A'
+                : '--'}
+              </div>
             </div>
           </div>
         </div>

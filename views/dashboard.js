@@ -277,8 +277,8 @@ function renderDashboard(opts) {
         }
         .beam-energy-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(140px, 1fr));
-          gap: 1rem;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 0.5rem;
           align-items: stretch;
           margin-top: 1rem;
         }
@@ -292,15 +292,25 @@ function renderDashboard(opts) {
           border: 1px solid var(--border-subtle);
         }
         .beam-energy-reading {
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           font-weight: 500;
-          margin-top: 2px;
+          margin-bottom: 5px;
+          padding: 5px 8px;
           border-radius: 6px;
-          background: var(--bg-surface);
+          background: var(--bg-base);
           border: 1px solid var(--border-subtle);
         }
-        .beam-energy-reading p{
-          margin-top: 7px;
+        .power-supply-box {
+          flex: 1;
+          border: 1px solid var(--border-subtle);
+          background: var(--bg-surface);
+          margin-top: 5px;
+          margin-bottom: 12px;
+          border-radius: 7px;
+          padding: 10px 12px;
+        }
+        .power-supply-heading {
+          margin-bottom: 12px;
         }
         .cathode-box {
           flex: 1;
@@ -710,11 +720,33 @@ function renderDashboard(opts) {
         <div class="env-section">
           <h3 class="section-header">Beam Energy</h3>
           <div class="beam-energy-grid">
-                <div class = "beam-energy-reading"><p>Set: --</p></div>
-                <div class = "beam-energy-reading"><p>High Voltage: --</p></div>
-                <div class = "beam-energy-reading"><p>Current: --</p></div>
+            <div class="power-supply-box">
+              <p class="power-supply-heading">-1kV Matsusada</p>
+              <div id="beamSetVoltageM1" class="beam-energy-reading">Set Voltage: --</div>
+              <div id="beamMeasuredVoltageM1" class="beam-energy-reading">Measured Voltage: --</div>
+              <div id="beamMeasuredCurrentM1" class="beam-energy-reading">Measured Current: --</div>
+            </div>
+            <div class="power-supply-box">
+              <p class="power-supply-heading">+1kV Matsusada</p>
+              <div id="beamSetVoltageM2" class="beam-energy-reading">Set Voltage: --</div>
+              <div id="beamMeasuredVoltageM2" class="beam-energy-reading">Measured Voltage: --</div>
+              <div id="beamMeasuredCurrentM2" class="beam-energy-reading">Measured Current: --</div>
+            </div>
+            <div class="power-supply-box">
+              <p class="power-supply-heading">20kV Bertan</p>
+              <div id="beamSetVoltageB20" class="beam-energy-reading">Set Voltage: --</div>
+              <div id="beamMeasuredVoltageB20" class="beam-energy-reading">Measured Voltage: --</div>
+              <div id="beamMeasuredCurrentB20" class="beam-energy-reading">Measured Current: --</div>
+            </div>
+            <div class="power-supply-box">
+              <p class="power-supply-heading">3kV Bertan</p>
+              <div id="beamSetVoltageB3" class="beam-energy-reading">Set Voltage: --</div>
+              <div id="beamMeasuredVoltageB3" class="beam-energy-reading">Measured Voltage: --</div>
+              <div id="beamMeasuredCurrentB3" class="beam-energy-reading">Measured Current: --</div>
+            </div>
           </div>
         </div>
+      </div>
 
       <div id="chart-root-2"></div>
       <div id="pressure-chart-section">
@@ -1291,7 +1323,6 @@ function renderDashboard(opts) {
           });
         })();
       </script>
-      </div>
     </body>
     </html>
   `;

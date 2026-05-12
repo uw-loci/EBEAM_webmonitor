@@ -77,6 +77,19 @@ function renderDashboard(opts) {
     return `Showing ${displayPointCount.toLocaleString()} of ${rawPointCount.toLocaleString()} raw points (downsample x${downsampleFactor}, ${sourceResolutionLabel})`;
   }
 
+  function renderPowerSupplyOutputLabel(isEnabled) {
+    if (isEnabled === null || typeof isEnabled === 'undefined') {
+      return `<div class="power-supply-output power-supply-output-unknown">Output: --</div>`;
+    }
+
+    const enabled = isEnabled === true;
+    const className = enabled
+      ? 'power-supply-output power-supply-output-enabled'
+      : 'power-supply-output power-supply-output-disabled';
+
+    return `<div class="${className}">Output: ${enabled ? 'Enabled' : 'Disabled'}</div>`;
+  }
+
   return `
     <!DOCTYPE html>
     <html>
@@ -323,6 +336,38 @@ function renderDashboard(opts) {
         }
         .cathode-heading {
            margin-bottom: 12px;
+        }
+        .power-supply-output {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 116px;
+          margin: 0 auto 10px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          border: 1px solid transparent;
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+        }
+        .power-supply-output-enabled {
+          color: #86efac;
+          background: rgba(34, 197, 94, 0.14);
+          border-color: rgba(34, 197, 94, 0.45);
+          box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.08) inset;
+        }
+        .power-supply-output-disabled {
+          color: #fca5a5;
+          background: rgba(239, 68, 68, 0.14);
+          border-color: rgba(239, 68, 68, 0.45);
+          box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.08) inset;
+        }
+        .power-supply-output-unknown {
+          color: var(--text-secondary);
+          background: rgba(255,255,255,0.03);
+          border-color: rgba(255,255,255,0.06);
+          box-shadow: none;
         }
         /* gauge circle now displays the attributes of a textbox */
         .gauge-grid {
@@ -722,6 +767,7 @@ function renderDashboard(opts) {
           <div class="beam-energy-grid">
             <div class="power-supply-box">
               <p class="power-supply-heading">+1kV Matsusada</p>
+              ${renderPowerSupplyOutputLabel(data.pos_1kv_connected)}
               <div id="beamSetVoltageM1" class="beam-energy-reading">Set Voltage:${data.pos_1kv_set != null && experimentRunning
                 ? data.pos_1kv_set.toFixed(2) + ' V'
                 : '--'}
@@ -737,6 +783,7 @@ function renderDashboard(opts) {
             </div>
             <div class="power-supply-box">
               <p class="power-supply-heading">-1kV Matsusada</p>
+              ${renderPowerSupplyOutputLabel(data.neg_1kv_connected)}
               <div id="beamSetVoltageM2" class="beam-energy-reading">Set Voltage: ${data.neg_1kv_set != null && experimentRunning
                 ? data.neg_1kv_set.toFixed(2) + ' V'
                 : '--'}
@@ -752,6 +799,7 @@ function renderDashboard(opts) {
             </div>
             <div class="power-supply-box">
               <p class="power-supply-heading">20kV Bertan</p>
+              ${renderPowerSupplyOutputLabel(data.pos_20kv_connected)}
               <div id="beamSetVoltageB20" class="beam-energy-reading">Set Voltage: ${data.pos_20kv_set != null && experimentRunning
                 ? data.pos_20kv_set.toFixed(2) + ' V'
                 : '--'}
@@ -767,6 +815,7 @@ function renderDashboard(opts) {
             </div>
             <div class="power-supply-box">
               <p class="power-supply-heading">3kV Bertan</p>
+              ${renderPowerSupplyOutputLabel(data.pos_3kv_connected)}
               <div id="beamSetVoltageB3" class="beam-energy-reading">Set Voltage: ${data.pos_3kv_set != null && experimentRunning
                 ? data.pos_3kv_set.toFixed(2) + ' V'
                 : '--'}
@@ -1203,6 +1252,37 @@ function renderDashboard(opts) {
           heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_B : "Clamp Temperature: " + "--");
           heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_C : "Clamp Temperature: " + "--");
 
+          // Update beam-energy supply cards (M1: pos_1kv)
+          const beamSetVoltageM1 = document.getElementById('beamSetVoltageM1');
+          const beamMeasuredVoltageM1 = document.getElementById('beamMeasuredVoltageM1');
+          const beamMeasuredCurrentM1 = document.getElementById('beamMeasuredCurrentM1');
+          if (beamSetVoltageM1) beamSetVoltageM1.textContent = 'Set Voltage: ' + (data.pos_1kv_set !== null && data.pos_1kv_set !== undefined && experimentRunning ? data.pos_1kv_set.toFixed(2) + ' V' : '--');
+          if (beamMeasuredVoltageM1) beamMeasuredVoltageM1.textContent = 'Measured Voltage: ' + (data.pos_1kv_hv !== null && data.pos_1kv_hv !== undefined && experimentRunning ? data.pos_1kv_hv.toFixed(2) + ' V' : '--');
+          if (beamMeasuredCurrentM1) beamMeasuredCurrentM1.textContent = 'Measured Current: ' + (data.pos_1kv_i !== null && data.pos_1kv_i !== undefined && experimentRunning ? data.pos_1kv_i.toFixed(2) + ' A' : '--');
+
+          // Update beam-energy supply cards (M2: neg_1kv)
+          const beamSetVoltageM2 = document.getElementById('beamSetVoltageM2');
+          const beamMeasuredVoltageM2 = document.getElementById('beamMeasuredVoltageM2');
+          const beamMeasuredCurrentM2 = document.getElementById('beamMeasuredCurrentM2');
+          if (beamSetVoltageM2) beamSetVoltageM2.textContent = 'Set Voltage: ' + (data.neg_1kv_set !== null && data.neg_1kv_set !== undefined && experimentRunning ? data.neg_1kv_set.toFixed(2) + ' V' : '--');
+          if (beamMeasuredVoltageM2) beamMeasuredVoltageM2.textContent = 'Measured Voltage: ' + (data.neg_1kv_hv !== null && data.neg_1kv_hv !== undefined && experimentRunning ? data.neg_1kv_hv.toFixed(2) + ' V' : '--');
+          if (beamMeasuredCurrentM2) beamMeasuredCurrentM2.textContent = 'Measured Current: ' + (data.neg_1kv_i !== null && data.neg_1kv_i !== undefined && experimentRunning ? data.neg_1kv_i.toFixed(2) + ' A' : '--');
+
+          // Update beam-energy supply cards (B20: pos_20kv)
+          const beamSetVoltageB20 = document.getElementById('beamSetVoltageB20');
+          const beamMeasuredVoltageB20 = document.getElementById('beamMeasuredVoltageB20');
+          const beamMeasuredCurrentB20 = document.getElementById('beamMeasuredCurrentB20');
+          if (beamSetVoltageB20) beamSetVoltageB20.textContent = 'Set Voltage: ' + (data.pos_20kv_set !== null && data.pos_20kv_set !== undefined && experimentRunning ? data.pos_20kv_set.toFixed(2) + ' V' : '--');
+          if (beamMeasuredVoltageB20) beamMeasuredVoltageB20.textContent = 'Measured Voltage: ' + (data.pos_20kv_hv !== null && data.pos_20kv_hv !== undefined && experimentRunning ? data.pos_20kv_hv.toFixed(2) + ' V' : '--');
+          if (beamMeasuredCurrentB20) beamMeasuredCurrentB20.textContent = 'Measured Current: ' + (data.pos_20kv_i !== null && data.pos_20kv_i !== undefined && experimentRunning ? data.pos_20kv_i.toFixed(2) + ' A' : '--');
+
+          // Update beam-energy supply cards (B3: pos_3kv)
+          const beamSetVoltageB3 = document.getElementById('beamSetVoltageB3');
+          const beamMeasuredVoltageB3 = document.getElementById('beamMeasuredVoltageB3');
+          const beamMeasuredCurrentB3 = document.getElementById('beamMeasuredCurrentB3');
+          if (beamSetVoltageB3) beamSetVoltageB3.textContent = 'Set Voltage: ' + (data.pos_3kv_set !== null && data.pos_3kv_set !== undefined && experimentRunning ? data.pos_3kv_set.toFixed(2) + ' V' : '--');
+          if (beamMeasuredVoltageB3) beamMeasuredVoltageB3.textContent = 'Measured Voltage: ' + (data.pos_3kv_hv !== null && data.pos_3kv_hv !== undefined && experimentRunning ? data.pos_3kv_hv.toFixed(2) + ' V' : '--');
+          if (beamMeasuredCurrentB3) beamMeasuredCurrentB3.textContent = 'Measured Current: ' + (data.pos_3kv_i !== null && data.pos_3kv_i !== undefined && experimentRunning ? data.pos_3kv_i.toFixed(2) + ' A' : '--');
 
           const dateObj = new Date(data.siteLastUpdated);
           const clean_string = dateObj.toLocaleString("en-US", {

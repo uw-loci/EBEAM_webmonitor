@@ -54,6 +54,11 @@
 - `hvolt` (index 10): green when `inputFlags[11]==0 && statusFlags[11]==1` — **inverted logic vs. all other interlocks**
 - `vacuumBits` in `state.data`: boolean array converted from "11010101"-style string in `mapSupabaseDataToAppFormat`
 
+## Beam energy telemetry
+- Source JSON: `short_term_logs.data.beam_energy.{pos1kv,neg1kv,pos20kv,pos3kv}`
+- Mapped fields per supply: `output`, `set_v`, `meas_v`, `meas_i`
+- Display units: `+/-1kV` voltage in `V`; `3kV`/`20kV` voltage in `kV`; current in `mA`
+
 ## Google Drive pipeline (gdrive.js)
 - Lists up to 5 most-recent `text/plain` files in `FOLDER_ID`, picks first with name starting `log_`
 - Downloads via raw HTTPS (not googleapis SDK): `googleapis.drive.v3/files/{id}?alt=media&key=`

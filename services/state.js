@@ -62,19 +62,19 @@ const state = {
     pos_1kv_set: null,
     pos_1kv_hv: null,
     pos_1kv_i: null,
-    pos_1kv_connected: null,
+    pos_1kv_output: null,
     neg_1kv_set: null,
     neg_1kv_hv: null,
     neg_1kv_i: null,
-    neg_1kv_connected: null,
+    neg_1kv_output: null,
     pos_20kv_set: null,
     pos_20kv_hv: null,
     pos_20kv_i: null,
-    pos_20kv_connected: null,
+    pos_20kv_output: null,
     pos_3kv_set: null,
     pos_3kv_hv: null,
     pos_3kv_i: null,
-    pos_3kv_connected: null
+    pos_3kv_output: null
   },
 };
 

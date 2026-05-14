@@ -77,17 +77,47 @@ function renderDashboard(opts) {
     return `Showing ${displayPointCount.toLocaleString()} of ${rawPointCount.toLocaleString()} raw points (downsample x${downsampleFactor}, ${sourceResolutionLabel})`;
   }
 
-  function renderPowerSupplyOutputLabel(isEnabled) {
-    if (isEnabled === null || typeof isEnabled === 'undefined') {
-      return `<div class="power-supply-output power-supply-output-unknown">Output: --</div>`;
+  function hasLiveNumber(value) {
+    return value !== null && typeof value !== 'undefined' && Number.isFinite(Number(value));
+  }
+
+  function isOutputEnabled(value) {
+    return value === true || value === 1 || value === 'true' || value === '1';
+  }
+
+  function renderPowerSupplyOutputLabel(outputEnabled, elementId, isRunning) {
+    const idAttr = elementId ? ` id="${elementId}"` : '';
+    if (!isRunning || outputEnabled === null || typeof outputEnabled === 'undefined') {
+      return `<div${idAttr} class="power-supply-output power-supply-output-unknown">Output: --</div>`;
     }
 
-    const enabled = isEnabled === true;
+    const enabled = isOutputEnabled(outputEnabled);
     const className = enabled
       ? 'power-supply-output power-supply-output-enabled'
       : 'power-supply-output power-supply-output-disabled';
 
-    return `<div class="${className}">Output: ${enabled ? 'Enabled' : 'Disabled'}</div>`;
+    return `<div${idAttr} class="${className}">Output: ${enabled ? 'Enabled' : 'Disabled'}</div>`;
+  }
+
+  function formatPowerSupplyVoltage(value, scale) {
+    if (!experimentRunning || !hasLiveNumber(value)) {
+      return '--';
+    }
+
+    const numericValue = Number(value);
+    if (scale === 'kv') {
+      return `${(numericValue / 1000).toFixed(2)}kV`; // Bertans
+    }
+
+    return `${numericValue.toFixed(2)} V`;            // Matsusadas
+  }
+
+  function formatPowerSupplyCurrent(value) {
+    if (!experimentRunning || !hasLiveNumber(value)) {
+      return '--';
+    }
+
+    return `${Number(value).toFixed(2)} mA`;
   }
 
   return `
@@ -767,66 +797,42 @@ function renderDashboard(opts) {
           <div class="beam-energy-grid">
             <div class="power-supply-box">
               <p class="power-supply-heading">+1kV Matsusada</p>
-              ${renderPowerSupplyOutputLabel(data.pos_1kv_connected)}
-              <div id="beamSetVoltageM1" class="beam-energy-reading">Set Voltage:${data.pos_1kv_set != null && experimentRunning
-                ? data.pos_1kv_set.toFixed(2) + ' V'
-                : '--'}
+              ${renderPowerSupplyOutputLabel(data.pos_1kv_output, 'powerSupplyOutputPos1', experimentRunning)}
+              <div id="powerSupplySetVoltagePos1" class="beam-energy-reading">Set Voltage: ${formatPowerSupplyVoltage(data.pos_1kv_set, 'v')}
                 </div>
-              <div id="beamMeasuredVoltageM1" class="beam-energy-reading">Measured Voltage: ${data.pos_1kv_hv != null && experimentRunning
-                ? data.pos_1kv_hv.toFixed(2) + ' V'
-                : '--'}
+              <div id="powerSupplyMeasuredVoltagePos1" class="beam-energy-reading">Measured Voltage: ${formatPowerSupplyVoltage(data.pos_1kv_hv, 'v')}
               </div>
-              <div id="beamMeasuredCurrentM1" class="beam-energy-reading">Measured Current: ${data.pos_1kv_i != null && experimentRunning
-                ? data.pos_1kv_i.toFixed(2) + ' A'
-                : '--'}
+              <div id="powerSupplyMeasuredCurrentPos1" class="beam-energy-reading">Measured Current: ${formatPowerSupplyCurrent(data.pos_1kv_i)}
               </div>
             </div>
             <div class="power-supply-box">
               <p class="power-supply-heading">-1kV Matsusada</p>
-              ${renderPowerSupplyOutputLabel(data.neg_1kv_connected)}
-              <div id="beamSetVoltageM2" class="beam-energy-reading">Set Voltage: ${data.neg_1kv_set != null && experimentRunning
-                ? data.neg_1kv_set.toFixed(2) + ' V'
-                : '--'}
+              ${renderPowerSupplyOutputLabel(data.neg_1kv_output, 'powerSupplyOutputNeg1', experimentRunning)}
+              <div id="powerSupplySetVoltageNeg1" class="beam-energy-reading">Set Voltage: ${formatPowerSupplyVoltage(data.neg_1kv_set, 'v')}
               </div>
-              <div id="beamMeasuredVoltageM2" class="beam-energy-reading">Measured Voltage: ${data.neg_1kv_hv != null && experimentRunning
-                ? data.neg_1kv_hv.toFixed(2) + ' V'
-                : '--'}
+              <div id="powerSupplyMeasuredVoltageNeg1" class="beam-energy-reading">Measured Voltage: ${formatPowerSupplyVoltage(data.neg_1kv_hv, 'v')}
               </div>
-              <div id="beamMeasuredCurrentM2" class="beam-energy-reading">Measured Current: ${data.neg_1kv_i != null && experimentRunning
-                ? data.neg_1kv_i.toFixed(2) + ' A'
-                : '--'}
+              <div id="powerSupplyMeasuredCurrentNeg1" class="beam-energy-reading">Measured Current: ${formatPowerSupplyCurrent(data.neg_1kv_i)}
               </div>
             </div>
             <div class="power-supply-box">
               <p class="power-supply-heading">20kV Bertan</p>
-              ${renderPowerSupplyOutputLabel(data.pos_20kv_connected)}
-              <div id="beamSetVoltageB20" class="beam-energy-reading">Set Voltage: ${data.pos_20kv_set != null && experimentRunning
-                ? data.pos_20kv_set.toFixed(2) + ' V'
-                : '--'}
+              ${renderPowerSupplyOutputLabel(data.pos_20kv_output, 'powerSupplyOutputB20', experimentRunning)}
+              <div id="powerSupplySetVoltageB20" class="beam-energy-reading">Set Voltage: ${formatPowerSupplyVoltage(data.pos_20kv_set, 'kv')}
               </div>
-              <div id="beamMeasuredVoltageB20" class="beam-energy-reading">Measured Voltage: ${data.pos_20kv_hv != null && experimentRunning
-                ? data.pos_20kv_hv.toFixed(2) + ' V'
-                : '--'}
+              <div id="powerSupplyMeasuredVoltageB20" class="beam-energy-reading">Measured Voltage: ${formatPowerSupplyVoltage(data.pos_20kv_hv, 'kv')}
               </div>
-              <div id="beamMeasuredCurrentB20" class="beam-energy-reading">Measured Current: ${data.pos_20kv_i != null && experimentRunning
-                ? data.pos_20kv_i.toFixed(2) + ' A'
-                : '--'}
+              <div id="powerSupplyMeasuredCurrentB20" class="beam-energy-reading">Measured Current: ${formatPowerSupplyCurrent(data.pos_20kv_i)}
               </div>
             </div>
             <div class="power-supply-box">
               <p class="power-supply-heading">3kV Bertan</p>
-              ${renderPowerSupplyOutputLabel(data.pos_3kv_connected)}
-              <div id="beamSetVoltageB3" class="beam-energy-reading">Set Voltage: ${data.pos_3kv_set != null && experimentRunning
-                ? data.pos_3kv_set.toFixed(2) + ' V'
-                : '--'}
+              ${renderPowerSupplyOutputLabel(data.pos_3kv_output, 'powerSupplyOutputB3', experimentRunning)}
+              <div id="powerSupplySetVoltageB3" class="beam-energy-reading">Set Voltage: ${formatPowerSupplyVoltage(data.pos_3kv_set, 'kv')}
               </div>
-              <div id="beamMeasuredVoltageB3" class="beam-energy-reading">Measured Voltage: ${data.pos_3kv_hv != null && experimentRunning
-                ? data.pos_3kv_hv.toFixed(2) + ' V'
-                : '--'}
+              <div id="powerSupplyMeasuredVoltageB3" class="beam-energy-reading">Measured Voltage: ${formatPowerSupplyVoltage(data.pos_3kv_hv, 'kv')}
               </div>
-              <div id="beamMeasuredCurrentB3" class="beam-energy-reading">Measured Current: ${data.pos_3kv_i != null && experimentRunning
-                ? data.pos_3kv_i.toFixed(2) + ' A'
-                : '--'}
+              <div id="powerSupplyMeasuredCurrentB3" class="beam-energy-reading">Measured Current: ${formatPowerSupplyCurrent(data.pos_3kv_i)}
               </div>
             </div>
           </div>
@@ -1162,6 +1168,53 @@ function renderDashboard(opts) {
           loadRecentLogSnippet();
         }
 
+        function hasLivePowerSupplyNumber(value) {
+          return value !== null && typeof value !== 'undefined' && Number.isFinite(Number(value));
+        }
+
+        function formatPowerSupplyVoltage(value, scale, isRunning) {
+          if (!isRunning || !hasLivePowerSupplyNumber(value)) {
+            return '--';
+          }
+
+          const numericValue = Number(value);
+          return scale === 'kv'
+            ? (numericValue / 1000).toFixed(2) + 'kV'
+            : numericValue.toFixed(2) + ' V';
+        }
+
+        function formatPowerSupplyCurrent(value, isRunning) {
+          if (!isRunning || !hasLivePowerSupplyNumber(value)) {
+            return '--';
+          }
+
+          return Number(value).toFixed(2) + ' mA';
+        }
+
+        function updatePowerSupplyOutput(id, outputEnabled, isRunning) {
+          const elem = document.getElementById(id);
+          if (!elem) return;
+
+          elem.classList.add('power-supply-output');
+          elem.classList.remove(
+            'power-supply-output-enabled',
+            'power-supply-output-disabled',
+            'power-supply-output-unknown'
+          );
+
+          if (!isRunning || outputEnabled === null || typeof outputEnabled === 'undefined') {
+            elem.classList.add('power-supply-output-unknown');
+            elem.textContent = 'Output: --';
+            return;
+          }
+
+          const enabled = outputEnabled === true || outputEnabled === 1 ||
+            outputEnabled === 'true' || outputEnabled === '1';
+
+          elem.classList.add(enabled ? 'power-supply-output-enabled' : 'power-supply-output-disabled');
+          elem.textContent = 'Output: ' + (enabled ? 'Enabled' : 'Disabled');
+        }
+
         setInterval(async() => {
           try {
 
@@ -1252,37 +1305,41 @@ function renderDashboard(opts) {
           heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_B : "Clamp Temperature: " + "--");
           heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_C : "Clamp Temperature: " + "--");
 
-          // Update beam-energy supply cards (M1: pos_1kv)
-          const beamSetVoltageM1 = document.getElementById('beamSetVoltageM1');
-          const beamMeasuredVoltageM1 = document.getElementById('beamMeasuredVoltageM1');
-          const beamMeasuredCurrentM1 = document.getElementById('beamMeasuredCurrentM1');
-          if (beamSetVoltageM1) beamSetVoltageM1.textContent = 'Set Voltage: ' + (data.pos_1kv_set !== null && data.pos_1kv_set !== undefined && experimentRunning ? data.pos_1kv_set.toFixed(2) + ' V' : '--');
-          if (beamMeasuredVoltageM1) beamMeasuredVoltageM1.textContent = 'Measured Voltage: ' + (data.pos_1kv_hv !== null && data.pos_1kv_hv !== undefined && experimentRunning ? data.pos_1kv_hv.toFixed(2) + ' V' : '--');
-          if (beamMeasuredCurrentM1) beamMeasuredCurrentM1.textContent = 'Measured Current: ' + (data.pos_1kv_i !== null && data.pos_1kv_i !== undefined && experimentRunning ? data.pos_1kv_i.toFixed(2) + ' A' : '--');
+          // Update power-supply cards (Pos1: pos_1kv)
+          const powerSupplySetVoltagePos1 = document.getElementById('powerSupplySetVoltagePos1');
+          const powerSupplyMeasuredVoltagePos1 = document.getElementById('powerSupplyMeasuredVoltagePos1');
+          const powerSupplyMeasuredCurrentPos1 = document.getElementById('powerSupplyMeasuredCurrentPos1');
+          updatePowerSupplyOutput('powerSupplyOutputPos1', data.pos_1kv_output, experimentRunning);
+          if (powerSupplySetVoltagePos1) powerSupplySetVoltagePos1.textContent = 'Set Voltage: ' + formatPowerSupplyVoltage(data.pos_1kv_set, 'v', experimentRunning);
+          if (powerSupplyMeasuredVoltagePos1) powerSupplyMeasuredVoltagePos1.textContent = 'Measured Voltage: ' + formatPowerSupplyVoltage(data.pos_1kv_hv, 'v', experimentRunning);
+          if (powerSupplyMeasuredCurrentPos1) powerSupplyMeasuredCurrentPos1.textContent = 'Measured Current: ' + formatPowerSupplyCurrent(data.pos_1kv_i, experimentRunning);
 
-          // Update beam-energy supply cards (M2: neg_1kv)
-          const beamSetVoltageM2 = document.getElementById('beamSetVoltageM2');
-          const beamMeasuredVoltageM2 = document.getElementById('beamMeasuredVoltageM2');
-          const beamMeasuredCurrentM2 = document.getElementById('beamMeasuredCurrentM2');
-          if (beamSetVoltageM2) beamSetVoltageM2.textContent = 'Set Voltage: ' + (data.neg_1kv_set !== null && data.neg_1kv_set !== undefined && experimentRunning ? data.neg_1kv_set.toFixed(2) + ' V' : '--');
-          if (beamMeasuredVoltageM2) beamMeasuredVoltageM2.textContent = 'Measured Voltage: ' + (data.neg_1kv_hv !== null && data.neg_1kv_hv !== undefined && experimentRunning ? data.neg_1kv_hv.toFixed(2) + ' V' : '--');
-          if (beamMeasuredCurrentM2) beamMeasuredCurrentM2.textContent = 'Measured Current: ' + (data.neg_1kv_i !== null && data.neg_1kv_i !== undefined && experimentRunning ? data.neg_1kv_i.toFixed(2) + ' A' : '--');
+          // Update power-supply cards (Neg1: neg_1kv)
+          const powerSupplySetVoltageNeg1 = document.getElementById('powerSupplySetVoltageNeg1');
+          const powerSupplyMeasuredVoltageNeg1 = document.getElementById('powerSupplyMeasuredVoltageNeg1');
+          const powerSupplyMeasuredCurrentNeg1 = document.getElementById('powerSupplyMeasuredCurrentNeg1');
+          updatePowerSupplyOutput('powerSupplyOutputNeg1', data.neg_1kv_output, experimentRunning);
+          if (powerSupplySetVoltageNeg1) powerSupplySetVoltageNeg1.textContent = 'Set Voltage: ' + formatPowerSupplyVoltage(data.neg_1kv_set, 'v', experimentRunning);
+          if (powerSupplyMeasuredVoltageNeg1) powerSupplyMeasuredVoltageNeg1.textContent = 'Measured Voltage: ' + formatPowerSupplyVoltage(data.neg_1kv_hv, 'v', experimentRunning);
+          if (powerSupplyMeasuredCurrentNeg1) powerSupplyMeasuredCurrentNeg1.textContent = 'Measured Current: ' + formatPowerSupplyCurrent(data.neg_1kv_i, experimentRunning);
 
-          // Update beam-energy supply cards (B20: pos_20kv)
-          const beamSetVoltageB20 = document.getElementById('beamSetVoltageB20');
-          const beamMeasuredVoltageB20 = document.getElementById('beamMeasuredVoltageB20');
-          const beamMeasuredCurrentB20 = document.getElementById('beamMeasuredCurrentB20');
-          if (beamSetVoltageB20) beamSetVoltageB20.textContent = 'Set Voltage: ' + (data.pos_20kv_set !== null && data.pos_20kv_set !== undefined && experimentRunning ? data.pos_20kv_set.toFixed(2) + ' V' : '--');
-          if (beamMeasuredVoltageB20) beamMeasuredVoltageB20.textContent = 'Measured Voltage: ' + (data.pos_20kv_hv !== null && data.pos_20kv_hv !== undefined && experimentRunning ? data.pos_20kv_hv.toFixed(2) + ' V' : '--');
-          if (beamMeasuredCurrentB20) beamMeasuredCurrentB20.textContent = 'Measured Current: ' + (data.pos_20kv_i !== null && data.pos_20kv_i !== undefined && experimentRunning ? data.pos_20kv_i.toFixed(2) + ' A' : '--');
+          // Update power-supply cards (B20: pos_20kv)
+          const powerSupplySetVoltageB20 = document.getElementById('powerSupplySetVoltageB20');
+          const powerSupplyMeasuredVoltageB20 = document.getElementById('powerSupplyMeasuredVoltageB20');
+          const powerSupplyMeasuredCurrentB20 = document.getElementById('powerSupplyMeasuredCurrentB20');
+          updatePowerSupplyOutput('powerSupplyOutputB20', data.pos_20kv_output, experimentRunning);
+          if (powerSupplySetVoltageB20) powerSupplySetVoltageB20.textContent = 'Set Voltage: ' + formatPowerSupplyVoltage(data.pos_20kv_set, 'kv', experimentRunning);
+          if (powerSupplyMeasuredVoltageB20) powerSupplyMeasuredVoltageB20.textContent = 'Measured Voltage: ' + formatPowerSupplyVoltage(data.pos_20kv_hv, 'kv', experimentRunning);
+          if (powerSupplyMeasuredCurrentB20) powerSupplyMeasuredCurrentB20.textContent = 'Measured Current: ' + formatPowerSupplyCurrent(data.pos_20kv_i, experimentRunning);
 
-          // Update beam-energy supply cards (B3: pos_3kv)
-          const beamSetVoltageB3 = document.getElementById('beamSetVoltageB3');
-          const beamMeasuredVoltageB3 = document.getElementById('beamMeasuredVoltageB3');
-          const beamMeasuredCurrentB3 = document.getElementById('beamMeasuredCurrentB3');
-          if (beamSetVoltageB3) beamSetVoltageB3.textContent = 'Set Voltage: ' + (data.pos_3kv_set !== null && data.pos_3kv_set !== undefined && experimentRunning ? data.pos_3kv_set.toFixed(2) + ' V' : '--');
-          if (beamMeasuredVoltageB3) beamMeasuredVoltageB3.textContent = 'Measured Voltage: ' + (data.pos_3kv_hv !== null && data.pos_3kv_hv !== undefined && experimentRunning ? data.pos_3kv_hv.toFixed(2) + ' V' : '--');
-          if (beamMeasuredCurrentB3) beamMeasuredCurrentB3.textContent = 'Measured Current: ' + (data.pos_3kv_i !== null && data.pos_3kv_i !== undefined && experimentRunning ? data.pos_3kv_i.toFixed(2) + ' A' : '--');
+          // Update power-supply cards (B3: pos_3kv)
+          const powerSupplySetVoltageB3 = document.getElementById('powerSupplySetVoltageB3');
+          const powerSupplyMeasuredVoltageB3 = document.getElementById('powerSupplyMeasuredVoltageB3');
+          const powerSupplyMeasuredCurrentB3 = document.getElementById('powerSupplyMeasuredCurrentB3');
+          updatePowerSupplyOutput('powerSupplyOutputB3', data.pos_3kv_output, experimentRunning);
+          if (powerSupplySetVoltageB3) powerSupplySetVoltageB3.textContent = 'Set Voltage: ' + formatPowerSupplyVoltage(data.pos_3kv_set, 'kv', experimentRunning);
+          if (powerSupplyMeasuredVoltageB3) powerSupplyMeasuredVoltageB3.textContent = 'Measured Voltage: ' + formatPowerSupplyVoltage(data.pos_3kv_hv, 'kv', experimentRunning);
+          if (powerSupplyMeasuredCurrentB3) powerSupplyMeasuredCurrentB3.textContent = 'Measured Current: ' + formatPowerSupplyCurrent(data.pos_3kv_i, experimentRunning);
 
           const dateObj = new Date(data.siteLastUpdated);
           const clean_string = dateObj.toLocaleString("en-US", {

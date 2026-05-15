@@ -109,7 +109,7 @@ function renderDashboard(opts) {
       return `${(numericValue / 1000).toFixed(2)}kV`; // Bertans
     }
 
-    return `${numericValue.toFixed(2)} V`;            // Matsusadas
+    return `${numericValue.toFixed(0)} V`;            // Matsusadas
   }
 
   function formatPowerSupplyCurrent(value) {
@@ -1180,7 +1180,7 @@ function renderDashboard(opts) {
           const numericValue = Number(value);
           return scale === 'kv'
             ? (numericValue / 1000).toFixed(2) + 'kV'
-            : numericValue.toFixed(2) + ' V';
+            : numericValue.toFixed(0) + ' V';
         }
 
         function formatPowerSupplyCurrent(value, isRunning) {
@@ -1293,17 +1293,17 @@ function renderDashboard(opts) {
           const sensor5 = document.getElementById('sensor-5');
           const sensor6 = document.getElementById('sensor-6');
 
-          heaterCurrentA.textContent = (data.heaterCurrent_A !== null && data.heaterCurrent_A !== undefined && experimentRunning? "Current: " + data.heaterCurrent_A : "Current: " + "--");
-          heaterCurrentB.textContent = (data.heaterCurrent_B !== null && data.heaterCurrent_B !== undefined && experimentRunning? "Current: " + data.heaterCurrent_B : "Current: " + "--");
-          heaterCurrentC.textContent = (data.heaterCurrent_C !== null && data.heaterCurrent_C !== undefined && experimentRunning? "Current: " + data.heaterCurrent_C : "Current: " + "--");
+          heaterCurrentA.textContent = (data.heaterCurrent_A !== null && data.heaterCurrent_A !== undefined && experimentRunning? "Current: " + Number(data.heaterCurrent_A).toFixed(2) + " A" : "Current: " + "--");
+          heaterCurrentB.textContent = (data.heaterCurrent_B !== null && data.heaterCurrent_B !== undefined && experimentRunning? "Current: " + Number(data.heaterCurrent_B).toFixed(2) + " A" : "Current: " + "--");
+          heaterCurrentC.textContent = (data.heaterCurrent_C !== null && data.heaterCurrent_C !== undefined && experimentRunning? "Current: " + Number(data.heaterCurrent_C).toFixed(2) + " A" : "Current: " + "--");
 
-          heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
-          heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
-          heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
+          heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined && experimentRunning? "Voltage: " + Number(data.heaterVoltage_A).toFixed(2) + " V" : "Voltage: " + "--");
+          heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && experimentRunning? "Voltage: " + Number(data.heaterVoltage_B).toFixed(2) + " V" : "Voltage: " + "--");
+          heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && experimentRunning? "Voltage: " + Number(data.heaterVoltage_C).toFixed(2) + " V" : "Voltage: " + "--");
 
-          heaterTemperatureA.textContent = (data.clamp_temperature_A !== null && data.clamp_temperature_A !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_A : "Clamp Temperature: " + "--");
-          heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_B : "Clamp Temperature: " + "--");
-          heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_C : "Clamp Temperature: " + "--");
+          heaterTemperatureA.textContent = (data.clamp_temperature_A !== null && data.clamp_temperature_A !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_A)) + "°C" : "Clamp Temperature: " + "--");
+          heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_B)) + "°C" : "Clamp Temperature: " + "--");
+          heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_C)) + "°C" : "Clamp Temperature: " + "--");
 
           // Update power-supply cards (Pos1: pos_1kv)
           const powerSupplySetVoltagePos1 = document.getElementById('powerSupplySetVoltagePos1');

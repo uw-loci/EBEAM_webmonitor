@@ -58,7 +58,23 @@ const state = {
     heaterVoltage_C: null,
     clamp_temperature_A: null,
     clamp_temperature_B: null,
-    clamp_temperature_C: null
+    clamp_temperature_C: null,
+    pos_1kv_set: null,
+    pos_1kv_hv: null,
+    pos_1kv_i: null,
+    pos_1kv_output: null,
+    neg_1kv_set: null,
+    neg_1kv_hv: null,
+    neg_1kv_i: null,
+    neg_1kv_output: null,
+    pos_20kv_set: null,
+    pos_20kv_hv: null,
+    pos_20kv_i: null,
+    pos_20kv_output: null,
+    pos_3kv_set: null,
+    pos_3kv_hv: null,
+    pos_3kv_i: null,
+    pos_3kv_output: null
   },
 };
 

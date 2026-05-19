@@ -77,6 +77,49 @@ function renderDashboard(opts) {
     return `Showing ${displayPointCount.toLocaleString()} of ${rawPointCount.toLocaleString()} raw points (downsample x${downsampleFactor}, ${sourceResolutionLabel})`;
   }
 
+  function hasLiveNumber(value) {
+    return value !== null && typeof value !== 'undefined' && Number.isFinite(Number(value));
+  }
+
+  function isOutputEnabled(value) {
+    return value === true || value === 1 || value === 'true' || value === '1';
+  }
+
+  function renderPowerSupplyOutputLabel(outputEnabled, elementId, isRunning) {
+    const idAttr = elementId ? ` id="${elementId}"` : '';
+    if (!isRunning || outputEnabled === null || typeof outputEnabled === 'undefined') {
+      return `<div${idAttr} class="power-supply-output power-supply-output-unknown">Output: --</div>`;
+    }
+
+    const enabled = isOutputEnabled(outputEnabled);
+    const className = enabled
+      ? 'power-supply-output power-supply-output-enabled'
+      : 'power-supply-output power-supply-output-disabled';
+
+    return `<div${idAttr} class="${className}">Output: ${enabled ? 'Enabled' : 'Disabled'}</div>`;
+  }
+
+  function formatPowerSupplyVoltage(value, scale) {
+    if (!experimentRunning || !hasLiveNumber(value)) {
+      return '--';
+    }
+
+    const numericValue = Number(value);
+    if (scale === 'kv') {
+      return `${(numericValue / 1000).toFixed(2)}kV`; // Bertans
+    }
+
+    return `${numericValue.toFixed(0)} V`;            // Matsusadas
+  }
+
+  function formatPowerSupplyCurrent(value) {
+    if (!experimentRunning || !hasLiveNumber(value)) {
+      return '--';
+    }
+
+    return `${Number(value).toFixed(2)} mA`;
+  }
+
   return `
     <!DOCTYPE html>
     <html>
@@ -277,8 +320,8 @@ function renderDashboard(opts) {
         }
         .beam-energy-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(140px, 1fr));
-          gap: 1rem;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 0.5rem;
           align-items: stretch;
           margin-top: 1rem;
         }
@@ -292,15 +335,25 @@ function renderDashboard(opts) {
           border: 1px solid var(--border-subtle);
         }
         .beam-energy-reading {
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           font-weight: 500;
-          margin-top: 2px;
+          margin-bottom: 5px;
+          padding: 5px 8px;
           border-radius: 6px;
-          background: var(--bg-surface);
+          background: var(--bg-base);
           border: 1px solid var(--border-subtle);
         }
-        .beam-energy-reading p{
-          margin-top: 7px;
+        .power-supply-box {
+          flex: 1;
+          border: 1px solid var(--border-subtle);
+          background: var(--bg-surface);
+          margin-top: 5px;
+          margin-bottom: 12px;
+          border-radius: 7px;
+          padding: 10px 12px;
+        }
+        .power-supply-heading {
+          margin-bottom: 12px;
         }
         .cathode-box {
           flex: 1;
@@ -313,6 +366,38 @@ function renderDashboard(opts) {
         }
         .cathode-heading {
            margin-bottom: 12px;
+        }
+        .power-supply-output {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 116px;
+          margin: 0 auto 10px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          border: 1px solid transparent;
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+        }
+        .power-supply-output-enabled {
+          color: #86efac;
+          background: rgba(34, 197, 94, 0.14);
+          border-color: rgba(34, 197, 94, 0.45);
+          box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.08) inset;
+        }
+        .power-supply-output-disabled {
+          color: #fca5a5;
+          background: rgba(239, 68, 68, 0.14);
+          border-color: rgba(239, 68, 68, 0.45);
+          box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.08) inset;
+        }
+        .power-supply-output-unknown {
+          color: var(--text-secondary);
+          background: rgba(255,255,255,0.03);
+          border-color: rgba(255,255,255,0.06);
+          box-shadow: none;
         }
         /* gauge circle now displays the attributes of a textbox */
         .gauge-grid {
@@ -710,11 +795,49 @@ function renderDashboard(opts) {
         <div class="env-section">
           <h3 class="section-header">Beam Energy</h3>
           <div class="beam-energy-grid">
-                <div class = "beam-energy-reading"><p>Set: --</p></div>
-                <div class = "beam-energy-reading"><p>High Voltage: --</p></div>
-                <div class = "beam-energy-reading"><p>Current: --</p></div>
+            <div class="power-supply-box">
+              <p class="power-supply-heading">+1kV Matsusada</p>
+              ${renderPowerSupplyOutputLabel(data.pos_1kv_output, 'powerSupplyOutputPos1', experimentRunning)}
+              <div id="powerSupplySetVoltagePos1" class="beam-energy-reading">Set Voltage: ${formatPowerSupplyVoltage(data.pos_1kv_set, 'v')}
+                </div>
+              <div id="powerSupplyMeasuredVoltagePos1" class="beam-energy-reading">Measured Voltage: ${formatPowerSupplyVoltage(data.pos_1kv_hv, 'v')}
+              </div>
+              <div id="powerSupplyMeasuredCurrentPos1" class="beam-energy-reading">Measured Current: ${formatPowerSupplyCurrent(data.pos_1kv_i)}
+              </div>
+            </div>
+            <div class="power-supply-box">
+              <p class="power-supply-heading">-1kV Matsusada</p>
+              ${renderPowerSupplyOutputLabel(data.neg_1kv_output, 'powerSupplyOutputNeg1', experimentRunning)}
+              <div id="powerSupplySetVoltageNeg1" class="beam-energy-reading">Set Voltage: ${formatPowerSupplyVoltage(data.neg_1kv_set, 'v')}
+              </div>
+              <div id="powerSupplyMeasuredVoltageNeg1" class="beam-energy-reading">Measured Voltage: ${formatPowerSupplyVoltage(data.neg_1kv_hv, 'v')}
+              </div>
+              <div id="powerSupplyMeasuredCurrentNeg1" class="beam-energy-reading">Measured Current: ${formatPowerSupplyCurrent(data.neg_1kv_i)}
+              </div>
+            </div>
+            <div class="power-supply-box">
+              <p class="power-supply-heading">20kV Bertan</p>
+              ${renderPowerSupplyOutputLabel(data.pos_20kv_output, 'powerSupplyOutputB20', experimentRunning)}
+              <div id="powerSupplySetVoltageB20" class="beam-energy-reading">Set Voltage: ${formatPowerSupplyVoltage(data.pos_20kv_set, 'kv')}
+              </div>
+              <div id="powerSupplyMeasuredVoltageB20" class="beam-energy-reading">Measured Voltage: ${formatPowerSupplyVoltage(data.pos_20kv_hv, 'kv')}
+              </div>
+              <div id="powerSupplyMeasuredCurrentB20" class="beam-energy-reading">Measured Current: ${formatPowerSupplyCurrent(data.pos_20kv_i)}
+              </div>
+            </div>
+            <div class="power-supply-box">
+              <p class="power-supply-heading">3kV Bertan</p>
+              ${renderPowerSupplyOutputLabel(data.pos_3kv_output, 'powerSupplyOutputB3', experimentRunning)}
+              <div id="powerSupplySetVoltageB3" class="beam-energy-reading">Set Voltage: ${formatPowerSupplyVoltage(data.pos_3kv_set, 'kv')}
+              </div>
+              <div id="powerSupplyMeasuredVoltageB3" class="beam-energy-reading">Measured Voltage: ${formatPowerSupplyVoltage(data.pos_3kv_hv, 'kv')}
+              </div>
+              <div id="powerSupplyMeasuredCurrentB3" class="beam-energy-reading">Measured Current: ${formatPowerSupplyCurrent(data.pos_3kv_i)}
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
       <div id="chart-root-2"></div>
       <div id="pressure-chart-section">
@@ -1045,6 +1168,53 @@ function renderDashboard(opts) {
           loadRecentLogSnippet();
         }
 
+        function hasLivePowerSupplyNumber(value) {
+          return value !== null && typeof value !== 'undefined' && Number.isFinite(Number(value));
+        }
+
+        function formatPowerSupplyVoltage(value, scale, isRunning) {
+          if (!isRunning || !hasLivePowerSupplyNumber(value)) {
+            return '--';
+          }
+
+          const numericValue = Number(value);
+          return scale === 'kv'
+            ? (numericValue / 1000).toFixed(2) + 'kV'
+            : numericValue.toFixed(0) + ' V';
+        }
+
+        function formatPowerSupplyCurrent(value, isRunning) {
+          if (!isRunning || !hasLivePowerSupplyNumber(value)) {
+            return '--';
+          }
+
+          return Number(value).toFixed(2) + ' mA';
+        }
+
+        function updatePowerSupplyOutput(id, outputEnabled, isRunning) {
+          const elem = document.getElementById(id);
+          if (!elem) return;
+
+          elem.classList.add('power-supply-output');
+          elem.classList.remove(
+            'power-supply-output-enabled',
+            'power-supply-output-disabled',
+            'power-supply-output-unknown'
+          );
+
+          if (!isRunning || outputEnabled === null || typeof outputEnabled === 'undefined') {
+            elem.classList.add('power-supply-output-unknown');
+            elem.textContent = 'Output: --';
+            return;
+          }
+
+          const enabled = outputEnabled === true || outputEnabled === 1 ||
+            outputEnabled === 'true' || outputEnabled === '1';
+
+          elem.classList.add(enabled ? 'power-supply-output-enabled' : 'power-supply-output-disabled');
+          elem.textContent = 'Output: ' + (enabled ? 'Enabled' : 'Disabled');
+        }
+
         setInterval(async() => {
           try {
 
@@ -1123,18 +1293,53 @@ function renderDashboard(opts) {
           const sensor5 = document.getElementById('sensor-5');
           const sensor6 = document.getElementById('sensor-6');
 
-          heaterCurrentA.textContent = (data.heaterCurrent_A !== null && data.heaterCurrent_A !== undefined && experimentRunning? "Current: " + data.heaterCurrent_A : "Current: " + "--");
-          heaterCurrentB.textContent = (data.heaterCurrent_B !== null && data.heaterCurrent_B !== undefined && experimentRunning? "Current: " + data.heaterCurrent_B : "Current: " + "--");
-          heaterCurrentC.textContent = (data.heaterCurrent_C !== null && data.heaterCurrent_C !== undefined && experimentRunning? "Current: " + data.heaterCurrent_C : "Current: " + "--");
+          heaterCurrentA.textContent = (data.heaterCurrent_A !== null && data.heaterCurrent_A !== undefined && experimentRunning? "Current: " + Number(data.heaterCurrent_A).toFixed(2) + " A" : "Current: " + "--");
+          heaterCurrentB.textContent = (data.heaterCurrent_B !== null && data.heaterCurrent_B !== undefined && experimentRunning? "Current: " + Number(data.heaterCurrent_B).toFixed(2) + " A" : "Current: " + "--");
+          heaterCurrentC.textContent = (data.heaterCurrent_C !== null && data.heaterCurrent_C !== undefined && experimentRunning? "Current: " + Number(data.heaterCurrent_C).toFixed(2) + " A" : "Current: " + "--");
 
-          heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_A : "Voltage: " + "--");
-          heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_B : "Voltage: " + "--");
-          heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && experimentRunning? "Voltage: " + data.heaterVoltage_C : "Voltage: " + "--");
+          heaterVoltageA.textContent = (data.heaterVoltage_A !== null && data.heaterVoltage_A !== undefined && experimentRunning? "Voltage: " + Number(data.heaterVoltage_A).toFixed(2) + " V" : "Voltage: " + "--");
+          heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && experimentRunning? "Voltage: " + Number(data.heaterVoltage_B).toFixed(2) + " V" : "Voltage: " + "--");
+          heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && experimentRunning? "Voltage: " + Number(data.heaterVoltage_C).toFixed(2) + " V" : "Voltage: " + "--");
 
-          heaterTemperatureA.textContent = (data.clamp_temperature_A !== null && data.clamp_temperature_A !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_A : "Clamp Temperature: " + "--");
-          heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_B : "Clamp Temperature: " + "--");
-          heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + data.clamp_temperature_C : "Clamp Temperature: " + "--");
+          heaterTemperatureA.textContent = (data.clamp_temperature_A !== null && data.clamp_temperature_A !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_A)) + "°C" : "Clamp Temperature: " + "--");
+          heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_B)) + "°C" : "Clamp Temperature: " + "--");
+          heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_C)) + "°C" : "Clamp Temperature: " + "--");
 
+          // Update power-supply cards (Pos1: pos_1kv)
+          const powerSupplySetVoltagePos1 = document.getElementById('powerSupplySetVoltagePos1');
+          const powerSupplyMeasuredVoltagePos1 = document.getElementById('powerSupplyMeasuredVoltagePos1');
+          const powerSupplyMeasuredCurrentPos1 = document.getElementById('powerSupplyMeasuredCurrentPos1');
+          updatePowerSupplyOutput('powerSupplyOutputPos1', data.pos_1kv_output, experimentRunning);
+          if (powerSupplySetVoltagePos1) powerSupplySetVoltagePos1.textContent = 'Set Voltage: ' + formatPowerSupplyVoltage(data.pos_1kv_set, 'v', experimentRunning);
+          if (powerSupplyMeasuredVoltagePos1) powerSupplyMeasuredVoltagePos1.textContent = 'Measured Voltage: ' + formatPowerSupplyVoltage(data.pos_1kv_hv, 'v', experimentRunning);
+          if (powerSupplyMeasuredCurrentPos1) powerSupplyMeasuredCurrentPos1.textContent = 'Measured Current: ' + formatPowerSupplyCurrent(data.pos_1kv_i, experimentRunning);
+
+          // Update power-supply cards (Neg1: neg_1kv)
+          const powerSupplySetVoltageNeg1 = document.getElementById('powerSupplySetVoltageNeg1');
+          const powerSupplyMeasuredVoltageNeg1 = document.getElementById('powerSupplyMeasuredVoltageNeg1');
+          const powerSupplyMeasuredCurrentNeg1 = document.getElementById('powerSupplyMeasuredCurrentNeg1');
+          updatePowerSupplyOutput('powerSupplyOutputNeg1', data.neg_1kv_output, experimentRunning);
+          if (powerSupplySetVoltageNeg1) powerSupplySetVoltageNeg1.textContent = 'Set Voltage: ' + formatPowerSupplyVoltage(data.neg_1kv_set, 'v', experimentRunning);
+          if (powerSupplyMeasuredVoltageNeg1) powerSupplyMeasuredVoltageNeg1.textContent = 'Measured Voltage: ' + formatPowerSupplyVoltage(data.neg_1kv_hv, 'v', experimentRunning);
+          if (powerSupplyMeasuredCurrentNeg1) powerSupplyMeasuredCurrentNeg1.textContent = 'Measured Current: ' + formatPowerSupplyCurrent(data.neg_1kv_i, experimentRunning);
+
+          // Update power-supply cards (B20: pos_20kv)
+          const powerSupplySetVoltageB20 = document.getElementById('powerSupplySetVoltageB20');
+          const powerSupplyMeasuredVoltageB20 = document.getElementById('powerSupplyMeasuredVoltageB20');
+          const powerSupplyMeasuredCurrentB20 = document.getElementById('powerSupplyMeasuredCurrentB20');
+          updatePowerSupplyOutput('powerSupplyOutputB20', data.pos_20kv_output, experimentRunning);
+          if (powerSupplySetVoltageB20) powerSupplySetVoltageB20.textContent = 'Set Voltage: ' + formatPowerSupplyVoltage(data.pos_20kv_set, 'kv', experimentRunning);
+          if (powerSupplyMeasuredVoltageB20) powerSupplyMeasuredVoltageB20.textContent = 'Measured Voltage: ' + formatPowerSupplyVoltage(data.pos_20kv_hv, 'kv', experimentRunning);
+          if (powerSupplyMeasuredCurrentB20) powerSupplyMeasuredCurrentB20.textContent = 'Measured Current: ' + formatPowerSupplyCurrent(data.pos_20kv_i, experimentRunning);
+
+          // Update power-supply cards (B3: pos_3kv)
+          const powerSupplySetVoltageB3 = document.getElementById('powerSupplySetVoltageB3');
+          const powerSupplyMeasuredVoltageB3 = document.getElementById('powerSupplyMeasuredVoltageB3');
+          const powerSupplyMeasuredCurrentB3 = document.getElementById('powerSupplyMeasuredCurrentB3');
+          updatePowerSupplyOutput('powerSupplyOutputB3', data.pos_3kv_output, experimentRunning);
+          if (powerSupplySetVoltageB3) powerSupplySetVoltageB3.textContent = 'Set Voltage: ' + formatPowerSupplyVoltage(data.pos_3kv_set, 'kv', experimentRunning);
+          if (powerSupplyMeasuredVoltageB3) powerSupplyMeasuredVoltageB3.textContent = 'Measured Voltage: ' + formatPowerSupplyVoltage(data.pos_3kv_hv, 'kv', experimentRunning);
+          if (powerSupplyMeasuredCurrentB3) powerSupplyMeasuredCurrentB3.textContent = 'Measured Current: ' + formatPowerSupplyCurrent(data.pos_3kv_i, experimentRunning);
 
           const dateObj = new Date(data.siteLastUpdated);
           const clean_string = dateObj.toLocaleString("en-US", {
@@ -1291,7 +1496,6 @@ function renderDashboard(opts) {
           });
         })();
       </script>
-      </div>
     </body>
     </html>
   `;

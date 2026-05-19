@@ -1,6 +1,6 @@
 # E-Beam Web Monitor
 
-A Node.js/Express server that provides a real-time web dashboard for monitoring the subsystems of the 3D electron-beam metal printer. The dashboard shows interlock states, vacuum indicators, short-term and long-term pressure history, CCS clamp temperatures, and system logs without full page reloads.
+A Node.js/Express server that provides a real-time web dashboard for monitoring the subsystems of the 3D electron-beam metal printer. The dashboard shows interlock states, vacuum indicators, beam-energy power-supply readings, short-term and long-term pressure history, CCS clamp temperatures, and system logs without full page reloads.
 
 **Live site:** [ebeam-webmonitor.onrender.com](https://ebeam-webmonitor.onrender.com/)
 
@@ -97,13 +97,14 @@ Supabase: long_term_logs ---------------------------+   |
     - experimentRunning                                              - longTermPressureGraph
     - lastShortTermCursor                                            - ccsGraphA / ccsGraphB / ccsGraphC
     - lastLongTermCursor
+    - beam-energy power-supply values
     - web/display last-modified timestamps
 
 Google Drive log files --> services/gdrive.js --> cached reversed.txt --> /raw and /refresh-display
 
 Express routes:
 - `/` renders the dashboard HTML
-- `/data` serves current scalar values and computed colors
+- `/data` serves current scalar values, Beam Energy power-supply readings, and computed colors
 - `/chart-data` serves the selected pressure graph plus density metadata
 - `/ccs-chart-data` serves the three CCS clamp-temperature series
 - `/health`, `/raw`, `/refresh-display`, and `/experiment-reset` expose operational controls
@@ -112,7 +113,7 @@ Express routes:
 The startup sequence in `index.js` warms the pressure caches, CCS caches, and display-log cache before calling `app.listen()`, so the first page load has data ready instead of starting cold.
 
 The browser then:
-- polls `/data` every 3 seconds for scalar values and status badges
+- polls `/data` every 3 seconds for scalar values, status badges, and Beam Energy power-supply cards
 - polls `/chart-data` for the active pressure view
 - polls `/ccs-chart-data` for the three clamp-temperature charts
 - fetches `/raw` only when the full log viewer is expanded
@@ -177,6 +178,12 @@ When a pressure graph would exceed its display cap, the server re-samples older 
 
 In addition to the pressure graphs, startup backfills three CCS clamp-temperature series from the last hour of short-term telemetry. These are stored in fixed-size ring buffers (`ccsGraphA`, `ccsGraphB`, and `ccsGraphC`) and served through `/ccs-chart-data` for the three cathode charts on the dashboard.
 
+### Beam Energy power-supply telemetry
+
+The dashboard maps live beam-energy telemetry from the latest short-term row into scalar state served by `/data`. The Beam Energy section displays four power supplies: +1 kV Matsusada, -1 kV Matsusada, 20 kV Bertan, and 3 kV Bertan.
+
+Each power-supply card shows output status, set voltage, measured voltage, and measured current. When the experiment is inactive or a reading is missing, the card shows `--` instead of stale values.
+
 ### Interlock color logic
 
 Each interlock indicator (Door, Water, Vacuum, E-Stop, and others) is derived from safety flag arrays in the experiment data. `computeAllColors()` centralizes this translation and returns the `"green"`, `"red"`, or `"grey"` values used by both the server-rendered page and the browser's polling updates.
@@ -196,7 +203,7 @@ See [SUPABASE-README.md](./SUPABASE-README.md) for the database-side hot/cold ta
 | Endpoint | Method | Description |
 |---|---|---|
 | `/` | GET | Server-rendered HTML dashboard |
-| `/data` | GET | JSON with current scalar values, computed colors, and last-modified timestamps |
+| `/data` | GET | JSON with current scalar values, Beam Energy power-supply readings, computed colors, and last-modified timestamps |
 | `/chart-data?view=short\|long` | GET | JSON for the selected pressure graph plus `rawPointCount`, `displayPointCount`, `downsampleFactor`, and `sourceResolutionLabel` |
 | `/ccs-chart-data` | GET | JSON with the A/B/C CCS clamp-temperature chart series |
 | `/health` | GET | Supabase connection status and experiment state |

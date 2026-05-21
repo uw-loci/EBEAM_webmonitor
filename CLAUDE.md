@@ -33,13 +33,13 @@
 - `POST /experiment-reset` — body `{ password }`, deletes both log tables + clears in-memory arrays
 
 ## Module roles
-- `config.js` — env validation, Supabase + Drive client init, exports `INACTIVE_THRESHOLD`
+- `config.js` — env validation, Supabase client init, exports `INACTIVE_THRESHOLD`
 - `services/state.js` — single mutable object shared across all modules by reference
 - `services/polling.js` — orchestration + overlap guards + cursor advancement
 - `services/supabase.js` — all DB queries; backfill + paginated `fetchEntriesSince`
 - `services/graphs.js` — graph object factory, downsampling logic, CCS ring buffers
 - `services/interlocks.js` — pure color functions; no I/O
-- `services/gdrive.js` — Drive list/download, line-reverse, write `reversed.txt`
+- `services/gdrive.js` — Drive REST list/download, line-reverse, write `reversed.txt`
 - `services/utils.js` — `secondsSinceMidnightChicago()`, `randomPressure()`, `generateLogLine()`
 - `views/dashboard.js` — `renderDashboard(opts)` → full HTML string; all client JS inline
 - `routes.js` — registers all Express routes

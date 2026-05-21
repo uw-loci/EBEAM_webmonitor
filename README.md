@@ -15,7 +15,7 @@ If you need to change the web monitor branch that Render deploys:
 ## Setup
 
 ### Prerequisites
-- Node.js (v18+)
+- Node.js (v20+)
 - A Supabase project with the `short_term_logs` and `long_term_logs` tables
 - A Google Cloud API key with Drive API enabled
 - A Google Drive folder containing the system log files
@@ -61,7 +61,7 @@ npm test
 
 `npm test` runs Node's built-in test runner (`node --test`).
 
-Current automated coverage lives in `test/polling.test.js` and uses mocked Supabase and Google Drive clients, so you do not need live cloud services or a populated `.env` file to run the suite.
+Current automated coverage lives in `test/polling.test.js` and uses mocked Supabase and Google Drive REST helpers, so you do not need live cloud services or a populated `.env` file to run the suite.
 
 The tests currently focus on:
 - short-term and long-term catch-up polling
@@ -123,7 +123,7 @@ The browser then:
 ```text
 .
 |-- index.js                 # App entry point: startup warm-up, polling intervals, server start
-|-- config.js                # Environment variables, Supabase client, Google Drive client, constants
+|-- config.js                # Environment variables, Supabase client, constants
 |-- routes.js                # Express routes for HTML, JSON APIs, health checks, and reset actions
 |-- services/
 |   |-- state.js             # Shared runtime state: cursors, last-modified times, scalar data, flags

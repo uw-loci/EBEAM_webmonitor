@@ -240,18 +240,6 @@ Module._load = function mockExternalDependencies(request, parent, isMain) {
     };
   }
 
-  if (request === 'googleapis') {
-    return {
-      google: {
-        drive: () => ({
-          files: {
-            list: async () => ({ data: { files: [] } }),
-          },
-        }),
-      },
-    };
-  }
-
   return originalLoad(request, parent, isMain);
 };
 
@@ -285,6 +273,8 @@ const {
   RECENT_LOG_WINDOW_MS,
   collectRecentLogSnippet,
   fetchDisplayFileContents,
+  getMostRecentFile,
+  listDriveTextFiles,
 } = require('../services/gdrive');
 
 function createLogger() {
@@ -765,6 +755,64 @@ test('collectRecentLogSnippet respects the byte cap for large unparseable logs',
   assert.ok(snippet.lineCount < FALLBACK_SNIPPET_LINES);
   assert.ok(snippet.lineCount <= MAX_SNIPPET_LINES);
   assert.ok(snippet.byteLength <= MAX_SNIPPET_BYTES);
+});
+
+test('listDriveTextFiles builds the expected Google Drive REST query', async () => {
+  let requestedUrl = null;
+
+  const files = await listDriveTextFiles({
+    folderId: 'folder-123',
+    apiKey: 'api-key-456',
+    requestJsonFn: async (url) => {
+      requestedUrl = url;
+      return {
+        files: [
+          { id: 'file-1', name: 'log_latest.txt', modifiedTime: '2026-03-26T08:30:00.000Z' },
+        ],
+      };
+    },
+  });
+
+  const url = new URL(requestedUrl);
+  assert.equal(`${url.origin}${url.pathname}`, 'https://www.googleapis.com/drive/v3/files');
+  assert.equal(url.searchParams.get('key'), 'api-key-456');
+  assert.equal(url.searchParams.get('q'), "'folder-123' in parents and mimeType='text/plain'");
+  assert.equal(url.searchParams.get('orderBy'), 'modifiedTime desc');
+  assert.equal(url.searchParams.get('pageSize'), '5');
+  assert.equal(url.searchParams.get('fields'), 'files(id,name,modifiedTime)');
+  assert.deepEqual(files, [
+    { id: 'file-1', name: 'log_latest.txt', modifiedTime: '2026-03-26T08:30:00.000Z' },
+  ]);
+});
+
+test('getMostRecentFile selects the newest log-prefixed text file', async () => {
+  const result = await getMostRecentFile({
+    logger: { log: () => {}, error: () => {} },
+    listDriveTextFilesFn: async () => [
+      { id: 'file-a', name: 'notes.txt', modifiedTime: '2026-03-26T08:31:00.000Z' },
+      { id: 'file-b', name: 'log_recent.txt', modifiedTime: '2026-03-26T08:30:00.000Z' },
+      { id: 'file-c', name: 'log_older.txt', modifiedTime: '2026-03-26T08:00:00.000Z' },
+    ],
+  });
+
+  assert.deepEqual(result, {
+    displayFile: {
+      id: 'file-b',
+      name: 'log_recent.txt',
+      modifiedTime: '2026-03-26T08:30:00.000Z',
+    },
+  });
+});
+
+test('getMostRecentFile returns null when the Drive list request fails', async () => {
+  const result = await getMostRecentFile({
+    logger: { log: () => {}, error: () => {} },
+    listDriveTextFilesFn: async () => {
+      throw new Error('network unavailable');
+    },
+  });
+
+  assert.deepEqual(result, { displayFile: null });
 });
 
 test('fetchDisplayFileContents skips downloading an unchanged Drive file', async () => {

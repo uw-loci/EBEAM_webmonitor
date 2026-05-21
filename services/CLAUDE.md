@@ -55,8 +55,8 @@
 - `vacuumBits` in `state.data`: boolean array converted from "11010101"-style string in `mapSupabaseDataToAppFormat`
 
 ## Google Drive pipeline (gdrive.js)
-- Lists up to 5 most-recent `text/plain` files in `FOLDER_ID`, picks first with name starting `log_`
-- Downloads via raw HTTPS (not googleapis SDK): `googleapis.drive.v3/files/{id}?alt=media&key=`
+- Lists up to 5 most-recent `text/plain` files via Drive REST, picks first with name starting `log_`
+- Downloads via raw HTTPS: `drive/v3/files/{id}?alt=media&key=`
 - 3 retries on download failure
 - Reverses all lines, caps at 100,000, writes to `reversed.txt` in project root
 - `state.displayLogLastModified` set to Drive file's `modifiedTime` on successful write

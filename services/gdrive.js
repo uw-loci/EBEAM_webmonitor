@@ -1,6 +1,6 @@
 const fs = require('fs');
 const https = require('https');
-const { drive, FOLDER_ID, API_KEY, REVERSED_FILE_PATH } = require('../config');
+const { FOLDER_ID, API_KEY, REVERSED_FILE_PATH } = require('../config');
 const state = require('./state');
 
 const RECENT_LOG_WINDOW_MS = 30 * 60 * 1000;
@@ -141,21 +141,64 @@ function collectRecentLogSnippet(lines, options = {}) {
   return collector.finalize();
 }
 
+function buildDriveListUrl({ folderId = FOLDER_ID, apiKey = API_KEY } = {}) {
+  const url = new URL('https://www.googleapis.com/drive/v3/files');
+  url.searchParams.set('key', apiKey);
+  url.searchParams.set('q', `'${folderId}' in parents and mimeType='text/plain'`);
+  url.searchParams.set('orderBy', 'modifiedTime desc');
+  url.searchParams.set('pageSize', '5');
+  url.searchParams.set('fields', 'files(id,name,modifiedTime)');
+  return url.toString();
+}
+
+function fetchJson(url) {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, { headers: { Accept: 'application/json' } }, res => {
+        let body = '';
+        res.setEncoding('utf8');
+
+        res.on('data', chunk => {
+          body += chunk;
+        });
+
+        res.on('end', () => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`Google API Failed: ${res.statusCode}`));
+            return;
+          }
+
+          try {
+            resolve(JSON.parse(body));
+          } catch (err) {
+            reject(new Error(`Invalid Google API JSON: ${err.message}`));
+          }
+        });
+      })
+      .on('error', reject);
+  });
+}
+
+async function listDriveTextFiles(options = {}) {
+  const requestJsonFn = options.requestJsonFn ?? fetchJson;
+  const data = await requestJsonFn(buildDriveListUrl(options));
+  if (!Array.isArray(data?.files)) {
+    throw new Error('Invalid Google Drive response: missing files array');
+  }
+  return data.files;
+}
+
 /**
  * Fetch the most recent plain-text log files from Google Drive.
  * Returns { displayFile } where displayFile may be null.
  */
-async function getMostRecentFile() {
-  try {
-    const res = await drive.files.list({
-      q: `'${FOLDER_ID}' in parents and mimeType='text/plain'`,
-      orderBy: 'modifiedTime desc',
-      pageSize: 5,
-      fields: 'files(id, name, modifiedTime)',
-    });
+async function getMostRecentFile(options = {}) {
+  const logger = options.logger ?? console;
+  const listDriveTextFilesFn = options.listDriveTextFilesFn ?? listDriveTextFiles;
 
-    const files = res.data.files;
-    console.log("Latest files seen:", files.map(f => f.name));
+  try {
+    const files = await listDriveTextFilesFn(options);
+    logger.log("Latest files seen:", files.map(f => f.name));
 
     if (!files || files.length === 0) {
       throw new Error('No files found in the folder.');
@@ -165,7 +208,7 @@ async function getMostRecentFile() {
     return { displayFile };
 
   } catch (err) {
-    console.error(`Google Drive API Error: ${err.message}`);
+    logger.error(`Google Drive API Error: ${err.message}`);
     return { displayFile: null };
   }
 }
@@ -188,7 +231,7 @@ async function fetchRecentLogSnippet(fileId, options = {}) {
       const response = await new Promise((resolve, reject) => {
         https
           .get(
-            `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`,
+            `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&key=${API_KEY}`,
             { headers: { Accept: 'text/plain' } },
             res => {
               if (res.statusCode !== 200) {
@@ -334,6 +377,8 @@ module.exports = {
   parseDisplayLogTimestampMs,
   createDisplayLogSnippetCollector,
   collectRecentLogSnippet,
+  buildDriveListUrl,
+  listDriveTextFiles,
   getMostRecentFile,
   fetchRecentLogSnippet,
   writeToFile,

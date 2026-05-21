@@ -141,6 +141,7 @@ function renderDashboard(opts) {
           padding: 12px 16px;
           margin: 14px auto;
           width: 90%;
+          box-sizing: border-box;
           border: 1px solid var(--border-subtle);
         }
 
@@ -370,9 +371,37 @@ function renderDashboard(opts) {
           font-size: 0.75em;
           border-radius: 5px;
           transition: background-color 0.3s ease;
-          float: right;
-          margin-top: -3.5em;
-          margin-bottom: 5px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .pressure-chart-toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          padding: 0 10px 8px;
+          width: 98%;
+          margin: 0 auto;
+        }
+        .pressure-toggle-button {
+          flex-shrink: 0;
+        }
+        .log-viewer-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .log-viewer-title {
+          flex: 1 1 320px;
+          margin: 0;
+        }
+        .log-toggle-button {
+          flex-shrink: 0;
         }
         .btn-refresh {
           width: 22px;
@@ -448,10 +477,12 @@ function renderDashboard(opts) {
           border-radius: 15px;
           padding: 10px;
           margin: 14px auto;
-          width: 98%;
+          width: 90%;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
-        #ccs-charts-section .chart-container { margin: 0; width: 100%; }
+        #ccs-charts-section .chart-container { margin: 10px auto; }
 
         .chart {
           position: relative;
@@ -461,22 +492,11 @@ function renderDashboard(opts) {
         }
 
         #ccs-charts-section .chart {
-          min-height: 180px;
           height: auto;
         }
 
         #ccs-charts-section {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 10px;
-          width: 98%;
-          margin: 10px auto;
-          box-sizing: border-box;
-        }
-        @media (max-width: 900px) {
-          #ccs-charts-section {
-            grid-template-columns: 1fr;
-          }
+          margin: 10px 0;
         }
 
         .chart-title {
@@ -695,19 +715,18 @@ function renderDashboard(opts) {
                 <div class = "beam-energy-reading"><p>Current: --</p></div>
           </div>
         </div>
-      </div>
 
       <div id="chart-root-2"></div>
       <div id="pressure-chart-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 98%; margin: 0 auto 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 90%; margin: 0 auto 0 auto;">
           <span id="pressure-chart-label" style="color:#94a3b8; font-size:14px;">
             Short-Term (Last 24h, ~3s source data, downsampled for display)
           </span>
-          <button id="pressure-view-toggle" class="btn-toggle" style="float:none; margin:0;">
+          <button id="pressure-view-toggle" class="btn-toggle pressure-toggle-button">
             Switch to Historical View
           </button>
         </div>
-        <div id="pressure-chart-status" class="chart-info-text" style="width:98%; margin:0 auto 6px auto; text-align:left; color:#94a3b8;">
+        <div id="pressure-chart-status" class="chart-info-text" style="width:90%; margin:0 auto 6px auto; text-align:left; color:#94a3b8;">
           ${formatPressureChartStatus(shortTermChartMeta)}
         </div>
         <div id="chart-root-3" style="margin-top: 0;"></div>
@@ -737,9 +756,22 @@ function renderDashboard(opts) {
           container.appendChild(wrapper);
 
           const chartEl = wrapper.querySelector('.chart');
+          const getChartWidth = () => {
+            const measuredWidth = Math.floor(chartEl.getBoundingClientRect().width || chartEl.clientWidth || 0);
+            if (measuredWidth > 0) {
+              return measuredWidth;
+            }
+
+            const wrapperStyles = window.getComputedStyle(wrapper);
+            const horizontalPadding =
+              Number.parseFloat(wrapperStyles.paddingLeft || '0') +
+              Number.parseFloat(wrapperStyles.paddingRight || '0');
+
+            return Math.max(1, Math.floor(wrapper.clientWidth - horizontalPadding));
+          };
 
           const uplot = new uPlot({
-            width: wrapper.clientWidth,
+            width: getChartWidth(),
             height: 300,
             series: [
               {},
@@ -784,8 +816,7 @@ function renderDashboard(opts) {
           }, data, chartEl);
 
           window.addEventListener('resize', () => {
-            const newWidth = wrapper.clientWidth;
-            uplot.setSize({ width: newWidth, height: 300 });
+            uplot.setSize({ width: getChartWidth(), height: 300 });
           });
 
           chartEl.ondblclick = () => {
@@ -898,7 +929,7 @@ function renderDashboard(opts) {
 
           const uplot = new uPlot({
             width: wrapper.clientWidth,
-            height: 180,
+            height: 250,
             series: [
               {},
               {
@@ -935,7 +966,7 @@ function renderDashboard(opts) {
           }, data, chartEl);
 
           window.addEventListener('resize', () => {
-            uplot.setSize({ width: wrapper.clientWidth, height: 180 });
+            uplot.setSize({ width: wrapper.clientWidth, height: 250 });
           });
 
           chartEl.ondblclick = () => {
@@ -967,15 +998,17 @@ function renderDashboard(opts) {
 
       <!-- Log Viewer -->
       <div class="env-section">
-        <h3 class="dashboard-subtitle env-title">System Logs; Last Update: <span id="display-last-updated">${
-            data.displayLogLastModified
-              ? new Date(data.displayLogLastModified).toLocaleString("en-US", {
-                  hour12: true,
-                  timeZone: "America/Chicago"
-                })
-              : "N/A"
-        }</span></h3>
-        <button id="toggleButton" class="btn-toggle">Show Full Log</button>
+        <div class="log-viewer-header">
+          <h3 class="dashboard-subtitle env-title log-viewer-title">Recent Log (last 30 min); Last Update: <span id="display-last-updated">${
+              state.displayLogLastModified
+                ? new Date(state.displayLogLastModified).toLocaleString("en-US", {
+                    hour12: true,
+                    timeZone: "America/Chicago"
+                  })
+                : "N/A"
+          }</span></h3>
+          <button id="toggleButton" class="btn-toggle log-toggle-button">Show Recent Log</button>
+        </div>
         <div id="fullContent" class="content-section">
           <pre></pre>
         </div>
@@ -988,14 +1021,28 @@ function renderDashboard(opts) {
 
          const toggleButton = document.getElementById('toggleButton');
          const fullSection = document.getElementById('fullContent');
-         const pre = fullSection.querySelector('pre')
+          const pre = fullSection.querySelector('pre')
+
+         async function loadRecentLogSnippet() {
+          try {
+            const response = await fetch('/raw');
+            if (!response.ok) {
+              pre.textContent = 'No recent log snippet cached yet.';
+              return;
+            }
+
+            const text = await response.text();
+            pre.textContent = text || 'No recent log snippet cached yet.';
+          } catch (error) {
+            console.error('Failed to load recent log snippet:', error);
+            pre.textContent = 'Unable to load recent log snippet.';
+          }
+         }
 
          if (showingFull) {
-          fetch('/raw').then(resp => resp.text()).then(text => {
-          pre.textContent = text;
           fullSection.classList.add('active');
-          toggleButton.textContent = 'Collapse Log View';
-          });
+          toggleButton.textContent = 'Hide Recent Log';
+          loadRecentLogSnippet();
         }
 
         setInterval(async() => {
@@ -1142,15 +1189,13 @@ function renderDashboard(opts) {
 
         toggleButton.addEventListener('click', async () => {
           if (!showingFull) {
-            pre.textContent = ' Fetching file contents...';
+            pre.textContent = 'Loading recent log snippet...';
             fullSection.classList.add('active');
-            await fetch('/refresh-display');
-            const resp = await (await fetch('/raw')).text();
-            pre.textContent = resp;
-            toggleButton.textContent = 'Collapse Log View';
+            await loadRecentLogSnippet();
+            toggleButton.textContent = 'Hide Recent Log';
           } else {
             fullSection.classList.remove('active');
-            toggleButton.textContent = 'Show Full Log';
+            toggleButton.textContent = 'Show Recent Log';
           }
           showingFull = !showingFull;
           sessionStorage.setItem('showingFull', showingFull);
@@ -1246,6 +1291,7 @@ function renderDashboard(opts) {
           });
         })();
       </script>
+      </div>
     </body>
     </html>
   `;

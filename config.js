@@ -1,4 +1,3 @@
-const { google } = require('googleapis');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config();
@@ -26,12 +25,8 @@ const supabase = createClient(
   process.env.SUPABASE_API_KEY
 );
 
-// Initialize Google Drive API
-const drive = google.drive({ version: 'v3', auth: API_KEY });
-
 module.exports = {
   supabase,
-  drive,
   FOLDER_ID,
   API_KEY,
   PORT,

@@ -1,6 +1,6 @@
 const { supabase } = require('../config');
 const state = require('./state');
-const { updateDisplayData, addCCSPoint } = require('./graphs');
+const { appendPressurePoint, addCCSPoint } = require('./graphs');
 
 const PAGE_SIZE = 1000;
 
@@ -114,15 +114,15 @@ function mapSupabaseDataToAppFormat(logData) {
     vacuumBits: typeof logData.vacuumBits === 'string'
       ? logData.vacuumBits.split('').map(bit => bit === '1')
       : (logData.vacuumBits || null),
-    heaterCurrent_A: logData["Cathode A - Heater Current:"] ?? null,
-    heaterCurrent_B: logData["Cathode B - Heater Current:"] ?? null,
-    heaterCurrent_C: logData["Cathode C - Heater Current:"] ?? null,
-    heaterVoltage_A: logData["Cathode A - Heater Voltage:"] ?? null,
-    heaterVoltage_B: logData["Cathode B - Heater Voltage:"] ?? null,
-    heaterVoltage_C: logData["Cathode C - Heater Voltage:"] ?? null,
-    clamp_temperature_A: logData.clamp_temperature_A ?? null,
-    clamp_temperature_B: logData.clamp_temperature_B ?? null,
-    clamp_temperature_C: logData.clamp_temperature_C ?? null
+    heaterCurrent_A: logData.cathode?.A?.heater_current ?? null,
+    heaterCurrent_B: logData.cathode?.B?.heater_current ?? null,
+    heaterCurrent_C: logData.cathode?.C?.heater_current ?? null,
+    heaterVoltage_A: logData.cathode?.A?.heater_voltage ?? null,
+    heaterVoltage_B: logData.cathode?.B?.heater_voltage ?? null,
+    heaterVoltage_C: logData.cathode?.C?.heater_voltage ?? null,
+    clamp_temperature_A: logData.cathode?.A?.clamp_temperature ?? null,
+    clamp_temperature_B: logData.cathode?.B?.clamp_temperature ?? null,
+    clamp_temperature_C: logData.cathode?.C?.clamp_temperature ?? null
   };
 }
 
@@ -182,15 +182,12 @@ async function backfillShortTermGraph(graph) {
         const pressure = row.data?.pressure;
         if (pressure == null) continue;
         const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
-        graph.fullXVals.push(tSec);
-        graph.fullYVals.push(parseFloat(pressure));
-        updateDisplayData(graph);
+        appendPressurePoint(graph, tSec, parseFloat(pressure));
       }
 
       lastCursor = buildCursorFromRow(data[data.length - 1], 'created_at');
 
       if (data.length < PAGE_SIZE) break;
-      if (graph.fullXVals.length >= graph.maxDataPoints) break;
       from += PAGE_SIZE;
     }
 
@@ -208,7 +205,7 @@ async function backfillShortTermGraph(graph) {
 
 /**
  * Backfills the long-term pressure graph from long_term_logs.
- * Time window: all-time (matches the "Historical / All-time" chart label; 1-min averaged rows).
+ * Startup backfill is capped by graph.maxDataPoints; rows are read oldest-first from long_term_logs.
  * @param {Object} graph - The graph object to populate
  * @returns {{ timestamp: string, id: string|null }|null} Cursor for the last row, or null if no data
  */
@@ -234,15 +231,12 @@ async function backfillLongTermGraph(graph) {
       for (const row of data) {
         if (row.avg_pressure == null) continue;
         const tSec = Math.floor(new Date(row.recorded_at).getTime() / 1000);
-        graph.fullXVals.push(tSec);
-        graph.fullYVals.push(row.avg_pressure);
-        updateDisplayData(graph);
+        appendPressurePoint(graph, tSec, row.avg_pressure);
       }
 
       lastCursor = buildCursorFromRow(data[data.length - 1], 'recorded_at');
 
       if (data.length < PAGE_SIZE) break;
-      if (graph.fullXVals.length >= graph.maxDataPoints) break;
       from += PAGE_SIZE;
     }
 
@@ -366,9 +360,9 @@ async function backfillCCSGraphs(graphA, graphB, graphC) {
 
       for (const row of data) {
         const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
-        addCCSPoint(graphA, tSec, row.data?.clamp_temperature_A ?? null);
-        addCCSPoint(graphB, tSec, row.data?.clamp_temperature_B ?? null);
-        addCCSPoint(graphC, tSec, row.data?.clamp_temperature_C ?? null);
+        addCCSPoint(graphA, tSec, row.data?.cathode?.A?.clamp_temperature ?? null);
+        addCCSPoint(graphB, tSec, row.data?.cathode?.B?.clamp_temperature ?? null);
+        addCCSPoint(graphC, tSec, row.data?.cathode?.C?.clamp_temperature ?? null);
       }
 
       totalPoints += data.length;

@@ -24,7 +24,7 @@
 
 ## Routes (`routes.js`)
 - `GET /` — SSR HTML; chart data inlined as JSON literals at page load
-- `GET /data` — JSON scalars + `sicColors[11]` + `vacuumColors[8]`; client polls every 3s
+- `GET /data` — JSON scalars + beam-energy output booleans + `sicColors[11]` + `vacuumColors[8]`; client polls every 3s
 - `GET /chart-data?view=short|long` — downsampled display arrays + graph metadata
 - `GET /ccs-chart-data` — CCS ring buffer arrays A/B/C
 - `GET /health` — live Supabase ping + `experimentRunning`

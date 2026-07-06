@@ -5,6 +5,7 @@ function createGraphObj(options = {}) {
     displayXVals: options.displayXVals || [],
     displayYVals: options.displayYVals || [],
     maxDataPoints: options.maxDataPoints ?? 1000,
+    maxTimeWindowSeconds: options.maxTimeWindowSeconds ?? null,
     maxDisplayPoints: options.maxDisplayPoints ?? 256,
     sourceResolutionLabel: options.sourceResolutionLabel || 'source data',
     lastUsedFactor: options.lastUsedFactor ?? 1,
@@ -25,6 +26,7 @@ function resetPressureGraphDisplayState(graph) {
 
 const shortTermPressureGraph = createGraphObj({
   maxDataPoints: 30000,
+  maxTimeWindowSeconds: 24 * 60 * 60,
   maxDisplayPoints: 1024,
   sourceResolutionLabel: '~3s source data',
 });
@@ -115,10 +117,22 @@ function appendPressurePoint(graph, tSec, pressure) {
   graph.fullXVals.push(tSec);
   graph.fullYVals.push(pressure);
 
-  const overflowCount = graph.fullXVals.length - graph.maxDataPoints;
-  if (overflowCount > 0) {
-    graph.fullXVals.splice(0, overflowCount);
-    graph.fullYVals.splice(0, overflowCount);
+  const cutoffTimeSec = graph.maxTimeWindowSeconds
+    ? tSec - graph.maxTimeWindowSeconds
+    : null;
+  let trimCount = Math.max(0, graph.fullXVals.length - graph.maxDataPoints);
+
+  while (
+    cutoffTimeSec !== null &&
+    trimCount < graph.fullXVals.length &&
+    graph.fullXVals[trimCount] < cutoffTimeSec
+  ) {
+    trimCount++;
+  }
+
+  if (trimCount > 0) {
+    graph.fullXVals.splice(0, trimCount);
+    graph.fullYVals.splice(0, trimCount);
     rebuildDisplayData(graph);
     return;
   }

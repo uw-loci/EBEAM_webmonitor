@@ -688,9 +688,9 @@ function renderDashboard(opts) {
               <div id="vac-indicator-2" class="vacuum-indicators-circle" style="background-color:${vacColors[2]}"></div>
               <span>Turbo Vent Open</span>
             </div>
-            <div class="vacuum-indicators-item" title="972b Power On">
+            <div class="vacuum-indicators-item" title="972B Relay 1 ON">
               <div id="vac-indicator-3" class="vacuum-indicators-circle" style="background-color:${vacColors[3]}"></div>
-              <span>972b Power On</span>
+              <span>972B Relay 1 ON</span>
             </div>
             <div class="vacuum-indicators-item" title="Turbo Gate Closed">
               <div id="vac-indicator-4" class="vacuum-indicators-circle" style="background-color:${vacColors[4]}"></div>

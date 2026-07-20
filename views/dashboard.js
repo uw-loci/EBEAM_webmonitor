@@ -388,7 +388,7 @@ function renderDashboard(opts) {
         }
         .beam-energy-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 0.5rem;
           align-items: stretch;
           margin-top: 1rem;
@@ -413,6 +413,8 @@ function renderDashboard(opts) {
         }
         .power-supply-box {
           flex: 1;
+          min-width: 0;
+          box-sizing: border-box;
           border: 1px solid var(--border-subtle);
           background: var(--bg-surface);
           margin-top: 5px;
@@ -628,10 +630,16 @@ function renderDashboard(opts) {
           .card-container {
             grid-template-columns: repeat(2, 1fr);
           }
+          .beam-energy-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
         }
         @media (max-width: 600px) {
           .card-container {
             grid-template-columns: repeat(1, 1fr);
+          }
+          .beam-energy-grid {
+            grid-template-columns: minmax(0, 1fr);
           }
           .pressure-chart-toolbar,
           .pressure-chart-help {

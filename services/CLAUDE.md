@@ -59,6 +59,8 @@
 - Source JSON: `short_term_logs.data.beam_energy.{pos1kv,neg1kv,pos20kv,pos3kv}`
 - Mapped fields per supply: `output`, `set_v`, `meas_v`, `meas_i`
 - Display units: `+/-1kV` voltage in `V`; `3kV`/`20kV` voltage in `kV`; current in `mA`
+- Dashboard grid: 4 columns desktop; 2 columns <=992px; 1 column <=600px
+- Grid tracks: `minmax(0, 1fr)`; power-supply cards `min-width: 0` — no horizontal overflow
 
 ## Google Drive pipeline (gdrive.js)
 - Lists up to 5 most-recent `text/plain` files via Drive REST, picks first with name starting `log_`

@@ -250,6 +250,7 @@ const {
   getPaddedPressureLogRange,
   filterPressureLogGridSplits,
   getPressureTimeWindowBounds,
+  buildPressureViewportSample,
 } = require('../views/dashboard');
 const {
   createGraphObj,
@@ -353,6 +354,7 @@ function resetPressureGraph(graph) {
   graph.lastPermanentIndex = -1;
   graph.chartDataIntervalCount = 0;
   graph.chartDataIntervalDuration = 1;
+  graph.nextPointIndex = 0;
 }
 
 function resetCCSGraph(graph) {
@@ -1070,6 +1072,7 @@ test('appendPressurePoint preserves graph array references and display invariant
 
   assert.deepEqual(graph.fullXVals, [1007, 1008, 1009, 1010, 1011]);
   assert.deepEqual(graph.fullYVals, [7, 8, 9, 10, 11]);
+  assert.equal(graph.nextPointIndex, 12);
 });
 
 test('long-term data remains capped at the lower historical display density', () => {
@@ -1151,6 +1154,28 @@ test('chart-data returns density metadata for both short and long views', () => 
   assert.deepEqual(response.payload.xVals, shortTermPressureGraph.displayXVals);
   assert.deepEqual(response.payload.yVals, shortTermPressureGraph.displayYVals);
 
+  const snapshotResponse = createResponseRecorder();
+  chartRoute.handler({ query: { view: 'short', raw: '1' } }, snapshotResponse);
+  assert.equal(snapshotResponse.payload.resetRequired, false);
+  assert.deepEqual(snapshotResponse.payload.xVals, shortTermPressureGraph.fullXVals);
+  assert.deepEqual(snapshotResponse.payload.yVals, shortTermPressureGraph.fullYVals);
+
+  const lastTimestamp = shortTermPressureGraph.fullXVals.at(-1);
+  const snapshotCursor = snapshotResponse.payload.cursor;
+  appendPressurePoint(shortTermPressureGraph, lastTimestamp, 42);
+
+  const deltaResponse = createResponseRecorder();
+  chartRoute.handler({
+    query: {
+      view: 'short',
+      raw: '1',
+      cursor: String(snapshotCursor),
+    },
+  }, deltaResponse);
+  assert.equal(deltaResponse.payload.resetRequired, false);
+  assert.deepEqual(deltaResponse.payload.xVals, [lastTimestamp]);
+  assert.deepEqual(deltaResponse.payload.yVals, [42]);
+
   const longResponse = createResponseRecorder();
   chartRoute.handler({ query: { view: 'long' } }, longResponse);
 
@@ -1194,8 +1219,10 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   );
   assert.match(
     response.payload,
-    /normalizePressureSeriesForLogScale\(chartData\.yVals\)/
+    /normalizePressureSeriesForLogScale\(sample\.yVals\)/
   );
+  assert.match(response.payload, /requestAnimationFrame/);
+  assert.match(response.payload, /&raw=1&cursor=/);
   assert.match(response.payload, /id="pressure-time-range"/);
   assert.match(response.payload, /<option value="1">Last 1h<\/option>/);
   assert.match(response.payload, /<option value="24" selected>Last 24h<\/option>/);
@@ -1208,7 +1235,7 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /focus:\s*\{\s*prox:\s*-1\s*\}/);
   assert.match(response.payload, /points:\s*\{\s*size:\s*8,/);
   assert.match(response.payload, /filter:\s*filterPressureLogGridSplits/);
-  assert.match(response.payload, /pressureChart\.setData\(\[pressureChartDataX, normalizedYVals\], false\)/);
+  assert.match(response.payload, /pressureChart\.setData\(\[sample\.xVals, normalizedYVals\], false\)/);
   assert.match(response.payload, /pressureViewportKind = 'custom'/);
   assert.match(response.payload, /pressureChart\.setScale\('y', \{ min: null, max: null \}\)/);
   assert.match(response.payload, /overflow:\s*hidden;/);
@@ -1295,4 +1322,16 @@ test('getPressureTimeWindowBounds anchors presets to the newest loaded timestamp
   assert.deepEqual(getPressureTimeWindowBounds([null, oldest, newest, null], 1), [newest - 3600, newest]);
   assert.deepEqual(getPressureTimeWindowBounds([], 1), [null, null]);
   assert.deepEqual(getPressureTimeWindowBounds([null, Number.NaN], 1), [null, null]);
+});
+
+test('buildPressureViewportSample keeps power-of-two sampling stable as the cache advances', () => {
+  const xVals = Array.from({ length: 17 }, (_value, index) => index);
+  const yVals = xVals.map((value) => value * 10);
+  const initial = buildPressureViewportSample(xVals.slice(0, 16), yVals.slice(0, 16), 0, 15, 5, 0);
+  const advanced = buildPressureViewportSample(xVals.slice(1), yVals.slice(1), 1, 16, 5, 1);
+
+  assert.equal(initial.downsampleFactor, 4);
+  assert.equal(advanced.downsampleFactor, 4);
+  assert.deepEqual(initial.xVals, [0, 4, 8, 12, 15]);
+  assert.deepEqual(advanced.xVals, [4, 8, 12, 16]);
 });

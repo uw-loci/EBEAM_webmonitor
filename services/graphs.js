@@ -1,6 +1,7 @@
 function createGraphObj(options = {}) {
+  const fullXVals = options.fullXVals || [];
   return {
-    fullXVals: options.fullXVals || [],
+    fullXVals,
     fullYVals: options.fullYVals || [],
     displayXVals: options.displayXVals || [],
     displayYVals: options.displayYVals || [],
@@ -11,6 +12,7 @@ function createGraphObj(options = {}) {
     lastPermanentIndex: options.lastPermanentIndex ?? -1,
     chartDataIntervalCount: options.chartDataIntervalCount ?? 0,
     chartDataIntervalDuration: options.chartDataIntervalDuration ?? 1,
+    nextPointIndex: options.nextPointIndex ?? fullXVals.length,
   };
 }
 
@@ -114,6 +116,7 @@ function rebuildDisplayData(graph) {
 function appendPressurePoint(graph, tSec, pressure) {
   graph.fullXVals.push(tSec);
   graph.fullYVals.push(pressure);
+  graph.nextPointIndex++;
 
   const overflowCount = graph.fullXVals.length - graph.maxDataPoints;
   if (overflowCount > 0) {
@@ -130,6 +133,7 @@ function clearPressureGraph(graph) {
   graph.fullXVals.length = 0;
   graph.fullYVals.length = 0;
   resetPressureGraphDisplayState(graph);
+  graph.nextPointIndex = 0;
 }
 
 function getGraphMetadata(graph) {

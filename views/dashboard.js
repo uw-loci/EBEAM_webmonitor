@@ -1036,7 +1036,7 @@ function renderDashboard(opts) {
 
         function setChartData(chart, data, preserveZoom = true) {
           const zoomedXScale = preserveZoom ? getZoomedXScale(chart) : null;
-          chart.setData(data);
+          chart.setData(data, !zoomedXScale);
 
           if (zoomedXScale) {
             chart.setScale('x', zoomedXScale);

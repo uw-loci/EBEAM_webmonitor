@@ -57,6 +57,11 @@
 - Y-axis: base-10 logarithmic (`distr: 3`, `log: 10`) — short + historical views
 - values: finite `> 0`; nonpositive/invalid → `null` gaps client-side
 - labels: scientific notation; axis identifies `log10`
+- range: visible positive minimum lower padding >= 0.5 decade; Y auto-range per X viewport
+- grid: log mantissas `1`, `3`, `5`, `7`, `9`
+- interaction: Zoom selection; Pan drag; wheel/pinch zoom; Reset/double-click restore
+- live windows: `1h`, `3h`, `6h`, `12h`, `24h`; presets follow newest; manual range fixed as Custom
+- historical: all-time default; manual Custom range
 
 ## Deploy
 - Render.com, `render.yaml`, auto-deploy from `main`

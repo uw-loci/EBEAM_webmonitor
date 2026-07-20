@@ -245,7 +245,12 @@ Module._load = function mockExternalDependencies(request, parent, isMain) {
 
 const state = require('../services/state');
 const registerRoutes = require('../routes');
-const { normalizePressureSeriesForLogScale } = require('../views/dashboard');
+const {
+  normalizePressureSeriesForLogScale,
+  getPaddedPressureLogRange,
+  filterPressureLogGridSplits,
+  getPressureTimeWindowBounds,
+} = require('../views/dashboard');
 const {
   createGraphObj,
   appendPressurePoint,
@@ -1176,7 +1181,8 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /class="btn-toggle log-toggle-button"/);
   assert.match(response.payload, /class="btn-toggle pressure-toggle-button"/);
   assert.match(response.payload, /chartEl\.getBoundingClientRect\(\)\.width/);
-  assert.match(response.payload, /y:\s*\{\s*distr:\s*3,\s*log:\s*10\s*\}/);
+  assert.match(response.payload, /distr:\s*3,\s*log:\s*10,/);
+  assert.match(response.payload, /getPaddedPressureLogRange\(uPlot\.rangeLog, dataMin, dataMax\)/);
   assert.match(response.payload, /Pressure \(mbar, log10\)/);
   assert.match(
     response.payload,
@@ -1190,6 +1196,21 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
     response.payload,
     /normalizePressureSeriesForLogScale\(chartData\.yVals\)/
   );
+  assert.match(response.payload, /id="pressure-time-range"/);
+  assert.match(response.payload, /<option value="1">Last 1h<\/option>/);
+  assert.match(response.payload, /<option value="24" selected>Last 24h<\/option>/);
+  assert.match(response.payload, /id="pressure-zoom-mode"[^>]*aria-pressed="true"/);
+  assert.match(response.payload, /id="pressure-pan-mode"[^>]*aria-pressed="false"/);
+  assert.match(response.payload, /id="pressure-reset-view"/);
+  assert.match(response.payload, /createPressureInteractionPlugin\(\{/);
+  assert.match(response.payload, /uplotRef\.setSelect\(\{ left, top: 0, width, height: rect\.height \}, false\)/);
+  assert.match(response.payload, /uplotRef\.posToVal\(left, 'x'\)/);
+  assert.match(response.payload, /focus:\s*\{\s*prox:\s*-1\s*\}/);
+  assert.match(response.payload, /points:\s*\{\s*size:\s*8,/);
+  assert.match(response.payload, /filter:\s*filterPressureLogGridSplits/);
+  assert.match(response.payload, /pressureChart\.setData\(\[pressureChartDataX, normalizedYVals\], false\)/);
+  assert.match(response.payload, /pressureViewportKind = 'custom'/);
+  assert.match(response.payload, /pressureChart\.setScale\('y', \{ min: null, max: null \}\)/);
   assert.match(response.payload, /overflow:\s*hidden;/);
   assert.match(response.payload, /fetch\('\/raw'\)/);
   assert.doesNotMatch(response.payload, /fetch\('\/refresh-display'\)/);
@@ -1205,4 +1226,73 @@ test('normalizePressureSeriesForLogScale keeps positive finite pressures and gap
     [1200, 1, 1e-3, 1e-6, null, null, null, null, null, null]
   );
   assert.deepEqual(normalizePressureSeriesForLogScale(null), []);
+});
+
+test('getPaddedPressureLogRange leaves at least half a decade below positive data', () => {
+  const calls = [];
+  const rangeLog = (dataMin, dataMax, base, fullMags) => {
+    calls.push([dataMin, dataMax, base, fullMags]);
+    return [dataMin, dataMax];
+  };
+
+  for (const [dataMin, dataMax] of [
+    [1200, 1200],
+    [1, 1],
+    [1e-3, 1e-3],
+    [1e-6, 1e-6],
+    [1e-6, 1200],
+  ]) {
+    const [rangeMin, rangeMax] = getPaddedPressureLogRange(rangeLog, dataMin, dataMax);
+    assert.ok(rangeMin <= dataMin / Math.sqrt(10));
+    assert.equal(rangeMax, dataMax);
+  }
+
+  assert.deepEqual(calls, [
+    [1200, 1200, 10, false],
+    [1, 1, 10, false],
+    [1e-3, 1e-3, 10, false],
+    [1e-6, 1e-6, 10, false],
+    [1e-6, 1200, 10, false],
+  ]);
+  assert.deepEqual(getPaddedPressureLogRange(rangeLog, null, null), [null, null]);
+  assert.deepEqual(getPaddedPressureLogRange(rangeLog, undefined, undefined), [undefined, undefined]);
+  assert.deepEqual(getPaddedPressureLogRange(rangeLog, 0, 1), [0, 1]);
+  assert.deepEqual(getPaddedPressureLogRange(rangeLog, -1, 1), [-1, 1]);
+});
+
+test('filterPressureLogGridSplits keeps five odd mantissas per decade', () => {
+  const splits = [
+    1e-6, 2e-6, 3e-6, 4e-6, 5e-6, 6e-6, 7e-6, 8e-6, 9e-6,
+    1e-3, 2e-3, 3e-3, 4e-3, 5e-3, 6e-3, 7e-3, 8e-3, 9e-3,
+    1, 2, 3, 4, 5, 6, 7, 8, 9,
+    10, 20, 30, 40, 50, 60, 70, 80, 90,
+  ];
+
+  assert.deepEqual(
+    filterPressureLogGridSplits(null, splits),
+    splits.map((value) => {
+      const magnitude = 10 ** Math.floor(Math.log10(value));
+      return Math.round(value / magnitude) % 2 === 1 ? value : null;
+    })
+  );
+  assert.deepEqual(filterPressureLogGridSplits(null, [0, -1, Number.NaN, Infinity]), [null, null, null, null]);
+  assert.deepEqual(filterPressureLogGridSplits(null, null), []);
+});
+
+test('getPressureTimeWindowBounds anchors presets to the newest loaded timestamp', () => {
+  const newest = 1_800_000_000;
+  const oldest = newest - (24 * 60 * 60);
+  const xVals = [oldest, newest - 30, newest];
+
+  for (const hours of [1, 3, 6, 12, 24]) {
+    assert.deepEqual(
+      getPressureTimeWindowBounds(xVals, hours),
+      [Math.max(oldest, newest - (hours * 60 * 60)), newest]
+    );
+  }
+
+  assert.deepEqual(getPressureTimeWindowBounds(xVals, null), [oldest, newest]);
+  assert.deepEqual(getPressureTimeWindowBounds([null, oldest, newest, null], 1), [newest - 3600, newest]);
+  assert.deepEqual(getPressureTimeWindowBounds([], 1), [null, null]);
+  assert.deepEqual(getPressureTimeWindowBounds([null, Number.NaN], 1), [null, null]);
 });

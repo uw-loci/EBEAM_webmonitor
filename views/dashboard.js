@@ -35,15 +35,56 @@ function filterPressureLogGridSplits(_uplot, splits) {
     return [];
   }
 
-  return splits.map((value) => {
-    if (!Number.isFinite(value) || value <= 0) {
-      return null;
-    }
-
+  const candidateIndexes = [];
+  const decadeIndexes = [];
+  splits.forEach((value, index) => {
+    if (!Number.isFinite(value) || value <= 0) return;
     const magnitude = 10 ** Math.floor(Math.log10(value));
     const mantissa = Math.round(value / magnitude);
-    return mantissa % 2 === 1 ? value : null;
+    if (mantissa % 2 === 1) {
+      candidateIndexes.push(index);
+      if (mantissa === 1) decadeIndexes.push(index);
+    }
   });
+
+  const maxSplits = 10;
+  const pickEvenly = (indexes, count) => Array.from({ length: count }, (_value, index) => (
+    indexes[Math.round(index * (indexes.length - 1) / Math.max(1, count - 1))]
+  ));
+  let visibleIndexes = new Set(
+    decadeIndexes.length >= maxSplits
+      ? pickEvenly(decadeIndexes, maxSplits)
+      : decadeIndexes.concat(pickEvenly(
+          candidateIndexes.filter((index) => !decadeIndexes.includes(index)),
+          Math.min(maxSplits - decadeIndexes.length, candidateIndexes.length - decadeIndexes.length)
+        ))
+  );
+
+  if (_uplot && typeof _uplot.valToPos === 'function') {
+    const minLabelSpacing = 16;
+    const positionedIndexes = Array.from(visibleIndexes, (index) => ({
+      index,
+      position: _uplot.valToPos(splits[index], 'y'),
+      isDecade: decadeIndexes.includes(index),
+    })).filter(({ position }) => Number.isFinite(position)).sort((a, b) => a.position - b.position);
+    const nonOverlapping = [];
+
+    positionedIndexes.forEach((candidate) => {
+      const previous = nonOverlapping.at(-1);
+      if (!previous || candidate.position - previous.position >= minLabelSpacing) {
+        nonOverlapping.push(candidate);
+      } else if (candidate.isDecade && !previous.isDecade) {
+        const beforePrevious = nonOverlapping.at(-2);
+        if (!beforePrevious || candidate.position - beforePrevious.position >= minLabelSpacing) {
+          nonOverlapping[nonOverlapping.length - 1] = candidate;
+        }
+      }
+    });
+
+    visibleIndexes = new Set(nonOverlapping.map(({ index }) => index));
+  }
+
+  return splits.map((value, index) => visibleIndexes.has(index) ? value : null);
 }
 
 function getPressureTimeWindowBounds(xVals, hours) {

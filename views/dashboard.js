@@ -1,5 +1,15 @@
 const { getGraphMetadata } = require('../services/graphs');
 
+function normalizePressureSeriesForLogScale(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values.map((value) => (
+    Number.isFinite(value) && value > 0 ? value : null
+  ));
+}
+
 /**
  * Renders the full HTML dashboard page.
  *
@@ -59,6 +69,7 @@ function renderDashboard(opts) {
   ] = sicColors;
 
   const shortTermChartMeta = getGraphMetadata(shortTermPressureGraph);
+  const normalizePressureSeriesSource = normalizePressureSeriesForLogScale.toString();
 
   function formatPressureChartStatus(meta) {
     const rawPointCount = Number(meta.rawPointCount ?? 0);
@@ -856,6 +867,8 @@ function renderDashboard(opts) {
       </div>
 
       <script>
+        ${normalizePressureSeriesSource}
+
         function createLiveUplotChart(container, config) {
           if (typeof container === 'string') container = document.querySelector(container);
 
@@ -908,7 +921,10 @@ function renderDashboard(opts) {
                 points: { show: true, size: 2, fill: '#38bdf8', stroke: '#38bdf8' }
               }
             ],
-            scales: { x: { time: true } },
+            scales: {
+              x: { time: true },
+              y: { distr: 3, log: 10 },
+            },
             axes: [
               {
                 stroke: '#94a3b8',
@@ -917,13 +933,15 @@ function renderDashboard(opts) {
                 grid:  { stroke: 'rgba(255,255,255,0.06)', width: 1 },
               },
               {
-                label: 'Pressure (mbar)',
+                label: 'Pressure (mbar, log10)',
                 labelSize: 20,
                 labelFont: '10px Arial',
                 stroke: '#94a3b8',
                 font: '10px Arial',
                 size: 80,
-                values: (u, vals) => vals.map(v => v.toExponential(2)),
+                values: (u, vals) => vals.map(v => (
+                  Number.isFinite(v) ? v.toExponential(2) : ''
+                )),
                 ticks: { stroke: 'rgba(255,255,255,0.15)', width: 1 },
                 grid:  { stroke: 'rgba(255,255,255,0.06)', width: 1 },
               },
@@ -952,7 +970,10 @@ function renderDashboard(opts) {
         // Create the pressure chart and keep a reference for live updates
         let pressureChart = createLiveUplotChart(document.getElementById('chart-root-3'), {
           title: 'Pressure Graph',
-          data: [${JSON.stringify(shortTermPressureGraph.displayXVals)}, ${JSON.stringify(shortTermPressureGraph.displayYVals)}],
+          data: [
+            ${JSON.stringify(shortTermPressureGraph.displayXVals)},
+            normalizePressureSeriesForLogScale(${JSON.stringify(shortTermPressureGraph.displayYVals)}),
+          ],
           seriesLabel: "pressure (mbar)",
           maxDataPoints: ${shortTermPressureGraph.maxDataPoints},
           maxDisplayPoints: ${shortTermPressureGraph.maxDisplayPoints},
@@ -999,7 +1020,10 @@ function renderDashboard(opts) {
         }
 
         function applyPressureChartData(chartData) {
-          pressureChart.setData([chartData.xVals, chartData.yVals]);
+          pressureChart.setData([
+            chartData.xVals,
+            normalizePressureSeriesForLogScale(chartData.yVals),
+          ]);
           pressureChartStatus.textContent = formatPressureChartStatus(chartData);
         }
 
@@ -1501,4 +1525,4 @@ function renderDashboard(opts) {
   `;
 }
 
-module.exports = { renderDashboard };
+module.exports = { renderDashboard, normalizePressureSeriesForLogScale };

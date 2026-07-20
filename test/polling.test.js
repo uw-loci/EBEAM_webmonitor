@@ -245,6 +245,7 @@ Module._load = function mockExternalDependencies(request, parent, isMain) {
 
 const state = require('../services/state');
 const registerRoutes = require('../routes');
+const { normalizePressureSeriesForLogScale } = require('../views/dashboard');
 const {
   createGraphObj,
   appendPressurePoint,
@@ -1175,9 +1176,33 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /class="btn-toggle log-toggle-button"/);
   assert.match(response.payload, /class="btn-toggle pressure-toggle-button"/);
   assert.match(response.payload, /chartEl\.getBoundingClientRect\(\)\.width/);
+  assert.match(response.payload, /y:\s*\{\s*distr:\s*3,\s*log:\s*10\s*\}/);
+  assert.match(response.payload, /Pressure \(mbar, log10\)/);
+  assert.match(
+    response.payload,
+    /Number\.isFinite\(v\) \? v\.toExponential\(2\) : ''/
+  );
+  assert.match(
+    response.payload,
+    /normalizePressureSeriesForLogScale\(\[\]\),\s*\n\s*\],/
+  );
+  assert.match(
+    response.payload,
+    /normalizePressureSeriesForLogScale\(chartData\.yVals\)/
+  );
   assert.match(response.payload, /overflow:\s*hidden;/);
   assert.match(response.payload, /fetch\('\/raw'\)/);
   assert.doesNotMatch(response.payload, /fetch\('\/refresh-display'\)/);
   assert.doesNotMatch(response.payload, /margin-top:\s*-3\.5em/);
   assert.doesNotMatch(response.payload, /float:\s*right/);
+});
+
+test('normalizePressureSeriesForLogScale keeps positive finite pressures and gaps invalid values', () => {
+  const pressures = [1200, 1, 1e-3, 1e-6, 0, -1, null, Number.NaN, Infinity, -Infinity];
+
+  assert.deepEqual(
+    normalizePressureSeriesForLogScale(pressures),
+    [1200, 1, 1e-3, 1e-6, null, null, null, null, null, null]
+  );
+  assert.deepEqual(normalizePressureSeriesForLogScale(null), []);
 });

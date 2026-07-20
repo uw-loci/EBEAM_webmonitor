@@ -172,6 +172,8 @@ The server keeps the full in-memory pressure arrays separately from the display 
 
 When a pressure graph would exceed its display cap, the server re-samples older points using a larger power-of-two stride while still keeping the newest point visible. That lets the UI stay responsive without hiding the latest reading, and it applies to both pressure views even though they use different source resolutions and display limits.
 
+Both pressure views use a base-10 logarithmic Y axis so atmospheric pressure and turbo-pump readings near `1e-6` mbar remain visible in the same chart. Tick and hover values stay in scientific notation, while zero, negative, or otherwise invalid pressure values render as gaps.
+
 `/chart-data` now returns both the plotted points and graph metadata such as `rawPointCount`, `displayPointCount`, `downsampleFactor`, and `sourceResolutionLabel`, allowing the UI to explain what the chart is showing.
 
 ### CCS clamp-temperature charts

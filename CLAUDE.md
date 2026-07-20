@@ -53,6 +53,11 @@
 - Graph X-axis: Unix **seconds** (not ms) — `Math.floor(ms / 1000)`
 - Display: `America/Chicago` timezone
 
+## Pressure chart
+- Y-axis: base-10 logarithmic (`distr: 3`, `log: 10`) — short + historical views
+- values: finite `> 0`; nonpositive/invalid → `null` gaps client-side
+- labels: scientific notation; axis identifies `log10`
+
 ## Deploy
 - Render.com, `render.yaml`, auto-deploy from `main`
 - `reversed.txt` written to project root at runtime — ephemeral on Render (re-fetched on restart)

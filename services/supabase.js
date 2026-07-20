@@ -185,7 +185,7 @@ function resetData() {
 
 /**
  * Backfills the short-term pressure graph from the last 24 hours of short_term_logs.
- * Time window: 24h (matches the "Last 24h" chart label and maxDataPoints: 30000 @ 3s ≈ 25h capacity).
+ * Time window: 24h, matching the live append window and the "Last 24h" chart label.
  * @param {Object} graph - The graph object to populate
  * @returns {{ timestamp: string, id: string|null }|null} Cursor for the last row, or null if no data
  */

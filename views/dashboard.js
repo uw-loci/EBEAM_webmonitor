@@ -791,9 +791,14 @@ function renderDashboard(opts) {
         }
 
         #chart-root-3 .u-select {
+          display: none;
           background: rgba(56, 189, 248, 0.18);
           border: 1px solid rgba(56, 189, 248, 0.9);
           box-sizing: border-box;
+        }
+
+        #chart-root-3.is-zoom-selecting .u-select {
+          display: block;
         }
       </style>
     </head>
@@ -1218,6 +1223,7 @@ function renderDashboard(opts) {
           };
 
           const clearZoomSelection = () => {
+            pressureChartRoot.classList.remove('is-zoom-selecting');
             if (uplotRef) {
               uplotRef.setSelect({ left: 0, top: 0, width: 0, height: 0 }, false);
             }
@@ -1239,6 +1245,7 @@ function renderDashboard(opts) {
             const left = Math.min(zoomStart.plotX, plotX);
             const width = Math.abs(plotX - zoomStart.plotX);
             const rect = uplotRef.over.getBoundingClientRect();
+            pressureChartRoot.classList.toggle('is-zoom-selecting', width > 0);
             uplotRef.setSelect({ left, top: 0, width, height: rect.height }, false);
           };
 

@@ -1230,6 +1230,8 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /id="pressure-pan-mode"[^>]*aria-pressed="false"/);
   assert.match(response.payload, /id="pressure-reset-view"/);
   assert.match(response.payload, /createPressureInteractionPlugin\(\{/);
+  assert.match(response.payload, /#chart-root-3 \.u-select \{\s*display: none;/);
+  assert.match(response.payload, /#chart-root-3\.is-zoom-selecting \.u-select \{\s*display: block;/);
   assert.match(response.payload, /uplotRef\.setSelect\(\{ left, top: 0, width, height: rect\.height \}, false\)/);
   assert.match(response.payload, /uplotRef\.posToVal\(left, 'x'\)/);
   assert.match(response.payload, /focus:\s*\{\s*prox:\s*-1\s*\}/);

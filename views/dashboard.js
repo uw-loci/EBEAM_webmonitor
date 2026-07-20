@@ -1019,11 +1019,35 @@ function renderDashboard(opts) {
             ' raw points (downsample x' + downsampleFactor + ', ' + sourceResolutionLabel + ')';
         }
 
-        function applyPressureChartData(chartData) {
-          pressureChart.setData([
+        function getZoomedXScale(chart) {
+          const xVals = chart.data[0];
+          const xMin = xVals[0];
+          const xMax = xVals[xVals.length - 1];
+          const { min, max } = chart.scales.x;
+
+          if (!Number.isFinite(xMin) || !Number.isFinite(xMax) ||
+              !Number.isFinite(min) || !Number.isFinite(max)) {
+            return null;
+          }
+
+          // Full view continues following live data; drag-zoomed ranges persist.
+          return min > xMin || max < xMax ? { min, max } : null;
+        }
+
+        function setChartData(chart, data, preserveZoom = true) {
+          const zoomedXScale = preserveZoom ? getZoomedXScale(chart) : null;
+          chart.setData(data);
+
+          if (zoomedXScale) {
+            chart.setScale('x', zoomedXScale);
+          }
+        }
+
+        function applyPressureChartData(chartData, preserveZoom = true) {
+          setChartData(pressureChart, [
             chartData.xVals,
             normalizePressureSeriesForLogScale(chartData.yVals),
-          ]);
+          ], preserveZoom);
           pressureChartStatus.textContent = formatPressureChartStatus(chartData);
         }
 
@@ -1040,7 +1064,8 @@ function renderDashboard(opts) {
           try {
             const res = await fetch('/chart-data?view=' + currentPressureView);
             const chartData = await res.json();
-            applyPressureChartData(chartData);
+            // A different data set has its own natural full-range view.
+            applyPressureChartData(chartData, false);
           } catch (e) {
             console.error('Failed to load chart data:', e);
           }
@@ -1403,9 +1428,9 @@ function renderDashboard(opts) {
           try {
             const ccsRes = await fetch('/ccs-chart-data');
             const ccsData = await ccsRes.json();
-            ccsChartA.setData([ccsData.A.xVals, ccsData.A.yVals]);
-            ccsChartB.setData([ccsData.B.xVals, ccsData.B.yVals]);
-            ccsChartC.setData([ccsData.C.xVals, ccsData.C.yVals]);
+            setChartData(ccsChartA, [ccsData.A.xVals, ccsData.A.yVals]);
+            setChartData(ccsChartB, [ccsData.B.xVals, ccsData.B.yVals]);
+            setChartData(ccsChartC, [ccsData.C.xVals, ccsData.C.yVals]);
           } catch (e) {
             console.error('CCS chart data update failed:', e);
           }

@@ -57,6 +57,7 @@
 - Y-axis: base-10 logarithmic (`distr: 3`, `log: 10`) — short + historical views
 - values: finite `> 0`; nonpositive/invalid → `null` gaps client-side
 - labels: scientific notation; axis identifies `log10`
+- drag-zoom: preserved across live `setData()` refreshes; double-click restores full auto-follow range
 
 ## Deploy
 - Render.com, `render.yaml`, auto-deploy from `main`

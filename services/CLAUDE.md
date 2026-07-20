@@ -28,10 +28,11 @@
 - `fetchAndUpdateFile()` calls `pollShortTerm()` internally — do not put `pollShortTerm` on its own interval
 
 ## Graph objects (graphs.js)
-- Full arrays: `fullXVals[]`, `fullYVals[]` — complete history, never truncated
+- Full arrays: `fullXVals[]`, `fullYVals[]` — bounded source history, truncated in place when a graph exceeds `maxDataPoints`
+- Time-bounded graphs also discard points older than `maxTimeWindowSeconds` relative to the newest appended pressure timestamp
 - Display arrays: `displayXVals[]`, `displayYVals[]` — downsampled copy served to client
 - Instances:
-  - `shortTermPressureGraph`: maxDataPoints 30000, maxDisplayPoints 1024
+  - `shortTermPressureGraph`: maxDataPoints 30000, maxTimeWindowSeconds 86400 (24h), maxDisplayPoints 1024
   - `longTermPressureGraph`: maxDataPoints 100000, maxDisplayPoints 256
 
 ## Downsampling algorithm (`updateDisplayData`)
@@ -75,6 +76,7 @@
 | `CCS_MAX_POINTS` | 1200 | graphs.js |
 | `PAGE_SIZE` | 1000 | supabase.js |
 | `shortTermPressureGraph.maxDataPoints` | 30000 | graphs.js |
+| `shortTermPressureGraph.maxTimeWindowSeconds` | 86400 (24h) | graphs.js |
 | `longTermPressureGraph.maxDataPoints` | 100000 | graphs.js |
 
 ## Adding a new telemetry field from Supabase

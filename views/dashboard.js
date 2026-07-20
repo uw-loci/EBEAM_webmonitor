@@ -1666,6 +1666,14 @@ function renderDashboard(opts) {
         function appendPressureRawData(chartData) {
           const xVals = Array.isArray(chartData.xVals) ? chartData.xVals : [];
           const yVals = Array.isArray(chartData.yVals) ? chartData.yVals : [];
+          const nextCacheStartIndex = Number(chartData.cacheStartIndex);
+          const expiredPointCount = Number.isInteger(nextCacheStartIndex)
+            ? Math.max(0, nextCacheStartIndex - pressureRawIndexOffset)
+            : 0;
+          if (expiredPointCount > 0) {
+            pressureRawDataX.splice(0, expiredPointCount);
+            pressureRawDataY.splice(0, expiredPointCount);
+          }
           pressureRawDataX.push(...xVals);
           pressureRawDataY.push(...yVals);
           const overflow = pressureRawDataX.length - pressureRawMaxPoints;

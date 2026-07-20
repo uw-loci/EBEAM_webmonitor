@@ -1052,6 +1052,24 @@ test('applyShortTermEntries caps raw points at maxDataPoints and keeps the newes
   assertPressureGraphDisplayIntegrity(graph);
 });
 
+test('appendPressurePoint trims raw points outside the configured time window', () => {
+  const graph = createGraphObj({
+    maxDataPoints: 100,
+    maxTimeWindowSeconds: 10,
+    maxDisplayPoints: 4,
+    sourceResolutionLabel: '~3s source data',
+  });
+
+  [0, 5, 10, 15, 20].forEach((tSec, index) => {
+    appendPressurePoint(graph, tSec, index);
+  });
+
+  assert.deepEqual(graph.fullXVals, [10, 15, 20]);
+  assert.deepEqual(graph.fullYVals, [2, 3, 4]);
+  assert.equal(graph.nextPointIndex, 5);
+  assertPressureGraphDisplayIntegrity(graph);
+});
+
 test('appendPressurePoint preserves graph array references and display invariants after repeated cap trims', () => {
   const graph = createGraphObj({
     maxDataPoints: 5,
@@ -1223,6 +1241,7 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   );
   assert.match(response.payload, /requestAnimationFrame/);
   assert.match(response.payload, /&raw=1&cursor=/);
+  assert.match(response.payload, /nextCacheStartIndex - pressureRawIndexOffset/);
   assert.match(response.payload, /id="pressure-time-range"/);
   assert.match(response.payload, /<option value="1">Last 1h<\/option>/);
   assert.match(response.payload, /<option value="24" selected>Last 24h<\/option>/);

@@ -1050,6 +1050,23 @@ test('applyShortTermEntries caps raw points at maxDataPoints and keeps the newes
   assertPressureGraphDisplayIntegrity(graph);
 });
 
+test('appendPressurePoint trims raw points outside the configured time window', () => {
+  const graph = createGraphObj({
+    maxDataPoints: 100,
+    maxTimeWindowSeconds: 10,
+    maxDisplayPoints: 4,
+    sourceResolutionLabel: '~3s source data',
+  });
+
+  [0, 5, 10, 15, 20].forEach((tSec, index) => {
+    appendPressurePoint(graph, tSec, index);
+  });
+
+  assert.deepEqual(graph.fullXVals, [10, 15, 20]);
+  assert.deepEqual(graph.fullYVals, [2, 3, 4]);
+  assertPressureGraphDisplayIntegrity(graph);
+});
+
 test('appendPressurePoint preserves graph array references and display invariants after repeated cap trims', () => {
   const graph = createGraphObj({
     maxDataPoints: 5,

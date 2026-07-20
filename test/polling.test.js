@@ -250,6 +250,7 @@ const {
   getPaddedPressureLogRange,
   filterPressureLogGridSplits,
   getPressureTimeWindowBounds,
+  buildPressureViewportSample,
 } = require('../views/dashboard');
 const {
   createGraphObj,
@@ -353,6 +354,7 @@ function resetPressureGraph(graph) {
   graph.lastPermanentIndex = -1;
   graph.chartDataIntervalCount = 0;
   graph.chartDataIntervalDuration = 1;
+  graph.nextPointIndex = 0;
 }
 
 function resetCCSGraph(graph) {
@@ -1064,6 +1066,7 @@ test('appendPressurePoint trims raw points outside the configured time window', 
 
   assert.deepEqual(graph.fullXVals, [10, 15, 20]);
   assert.deepEqual(graph.fullYVals, [2, 3, 4]);
+  assert.equal(graph.nextPointIndex, 5);
   assertPressureGraphDisplayIntegrity(graph);
 });
 
@@ -1087,6 +1090,7 @@ test('appendPressurePoint preserves graph array references and display invariant
 
   assert.deepEqual(graph.fullXVals, [1007, 1008, 1009, 1010, 1011]);
   assert.deepEqual(graph.fullYVals, [7, 8, 9, 10, 11]);
+  assert.equal(graph.nextPointIndex, 12);
 });
 
 test('long-term data remains capped at the lower historical display density', () => {
@@ -1168,6 +1172,28 @@ test('chart-data returns density metadata for both short and long views', () => 
   assert.deepEqual(response.payload.xVals, shortTermPressureGraph.displayXVals);
   assert.deepEqual(response.payload.yVals, shortTermPressureGraph.displayYVals);
 
+  const snapshotResponse = createResponseRecorder();
+  chartRoute.handler({ query: { view: 'short', raw: '1' } }, snapshotResponse);
+  assert.equal(snapshotResponse.payload.resetRequired, false);
+  assert.deepEqual(snapshotResponse.payload.xVals, shortTermPressureGraph.fullXVals);
+  assert.deepEqual(snapshotResponse.payload.yVals, shortTermPressureGraph.fullYVals);
+
+  const lastTimestamp = shortTermPressureGraph.fullXVals.at(-1);
+  const snapshotCursor = snapshotResponse.payload.cursor;
+  appendPressurePoint(shortTermPressureGraph, lastTimestamp, 42);
+
+  const deltaResponse = createResponseRecorder();
+  chartRoute.handler({
+    query: {
+      view: 'short',
+      raw: '1',
+      cursor: String(snapshotCursor),
+    },
+  }, deltaResponse);
+  assert.equal(deltaResponse.payload.resetRequired, false);
+  assert.deepEqual(deltaResponse.payload.xVals, [lastTimestamp]);
+  assert.deepEqual(deltaResponse.payload.yVals, [42]);
+
   const longResponse = createResponseRecorder();
   chartRoute.handler({ query: { view: 'long' } }, longResponse);
 
@@ -1211,8 +1237,11 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   );
   assert.match(
     response.payload,
-    /normalizePressureSeriesForLogScale\(chartData\.yVals\)/
+    /normalizePressureSeriesForLogScale\(sample\.yVals\)/
   );
+  assert.match(response.payload, /requestAnimationFrame/);
+  assert.match(response.payload, /&raw=1&cursor=/);
+  assert.match(response.payload, /nextCacheStartIndex - pressureRawIndexOffset/);
   assert.match(response.payload, /id="pressure-time-range"/);
   assert.match(response.payload, /<option value="1">Last 1h<\/option>/);
   assert.match(response.payload, /<option value="24" selected>Last 24h<\/option>/);
@@ -1220,12 +1249,14 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /id="pressure-pan-mode"[^>]*aria-pressed="false"/);
   assert.match(response.payload, /id="pressure-reset-view"/);
   assert.match(response.payload, /createPressureInteractionPlugin\(\{/);
+  assert.match(response.payload, /#chart-root-3 \.u-select \{\s*display: none;/);
+  assert.match(response.payload, /#chart-root-3\.is-zoom-selecting \.u-select \{\s*display: block;/);
   assert.match(response.payload, /uplotRef\.setSelect\(\{ left, top: 0, width, height: rect\.height \}, false\)/);
   assert.match(response.payload, /uplotRef\.posToVal\(left, 'x'\)/);
   assert.match(response.payload, /focus:\s*\{\s*prox:\s*-1\s*\}/);
   assert.match(response.payload, /points:\s*\{\s*size:\s*8,/);
   assert.match(response.payload, /filter:\s*filterPressureLogGridSplits/);
-  assert.match(response.payload, /pressureChart\.setData\(\[pressureChartDataX, normalizedYVals\], false\)/);
+  assert.match(response.payload, /pressureChart\.setData\(\[sample\.xVals, normalizedYVals\], false\)/);
   assert.match(response.payload, /pressureViewportKind = 'custom'/);
   assert.match(response.payload, /pressureChart\.setScale\('y', \{ min: null, max: null \}\)/);
   assert.match(response.payload, /overflow:\s*hidden;/);
@@ -1277,7 +1308,7 @@ test('getPaddedPressureLogRange leaves at least half a decade below positive dat
   assert.deepEqual(getPaddedPressureLogRange(rangeLog, -1, 1), [-1, 1]);
 });
 
-test('filterPressureLogGridSplits keeps five odd mantissas per decade', () => {
+test('filterPressureLogGridSplits keeps at most ten preferred-mantissa grid lines', () => {
   const splits = [
     1e-6, 2e-6, 3e-6, 4e-6, 5e-6, 6e-6, 7e-6, 8e-6, 9e-6,
     1e-3, 2e-3, 3e-3, 4e-3, 5e-3, 6e-3, 7e-3, 8e-3, 9e-3,
@@ -1285,12 +1316,27 @@ test('filterPressureLogGridSplits keeps five odd mantissas per decade', () => {
     10, 20, 30, 40, 50, 60, 70, 80, 90,
   ];
 
+  const filtered = filterPressureLogGridSplits(null, splits).filter(Number.isFinite);
+  assert.equal(filtered.length, 10);
+  assert.equal(filtered[0], 1e-6);
+  assert.equal(filtered.at(-1), 90);
+  assert.ok([1e-6, 1e-3, 1, 10].every((value) => filtered.includes(value)));
+  assert.ok(filtered.every((value) => {
+    const magnitude = 10 ** Math.floor(Math.log10(value));
+    const mantissa = Math.round(value / magnitude);
+    return mantissa === 2 || mantissa % 2 === 1;
+  }));
   assert.deepEqual(
-    filterPressureLogGridSplits(null, splits),
-    splits.map((value) => {
-      const magnitude = 10 ** Math.floor(Math.log10(value));
-      return Math.round(value / magnitude) % 2 === 1 ? value : null;
-    })
+    filterPressureLogGridSplits(null, [1, 2, 3, 4, 5, 6, 7, 8, 9]),
+    [1, 2, 3, null, 5, null, 7, null, 9]
+  );
+  assert.deepEqual(
+    filterPressureLogGridSplits({ valToPos: (value) => value * 5 }, [1, 3, 5, 7, 9]),
+    [1, null, 5, null, 9]
+  );
+  assert.deepEqual(
+    filterPressureLogGridSplits({ valToPos: (value) => value === 0.09 ? 0 : 8 }, [0.09, 0.1]),
+    [null, 0.1]
   );
   assert.deepEqual(filterPressureLogGridSplits(null, [0, -1, Number.NaN, Infinity]), [null, null, null, null]);
   assert.deepEqual(filterPressureLogGridSplits(null, null), []);
@@ -1312,4 +1358,16 @@ test('getPressureTimeWindowBounds anchors presets to the newest loaded timestamp
   assert.deepEqual(getPressureTimeWindowBounds([null, oldest, newest, null], 1), [newest - 3600, newest]);
   assert.deepEqual(getPressureTimeWindowBounds([], 1), [null, null]);
   assert.deepEqual(getPressureTimeWindowBounds([null, Number.NaN], 1), [null, null]);
+});
+
+test('buildPressureViewportSample keeps power-of-two sampling stable as the cache advances', () => {
+  const xVals = Array.from({ length: 17 }, (_value, index) => index);
+  const yVals = xVals.map((value) => value * 10);
+  const initial = buildPressureViewportSample(xVals.slice(0, 16), yVals.slice(0, 16), 0, 15, 5, 0);
+  const advanced = buildPressureViewportSample(xVals.slice(1), yVals.slice(1), 1, 16, 5, 1);
+
+  assert.equal(initial.downsampleFactor, 4);
+  assert.equal(advanced.downsampleFactor, 4);
+  assert.deepEqual(initial.xVals, [0, 4, 8, 12, 15]);
+  assert.deepEqual(advanced.xVals, [4, 8, 12, 16]);
 });

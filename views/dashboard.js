@@ -41,7 +41,7 @@ function filterPressureLogGridSplits(_uplot, splits) {
     if (!Number.isFinite(value) || value <= 0) return;
     const magnitude = 10 ** Math.floor(Math.log10(value));
     const mantissa = Math.round(value / magnitude);
-    if (mantissa % 2 === 1) {
+    if (mantissa % 2 === 1 || mantissa === 2) {
       candidateIndexes.push(index);
       if (mantissa === 1) decadeIndexes.push(index);
     }

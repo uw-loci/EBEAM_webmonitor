@@ -1289,7 +1289,7 @@ test('getPaddedPressureLogRange leaves at least half a decade below positive dat
   assert.deepEqual(getPaddedPressureLogRange(rangeLog, -1, 1), [-1, 1]);
 });
 
-test('filterPressureLogGridSplits keeps at most ten odd-mantissa grid lines', () => {
+test('filterPressureLogGridSplits keeps at most ten preferred-mantissa grid lines', () => {
   const splits = [
     1e-6, 2e-6, 3e-6, 4e-6, 5e-6, 6e-6, 7e-6, 8e-6, 9e-6,
     1e-3, 2e-3, 3e-3, 4e-3, 5e-3, 6e-3, 7e-3, 8e-3, 9e-3,
@@ -1304,11 +1304,12 @@ test('filterPressureLogGridSplits keeps at most ten odd-mantissa grid lines', ()
   assert.ok([1e-6, 1e-3, 1, 10].every((value) => filtered.includes(value)));
   assert.ok(filtered.every((value) => {
     const magnitude = 10 ** Math.floor(Math.log10(value));
-    return Math.round(value / magnitude) % 2 === 1;
+    const mantissa = Math.round(value / magnitude);
+    return mantissa === 2 || mantissa % 2 === 1;
   }));
   assert.deepEqual(
     filterPressureLogGridSplits(null, [1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    [1, null, 3, null, 5, null, 7, null, 9]
+    [1, 2, 3, null, 5, null, 7, null, 9]
   );
   assert.deepEqual(
     filterPressureLogGridSplits({ valToPos: (value) => value * 5 }, [1, 3, 5, 7, 9]),

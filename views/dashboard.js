@@ -441,7 +441,10 @@ function renderDashboard(opts) {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-width: 116px;
+          width: 100%;
+          max-width: 116px;
+          min-width: 0;
+          box-sizing: border-box;
           margin: 0 auto 10px;
           padding: 4px 10px;
           border-radius: 999px;
@@ -637,9 +640,6 @@ function renderDashboard(opts) {
         @media (max-width: 600px) {
           .card-container {
             grid-template-columns: repeat(1, 1fr);
-          }
-          .beam-energy-grid {
-            grid-template-columns: minmax(0, 1fr);
           }
           .pressure-chart-toolbar,
           .pressure-chart-help {

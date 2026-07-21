@@ -1243,7 +1243,7 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /requestAnimationFrame/);
   assert.match(response.payload, /&raw=1&cursor=/);
   assert.match(response.payload, /nextCacheStartIndex - pressureRawIndexOffset/);
-  assert.match(response.payload, /if \(pressureRawRefreshInFlight\) return;/);
+  assert.match(response.payload, /if \(pressureRawRefreshInFlight\) return null;/);
   assert.match(response.payload, /const REQUEST_TIMEOUT_MS = 10000;/);
   assert.match(response.payload, /const PRESSURE_SNAPSHOT_TIMEOUT_MS = 30000;/);
   assert.match(response.payload, /fetchJsonWithTimeout\(url\)/);
@@ -1255,7 +1255,21 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   );
   assert.match(response.payload, /finally \{\s*pressureRawRefreshInFlight = false;/);
   assert.match(response.payload, /const generation = \+\+pressureSnapshotGeneration;/);
-  assert.match(response.payload, /generation === pressureSnapshotGeneration/);
+  assert.match(
+    response.payload,
+    /generation !== pressureSnapshotGeneration \|\|\s*view !== currentPressureView \|\|\s*chartData\.view !== view/
+  );
+  assert.match(response.payload, /replacePressureRawData\(chartData\);\s*return view;/);
+  assert.match(response.payload, /appendPressureRawData\(chartData\);\s*return requestedView;/);
+  assert.match(response.payload, /const refreshedView = await refreshPressureRawData\(\);/);
+  assert.match(
+    response.payload,
+    /if \(refreshedView === 'long'\) lastLongTermPollAt = Date\.now\(\);/
+  );
+  assert.doesNotMatch(
+    response.payload,
+    /if \(currentPressureView === 'long'\) lastLongTermPollAt = Date\.now\(\);/
+  );
   assert.match(response.payload, /async function pollDashboard\(\)/);
   assert.match(response.payload, /fetchJsonWithTimeout\('\/data'\)/);
   assert.match(response.payload, /fetchJsonWithTimeout\('\/ccs-chart-data'\)/);

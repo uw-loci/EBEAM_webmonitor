@@ -1729,13 +1729,17 @@ function renderDashboard(opts) {
             '/chart-data?view=' + view + '&raw=1',
             PRESSURE_SNAPSHOT_TIMEOUT_MS
           );
-          if (generation === pressureSnapshotGeneration && view === currentPressureView) {
-            replacePressureRawData(chartData);
-          }
+          if (
+            generation !== pressureSnapshotGeneration ||
+            view !== currentPressureView ||
+            chartData.view !== view
+          ) return null;
+          replacePressureRawData(chartData);
+          return view;
         }
 
         async function refreshPressureRawData() {
-          if (pressureRawRefreshInFlight) return;
+          if (pressureRawRefreshInFlight) return null;
           pressureRawRefreshInFlight = true;
           const requestedView = currentPressureView;
           const requestedCursor = pressureRawCursor;
@@ -1747,10 +1751,11 @@ function renderDashboard(opts) {
 
             const url = '/chart-data?view=' + requestedView + '&raw=1&cursor=' + requestedCursor;
             const chartData = await fetchJsonWithTimeout(url);
-            if (requestedView !== currentPressureView || requestedCursor !== pressureRawCursor) return;
-            if (chartData.view !== requestedView) return;
+            if (requestedView !== currentPressureView || requestedCursor !== pressureRawCursor) return null;
+            if (chartData.view !== requestedView) return null;
             if (chartData.resetRequired) return await loadPressureRawSnapshot(requestedView);
             appendPressureRawData(chartData);
+            return requestedView;
           } finally {
             pressureRawRefreshInFlight = false;
           }
@@ -2171,8 +2176,8 @@ function renderDashboard(opts) {
 
           if (currentPressureView === 'short' || (currentPressureView === 'long' && shouldUpdateLongTerm)) {
             try {
-              await refreshPressureRawData();
-              if (currentPressureView === 'long') lastLongTermPollAt = Date.now();
+              const refreshedView = await refreshPressureRawData();
+              if (refreshedView === 'long') lastLongTermPollAt = Date.now();
             } catch (e) {
               console.error('Chart data update failed:', e);
             }

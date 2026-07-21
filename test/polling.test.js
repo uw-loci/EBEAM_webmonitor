@@ -246,6 +246,7 @@ Module._load = function mockExternalDependencies(request, parent, isMain) {
 const state = require('../services/state');
 const registerRoutes = require('../routes');
 const {
+  fetchJsonWithTimeout,
   normalizePressureSeriesForLogScale,
   getPaddedPressureLogRange,
   filterPressureLogGridSplits,
@@ -1242,6 +1243,24 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /requestAnimationFrame/);
   assert.match(response.payload, /&raw=1&cursor=/);
   assert.match(response.payload, /nextCacheStartIndex - pressureRawIndexOffset/);
+  assert.match(response.payload, /if \(pressureRawRefreshInFlight\) return;/);
+  assert.match(response.payload, /const REQUEST_TIMEOUT_MS = 10000;/);
+  assert.match(response.payload, /const PRESSURE_SNAPSHOT_TIMEOUT_MS = 30000;/);
+  assert.match(response.payload, /fetchJsonWithTimeout\(url\)/);
+  assert.match(response.payload, /const requestedView = currentPressureView;/);
+  assert.match(response.payload, /const requestedCursor = pressureRawCursor;/);
+  assert.match(
+    response.payload,
+    /requestedView !== currentPressureView \|\| requestedCursor !== pressureRawCursor/
+  );
+  assert.match(response.payload, /finally \{\s*pressureRawRefreshInFlight = false;/);
+  assert.match(response.payload, /const generation = \+\+pressureSnapshotGeneration;/);
+  assert.match(response.payload, /generation === pressureSnapshotGeneration/);
+  assert.match(response.payload, /async function pollDashboard\(\)/);
+  assert.match(response.payload, /fetchJsonWithTimeout\('\/data'\)/);
+  assert.match(response.payload, /fetchJsonWithTimeout\('\/ccs-chart-data'\)/);
+  assert.match(response.payload, /setTimeout\(pollDashboard, 3000\)/);
+  assert.doesNotMatch(response.payload, /setInterval\(async/);
   assert.match(response.payload, /id="pressure-time-range"/);
   assert.match(response.payload, /<option value="1">Last 1h<\/option>/);
   assert.match(response.payload, /<option value="24" selected>Last 24h<\/option>/);
@@ -1264,6 +1283,41 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.doesNotMatch(response.payload, /fetch\('\/refresh-display'\)/);
   assert.doesNotMatch(response.payload, /margin-top:\s*-3\.5em/);
   assert.doesNotMatch(response.payload, /float:\s*right/);
+});
+
+test('fetchJsonWithTimeout returns parsed data and passes an abort signal', async () => {
+  let requestSignal;
+  const chartData = await fetchJsonWithTimeout('/chart-data', 5, async (_url, options) => {
+    requestSignal = options.signal;
+    return { ok: true, json: async () => ({ cursor: 12 }) };
+  });
+
+  assert.deepEqual(chartData, { cursor: 12 });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.equal(requestSignal.aborted, false);
+});
+
+test('fetchJsonWithTimeout aborts a hung request and reports a timeout', async () => {
+  let requestSignal;
+  const hungFetch = (_url, options) => new Promise((_resolve, reject) => {
+    requestSignal = options.signal;
+    requestSignal.addEventListener('abort', () => {
+      reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+    }, { once: true });
+  });
+
+  await assert.rejects(
+    fetchJsonWithTimeout('/chart-data', 5, hungFetch),
+    /Request timed out/
+  );
+  assert.equal(requestSignal.aborted, true);
+});
+
+test('fetchJsonWithTimeout preserves HTTP failures', async () => {
+  await assert.rejects(
+    fetchJsonWithTimeout('/chart-data', 50, async () => ({ ok: false, status: 503 })),
+    /Request failed: 503/
+  );
 });
 
 test('normalizePressureSeriesForLogScale keeps positive finite pressures and gaps invalid values', () => {

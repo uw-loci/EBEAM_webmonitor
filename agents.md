@@ -1,6 +1,6 @@
 # E-Beam Web Monitor
 
-> RULE: When making changes, update the corresponding CLAUDE.md files using the same style (fragments, key-value, no sentences).
+> RULE: When making changes, update the corresponding agents.md files using the same style (fragments, key-value, no sentences).
 
 ## Commands
 - run: `npm start` (`node index.js`)
@@ -24,7 +24,7 @@
 
 ## Routes (`routes.js`)
 - `GET /` — SSR HTML; chart data inlined as JSON literals at page load
-- `GET /data` — JSON scalars + beam-energy output booleans + `sicColors[11]` + `vacuumColors[8]`; client polls every 3s
+- `GET /data` — JSON scalars + beam-energy output booleans + `sicColors[11]` + `vacuumColors[8]`; client polls 3s after prior poll completion
 - `GET /chart-data?view=short|long` — downsampled display arrays + graph metadata
 - `GET /ccs-chart-data` — CCS ring buffer arrays A/B/C
 - `GET /health` — live Supabase ping + `experimentRunning`
@@ -62,6 +62,8 @@
 - interaction: Zoom selection; Pan drag; wheel/pinch zoom; Reset/double-click restore
 - live windows: `1h`, `3h`, `6h`, `12h`, `24h`; presets follow newest; manual range fixed as Custom
 - historical: all-time default; manual Custom range
+- dashboard polling: self-scheduled after completion; 10s request timeout
+- pressure raw polling: one delta request in flight; 30s snapshots; latest snapshot generation wins
 
 ## Deploy
 - Render.com, `render.yaml`, auto-deploy from `main`

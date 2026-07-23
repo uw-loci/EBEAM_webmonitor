@@ -214,6 +214,13 @@ function renderDashboard(opts) {
   if (pressure !== null){
     pressure = Number(data.pressure).toExponential(3);
   }
+  let pressure902b = data.pressure_902b_mbar;
+  if (pressure902b !== null && typeof pressure902b !== 'undefined') {
+    const numericPressure902b = Number(pressure902b);
+    pressure902b = Number.isFinite(numericPressure902b)
+      ? numericPressure902b.toExponential(3)
+      : null;
+  }
 
   const temperatures = (data && data.temperatures) || {
     "1": "DISCONNECTED",
@@ -946,8 +953,8 @@ function renderDashboard(opts) {
           <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border-subtle);">
             <span></span>
             <h3 class="section-header" style="border-bottom:none; margin:0; text-align:center;">Vacuum Indicators</h3>
-            <span id="pressureReadings" style="font-size:1.05rem; font-weight:700; color:#7dd3fc; font-variant-numeric:tabular-nums; text-align:right;">
-              ${pressure !== null ? pressure + ' mbar' : '--'}
+            <span id="pressureReadings" style="font-size:1.05rem; font-weight:700; color:#7dd3fc; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap;">
+              <span id="pressure972b">972B: ${pressure !== null ? pressure + ' mbar' : '-- mbar'}</span>&nbsp;&nbsp;<span id="pressure902b" style="color:#818cf8;">902B: ${pressure902b !== null ? pressure902b + ' mbar' : '-- mbar'}</span>
             </span>
           </div>
           <div class="vacuum-indicators-container">
@@ -1926,7 +1933,7 @@ function renderDashboard(opts) {
           title: 'Cathode C \u2014 Clamp Temperature',
           data: [${JSON.stringify(ccsGraphC.xVals)}, ${JSON.stringify(ccsGraphC.yVals)}],
           seriesLabel: 'Temp C (°C)',
-          stroke: '#818cf8',
+          stroke: '#fca5a5',
         });
       </script>
 
@@ -2000,6 +2007,17 @@ function renderDashboard(opts) {
           }
 
           return Number(value).toFixed(2) + ' mA';
+        }
+
+        function formatPressureValue(value, isRunning) {
+          if (!isRunning || value === null || typeof value === 'undefined') {
+            return '-- mbar';
+          }
+
+          const numericValue = Number(value);
+          return Number.isFinite(numericValue)
+            ? numericValue.toExponential(3) + ' mbar'
+            : '-- mbar';
         }
 
         function updatePowerSupplyOutput(id, outputEnabled, isRunning) {
@@ -2078,7 +2096,8 @@ function renderDashboard(opts) {
             elem.style.backgroundColor = experimentRunning ? data.vacuumColors[i] : 'grey';
           });
 
-          const pressureReadings = document.getElementById('pressureReadings');
+          const pressure972b = document.getElementById('pressure972b');
+          const pressure902b = document.getElementById('pressure902b');
 
           const webMonitorLastModified = document.getElementById('log-last-modified');
 
@@ -2158,7 +2177,10 @@ function renderDashboard(opts) {
           });
           siteLastUpdated.textContent = clean_string;
 
-          pressureReadings.textContent = String(data.pressure).replace("E", "e") + " mbar";
+          pressure972b.textContent =
+            '972B: ' + formatPressureValue(data.pressure, experimentRunning);
+          pressure902b.textContent =
+            '902B: ' + formatPressureValue(data.pressure_902b_mbar, experimentRunning);
           sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None" && !experimentRunning) ? '--' : data.temperatures["1"] + '°C';
           sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None" && !experimentRunning) ? '--' : data.temperatures["2"] + '°C';
           sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None" && !experimentRunning) ? '--' : data.temperatures["3"] + '°C';

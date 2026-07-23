@@ -105,6 +105,7 @@ function mapSupabaseDataToAppFormat(logData) {
 
   return {
     pressure: logData.pressure || null,
+    pressure_902b_mbar: logData.pressure_902b_mbar ?? null,
     pressureTimestamp: logData.pressureTimestamp || null,
     safetyInputDataFlags: logData.safetyInputDataFlags || null,
     safetyOutputDataFlags: logData.safetyOutputDataFlags || null,
@@ -148,6 +149,7 @@ function mapSupabaseDataToAppFormat(logData) {
 function resetData() {
   state.data = {
     pressure: null,
+    pressure_902b_mbar: null,
     pressureTimestamp: null,
     safetyOutputDataFlags: null,
     safetyInputDataFlags: null,

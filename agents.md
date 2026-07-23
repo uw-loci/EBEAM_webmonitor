@@ -48,6 +48,9 @@
 - `short_term_logs`: `id` (int), `created_at` (timestamptz), `data` (JSONB) — 3s cadence
 - `long_term_logs`: `id` (UUID), `recorded_at` (timestamptz), `avg_pressure` (float) — 1-min avg
 
+- pressure scalars: `data.pressure` = 972B; `data.pressure_902b_mbar` = 902B; 902B display only, indigo `#818cf8`
+- CCS chart colors: A orange `#f97316`; B green `#22c55e`; C pale red `#fca5a5`
+
 ## Timestamps
 - Supabase: ISO 8601 UTC strings
 - Graph X-axis: Unix **seconds** (not ms) — `Math.floor(ms / 1000)`

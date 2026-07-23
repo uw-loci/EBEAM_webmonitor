@@ -53,6 +53,7 @@ function registerRoutes(app) {
 
     res.json({
       pressure: state.data.pressure,
+      pressure_902b_mbar: state.data.pressure_902b_mbar,
       pressureTimestamp: state.data.pressureTimestamp,
       safetyInputStatusFlags: state.data.safetyInputStatusFlags,
       safetyOutputStatusFlags: state.data.safetyOutputStatusFlags,

@@ -43,6 +43,7 @@ const state = {
   // Main data object holding all extracted experimental values
   data: {
     pressure: null,
+    pressure_902b_mbar: null,
     pressureTimestamp: null,
     safetyOutputDataFlags: null,
     safetyInputDataFlags: null,

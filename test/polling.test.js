@@ -267,6 +267,7 @@ const {
   backfillLongTermGraph,
   fetchShortTermEntriesSince,
   fetchLongTermEntriesSince,
+  mapSupabaseDataToAppFormat,
 } = require('../services/supabase');
 const {
   applyShortTermEntries,
@@ -399,6 +400,7 @@ function resetSingletonState() {
   state.experimentRunning = false;
   state.data = {
     pressure: null,
+    pressure_902b_mbar: null,
     pressureTimestamp: null,
     safetyOutputDataFlags: null,
     safetyInputDataFlags: null,
@@ -481,6 +483,16 @@ beforeEach(() => {
   resetCCSGraph(ccsGraphA);
   resetCCSGraph(ccsGraphB);
   resetCCSGraph(ccsGraphC);
+});
+
+test('maps the 902B Supabase pressure into scalar state', () => {
+  const mapped = mapSupabaseDataToAppFormat({
+    pressure: '1.234e-6',
+    pressure_902b_mbar: 5.678e-7,
+  });
+
+  assert.equal(mapped.pressure, '1.234e-6');
+  assert.equal(mapped.pressure_902b_mbar, 5.678e-7);
 });
 
 test('applyShortTermEntries catches up every unseen short-term row in order', () => {
@@ -1208,7 +1220,22 @@ test('chart-data returns density metadata for both short and long views', () => 
   assert.deepEqual(longResponse.payload.yVals, longTermPressureGraph.displayYVals);
 });
 
+test('/data exposes the latest 902B pressure', () => {
+  state.data.pressure_902b_mbar = 5.678e-7;
+  const app = createFakeApp();
+  registerRoutes(app);
+
+  const dataRoute = app.routes.find((route) => route.method === 'GET' && route.path === '/data');
+  const response = createResponseRecorder();
+  dataRoute.handler({}, response);
+
+  assert.equal(response.payload.pressure_902b_mbar, 5.678e-7);
+});
+
 test('dashboard HTML uses the recent-log viewer and does not force refresh on open', async () => {
+  state.experimentRunning = true;
+  state.data.pressure = 1.234e-6;
+  state.data.pressure_902b_mbar = 5.678e-7;
   const app = createFakeApp();
   registerRoutes(app);
 
@@ -1220,6 +1247,12 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
 
   assert.equal(response.statusCode, 200);
   assert.match(response.payload, /Recent Log \(last 30 min\)/);
+  assert.match(response.payload, /id="pressure972b">972B: 1\.234e-6 mbar<\/span>&nbsp;&nbsp;<span id="pressure902b" style="color:#818cf8;">902B: 5\.678e-7 mbar/);
+  assert.match(response.payload, /title: 'Cathode C — Clamp Temperature',[\s\S]*?stroke: '#fca5a5'/);
+  assert.doesNotMatch(response.payload, /972B:[^<]*\|[^<]*902B:/);
+  assert.match(response.payload, /return '-- mbar';/);
+  assert.match(response.payload, /'972B: ' \+ formatPressureValue\(data\.pressure, experimentRunning\)/);
+  assert.match(response.payload, /formatPressureValue\(data\.pressure_902b_mbar, experimentRunning\)/);
   assert.match(response.payload, /Show Recent Log/);
   assert.match(response.payload, /class="log-viewer-header"/);
   assert.match(response.payload, /class="btn-toggle log-toggle-button"/);

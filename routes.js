@@ -140,7 +140,10 @@ function registerRoutes(app) {
         view,
         resetRequired: false,
         xVals: graph.fullXVals.slice(sliceIndex),
-        yVals: graph.fullYVals.slice(sliceIndex),
+        pressure972bVals: graph.fullYVals.slice(sliceIndex),
+        ...(view === 'short' && {
+          pressure902bVals: graph.fullPressure902bVals.slice(sliceIndex),
+        }),
         cursor: graph.nextPointIndex,
         cacheStartIndex,
         maxDataPoints: graph.maxDataPoints,
@@ -151,7 +154,10 @@ function registerRoutes(app) {
     res.json({
       view,
       xVals: graph.displayXVals,
-      yVals: graph.displayYVals,
+      pressure972bVals: graph.displayYVals,
+      ...(view === 'short' && {
+        pressure902bVals: graph.displayPressure902bVals,
+      }),
       ...getGraphMetadata(graph),
     });
   });

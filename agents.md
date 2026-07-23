@@ -25,7 +25,7 @@
 ## Routes (`routes.js`)
 - `GET /` — SSR HTML; chart data inlined as JSON literals at page load
 - `GET /data` — JSON scalars + beam-energy output booleans + `sicColors[11]` + `vacuumColors[8]`; client polls 3s after prior poll completion
-- `GET /chart-data?view=short|long` — downsampled display arrays + graph metadata
+- `GET /chart-data?view=short|long` — `xVals` + `pressure972bVals`; short view also `pressure902bVals`; graph metadata
 - `GET /ccs-chart-data` — CCS ring buffer arrays A/B/C
 - `GET /health` — live Supabase ping + `experimentRunning`
 - `GET /raw` — serves `reversed.txt` as `text/plain`
@@ -48,23 +48,26 @@
 - `short_term_logs`: `id` (int), `created_at` (timestamptz), `data` (JSONB) — 3s cadence
 - `long_term_logs`: `id` (UUID), `recorded_at` (timestamptz), `avg_pressure` (float) — 1-min avg
 
-- pressure scalars: `data.pressure` = 972B; `data.pressure_902b_mbar` = 902B; 902B display only, indigo `#818cf8`
+- pressure fields: `data.pressure` = 972B mbar; `data.pressure_902b_mbar` = 902B mbar; 902B Live graph + scalar only
 - CCS chart colors: A orange `#f97316`; B green `#22c55e`; C pale red `#fca5a5`
 
 ## Timestamps
 - Supabase: ISO 8601 UTC strings
-- Graph X-axis: Unix **seconds** (not ms) — `Math.floor(ms / 1000)`
+- Graph X-axis: fractional Unix **seconds** — `ms / 1000`
 - Display: `America/Chicago` timezone
 
 ## Pressure chart
 - Y-axis: base-10 logarithmic (`distr: 3`, `log: 10`) — short + historical views
-- values: finite `> 0`; nonpositive/invalid → `null` gaps client-side
+- Live series: 972B cyan `#38bdf8`; 902B indigo `#818cf8`; solid, independently toggleable
+- Historical series: 972B only
+- values: finite `> 0`; missing/nonpositive/invalid → aligned `null` gaps; no carry-forward
 - labels: scientific notation; axis identifies `log10`
 - range: visible positive minimum lower padding >= 0.5 decade; Y auto-range per X viewport
-- grid: log mantissas `1`, `3`, `5`, `7`, `9`
-- interaction: Zoom selection; Pan drag; wheel/pinch zoom; Reset/double-click restore
-- live windows: `1h`, `3h`, `6h`, `12h`, `24h`; presets follow newest; manual range fixed as Custom
-- historical: all-time default; manual Custom range
+- grid: max 10 exact log mantissas; decades (`1`) first, then `2`, `3`, `5`, `7`, `9`
+- interaction: Zoom selection; Pan drag; wheel/pinch zoom; minimum X window 10s; Reset/double-click restore
+- live windows: `1h`, `3h`, `6h`, `12h`, `24h`; presets end at current server time; manual range fixed as Custom
+- historical: all-time default ends at current server time; manual Custom range
+- viewport-now: X-range only; no synthetic points; absolute-index downsampling unchanged
 - dashboard polling: self-scheduled after completion; 10s request timeout
 - pressure raw polling: one delta request in flight; 30s snapshots; latest snapshot generation wins
 

@@ -58,16 +58,26 @@ function filterPressureLogGridSplits(_uplot, splits) {
     return [];
   }
 
+  const allowedMantissas = new Set([1, 2, 3, 5, 7, 9, 10]);
+  const exactSplits = splits.map((value) => {
+    if (!Number.isFinite(value) || value <= 0) return null;
+    const exponent = Math.floor(Math.log10(value));
+    const magnitude = 10 ** exponent;
+    const mantissa = Math.round(value / magnitude);
+    return allowedMantissas.has(mantissa)
+      ? Number(`${mantissa}e${exponent}`)
+      : null;
+  });
   const candidateIndexes = [];
   const decadeIndexes = [];
-  splits.forEach((value, index) => {
-    if (!Number.isFinite(value) || value <= 0) return;
+  const seenValues = new Set();
+  exactSplits.forEach((value, index) => {
+    if (!Number.isFinite(value) || seenValues.has(value)) return;
+    seenValues.add(value);
     const magnitude = 10 ** Math.floor(Math.log10(value));
     const mantissa = Math.round(value / magnitude);
-    if (mantissa % 2 === 1 || mantissa === 2) {
-      candidateIndexes.push(index);
-      if (mantissa === 1) decadeIndexes.push(index);
-    }
+    candidateIndexes.push(index);
+    if (mantissa === 1) decadeIndexes.push(index);
   });
 
   const maxSplits = 10;
@@ -87,7 +97,7 @@ function filterPressureLogGridSplits(_uplot, splits) {
     const minLabelSpacing = 16;
     const positionedIndexes = Array.from(visibleIndexes, (index) => ({
       index,
-      position: _uplot.valToPos(splits[index], 'y'),
+      position: _uplot.valToPos(exactSplits[index], 'y'),
       isDecade: decadeIndexes.includes(index),
     })).filter(({ position }) => Number.isFinite(position)).sort((a, b) => a.position - b.position);
     const nonOverlapping = [];
@@ -107,12 +117,15 @@ function filterPressureLogGridSplits(_uplot, splits) {
     visibleIndexes = new Set(nonOverlapping.map(({ index }) => index));
   }
 
-  return splits.map((value, index) => visibleIndexes.has(index) ? value : null);
+  return exactSplits.map((value, index) => visibleIndexes.has(index) ? value : null);
 }
 
-function getPressureTimeWindowBounds(xVals, hours) {
+function getPressureTimeWindowBounds(xVals, hours, nowSec = null) {
+  const currentTime = Number.isFinite(nowSec) ? nowSec : null;
   if (!Array.isArray(xVals) || xVals.length === 0) {
-    return [null, null];
+    return Number.isFinite(hours) && hours > 0 && currentTime !== null
+      ? [currentTime - hours * 60 * 60, currentTime]
+      : [null, null];
   }
 
   const firstValue = xVals.find(Number.isFinite);
@@ -121,15 +134,77 @@ function getPressureTimeWindowBounds(xVals, hours) {
     return [null, null];
   }
 
+  const rightEdge = currentTime === null ? lastValue : Math.max(lastValue, currentTime);
   if (!Number.isFinite(hours) || hours <= 0) {
-    return [firstValue, lastValue];
+    return [firstValue, rightEdge];
   }
 
-  return [Math.max(firstValue, lastValue - hours * 60 * 60), lastValue];
+  return [Math.max(firstValue, rightEdge - hours * 60 * 60), rightEdge];
 }
 
-function buildPressureViewportSample(xVals, yVals, min, max, maxDisplayPoints = 1000, indexOffset = 0) {
-  const empty = { xVals: [], yVals: [], rawPointCount: 0, displayPointCount: 0, downsampleFactor: 1 };
+function clampPressureViewportRange(
+  dataMin,
+  dataMax,
+  requestedMin,
+  requestedMax,
+  sourceMinimumSpan = 1
+) {
+  if (
+    !Number.isFinite(dataMin) ||
+    !Number.isFinite(dataMax) ||
+    dataMax <= dataMin ||
+    !Number.isFinite(requestedMin) ||
+    !Number.isFinite(requestedMax) ||
+    requestedMax <= requestedMin
+  ) {
+    return null;
+  }
+
+  const minimumSpan = Math.max(
+    10,
+    Number.isFinite(sourceMinimumSpan) && sourceMinimumSpan > 0
+      ? sourceMinimumSpan
+      : 1
+  );
+  const boundedMin = Math.min(dataMin, dataMax - minimumSpan);
+  const boundedMax = dataMax;
+  const fullSpan = boundedMax - boundedMin;
+  const requestedSpan = requestedMax - requestedMin;
+  const span = Math.max(minimumSpan, Math.min(fullSpan, requestedSpan));
+
+  if (span >= fullSpan) return [boundedMin, boundedMax];
+
+  const center = requestedMin + requestedSpan / 2;
+  let min = center - span / 2;
+  let max = center + span / 2;
+  if (min < boundedMin) {
+    min = boundedMin;
+    max = boundedMin + span;
+  }
+  if (max > boundedMax) {
+    max = boundedMax;
+    min = boundedMax - span;
+  }
+  return [min, max];
+}
+
+function buildPressureViewportSample(
+  xVals,
+  pressure972bVals,
+  pressure902bVals,
+  min,
+  max,
+  maxDisplayPoints = 1000,
+  indexOffset = 0
+) {
+  const empty = {
+    xVals: [],
+    pressure972bVals: [],
+    pressure902bVals: [],
+    rawPointCount: 0,
+    displayPointCount: 0,
+    downsampleFactor: 1,
+  };
   if (!xVals.length || !Number.isFinite(min) || !Number.isFinite(max)) return empty;
 
   const findBound = (target, upper) => {
@@ -156,17 +231,21 @@ function buildPressureViewportSample(xVals, yVals, min, max, maxDisplayPoints = 
   const remainder = (indexOffset + start) % downsampleFactor;
   const firstSampleIndex = start + ((downsampleFactor - remainder) % downsampleFactor);
   const sampledXVals = [];
-  const sampledYVals = [];
+  const sampledPressure972bVals = [];
+  const sampledPressure902bVals = [];
   for (let index = firstSampleIndex; index < end - 1; index += downsampleFactor) {
     sampledXVals.push(xVals[index]);
-    sampledYVals.push(yVals[index]);
+    sampledPressure972bVals.push(pressure972bVals[index]);
+    sampledPressure902bVals.push(pressure902bVals[index]);
   }
   sampledXVals.push(xVals[end - 1]);
-  sampledYVals.push(yVals[end - 1]);
+  sampledPressure972bVals.push(pressure972bVals[end - 1]);
+  sampledPressure902bVals.push(pressure902bVals[end - 1]);
 
   return {
     xVals: sampledXVals,
-    yVals: sampledYVals,
+    pressure972bVals: sampledPressure972bVals,
+    pressure902bVals: sampledPressure902bVals,
     rawPointCount,
     displayPointCount: sampledXVals.length,
     downsampleFactor,
@@ -243,6 +322,7 @@ function renderDashboard(opts) {
   const paddedPressureLogRangeSource = getPaddedPressureLogRange.toString();
   const pressureLogGridFilterSource = filterPressureLogGridSplits.toString();
   const pressureTimeWindowBoundsSource = getPressureTimeWindowBounds.toString();
+  const pressureViewportClampSource = clampPressureViewportRange.toString();
   const pressureViewportSampleSource = buildPressureViewportSample.toString();
   const jsonFetchSource = fetchJsonWithTimeout.toString();
 
@@ -1161,6 +1241,7 @@ function renderDashboard(opts) {
         ${paddedPressureLogRangeSource}
         ${pressureLogGridFilterSource}
         ${pressureTimeWindowBoundsSource}
+        ${pressureViewportClampSource}
         ${pressureViewportSampleSource}
         const REQUEST_TIMEOUT_MS = ${REQUEST_TIMEOUT_MS};
         const PRESSURE_SNAPSHOT_TIMEOUT_MS = ${PRESSURE_SNAPSHOT_TIMEOUT_MS};
@@ -1172,17 +1253,21 @@ function renderDashboard(opts) {
         let pressureViewportKind = 'preset';
         let pressureCustomRange = null;
         let pressureRawDataX = ${JSON.stringify(shortTermPressureGraph.displayXVals)};
-        let pressureRawDataY = ${JSON.stringify(shortTermPressureGraph.displayYVals)};
+        let pressureRawData972b = ${JSON.stringify(shortTermPressureGraph.displayYVals)};
+        let pressureRawData902b = ${JSON.stringify(shortTermPressureGraph.displayPressure902bVals)};
         let pressureRawCursor = null;
         let pressureRawIndexOffset = 0;
         let pressureRawMaxPoints = ${shortTermPressureGraph.maxDataPoints};
         let pressureSourceResolutionLabel = ${JSON.stringify(shortTermPressureGraph.sourceResolutionLabel)};
+        let pressureViewportNow = Date.now() / 1000;
         let pressureMinimumXSpan = getMinimumPressureXSpan(pressureRawDataX);
         let pressureViewportRenderFrame = null;
         let pressureRawRefreshInFlight = false;
         let pressureSnapshotGeneration = 0;
         let pressureChart = null;
         let pressureChartInitialized = false;
+        let pressure902bLiveVisible = true;
+        let pressure902bSuppressedForHistorical = false;
         let applyingPressureViewport = false;
         let lastLongTermPollAt = Date.now();
         const LONG_TERM_POLL_INTERVAL_MS = 60_000;
@@ -1198,7 +1283,7 @@ function renderDashboard(opts) {
         const pressureResetView = document.getElementById('pressure-reset-view');
 
         function getPressureDataExtent() {
-          return getPressureTimeWindowBounds(pressureRawDataX, null);
+          return getPressureTimeWindowBounds(pressureRawDataX, null, pressureViewportNow);
         }
 
         function resolvePressureViewport() {
@@ -1226,7 +1311,11 @@ function renderDashboard(opts) {
           }
 
           if (currentPressureView === 'short') {
-            return getPressureTimeWindowBounds(pressureRawDataX, selectedLiveHours);
+            return getPressureTimeWindowBounds(
+              pressureRawDataX,
+              selectedLiveHours,
+              pressureViewportNow
+            );
           }
 
           return getPressureDataExtent();
@@ -1273,25 +1362,13 @@ function renderDashboard(opts) {
 
           const clampScaleRange = (min, max) => {
             const [dataMin, dataMax] = options.getDataExtent();
-            if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax) || dataMax <= dataMin) {
-              return null;
-            }
-
-            let span = max - min;
-            const fullSpan = dataMax - dataMin;
-            const minimumSpan = Math.min(fullSpan, options.getMinimumSpan());
-            span = Math.max(minimumSpan, Math.min(fullSpan, span));
-
-            if (span >= fullSpan) return [dataMin, dataMax];
-            if (min < dataMin) {
-              min = dataMin;
-              max = dataMin + span;
-            }
-            if (max > dataMax) {
-              max = dataMax;
-              min = dataMax - span;
-            }
-            return [min, max];
+            return clampPressureViewportRange(
+              dataMin,
+              dataMax,
+              min,
+              max,
+              options.getMinimumSpan()
+            );
           };
 
           const setUserXScale = (min, max) => {
@@ -1504,8 +1581,7 @@ function renderDashboard(opts) {
 
           const {
             title = "Live Updating Chart",
-            data = [[], []],
-            seriesLabel = "Series",
+            data = [[], [], []],
             maxDataPoints = 1000,
             maxDisplayPoints = 100,
             displayXVals = [],
@@ -1542,13 +1618,22 @@ function renderDashboard(opts) {
             series: [
               {},
               {
-                label: seriesLabel,
+                label: '972B pressure (mbar)',
                 value: (u, v) => {
                   if (v == null) return "";
                   return v.toExponential(4);
                 },
                 stroke: '#38bdf8',
                 points: { show: true, size: 2, fill: '#38bdf8', stroke: '#38bdf8' }
+              },
+              {
+                label: '902B pressure (mbar)',
+                value: (u, v) => {
+                  if (v == null) return "";
+                  return v.toExponential(4);
+                },
+                stroke: '#818cf8',
+                points: { show: true, size: 2, fill: '#818cf8', stroke: '#818cf8' }
               }
             ],
             scales: {
@@ -1631,8 +1716,8 @@ function renderDashboard(opts) {
           data: [
             ${JSON.stringify(shortTermPressureGraph.displayXVals)},
             normalizePressureSeriesForLogScale(${JSON.stringify(shortTermPressureGraph.displayYVals)}),
+            normalizePressureSeriesForLogScale(${JSON.stringify(shortTermPressureGraph.displayPressure902bVals)}),
           ],
-          seriesLabel: "pressure (mbar)",
           maxDataPoints: ${shortTermPressureGraph.maxDataPoints},
           maxDisplayPoints: ${shortTermPressureGraph.maxDisplayPoints},
           displayXVals: ${JSON.stringify(shortTermPressureGraph.displayXVals)},
@@ -1662,17 +1747,25 @@ function renderDashboard(opts) {
           const [min, max] = resolvePressureViewport();
           const sample = buildPressureViewportSample(
             pressureRawDataX,
-            pressureRawDataY,
+            pressureRawData972b,
+            pressureRawData902b,
             min,
             max,
             1000,
             pressureRawIndexOffset
           );
-          const normalizedYVals = normalizePressureSeriesForLogScale(sample.yVals);
+          const normalizedPressure972bVals =
+            normalizePressureSeriesForLogScale(sample.pressure972bVals);
+          const normalizedPressure902bVals = currentPressureView === 'short'
+            ? normalizePressureSeriesForLogScale(sample.pressure902bVals)
+            : new Array(sample.xVals.length).fill(null);
 
           applyingPressureViewport = true;
           pressureChart.batch(() => {
-            pressureChart.setData([sample.xVals, normalizedYVals], false);
+            pressureChart.setData(
+              [sample.xVals, normalizedPressure972bVals, normalizedPressure902bVals],
+              false
+            );
             if (Number.isFinite(min) && Number.isFinite(max) && max > min) {
               pressureChart.setScale('x', { min, max });
             } else {
@@ -1686,6 +1779,7 @@ function renderDashboard(opts) {
             sourceResolutionLabel: pressureSourceResolutionLabel,
           });
           updatePressureChartViewText();
+          updatePressureSeriesVisibility();
         }
 
         function schedulePressureViewportRender() {
@@ -1698,7 +1792,13 @@ function renderDashboard(opts) {
 
         function replacePressureRawData(chartData) {
           pressureRawDataX = Array.isArray(chartData.xVals) ? chartData.xVals.slice() : [];
-          pressureRawDataY = Array.isArray(chartData.yVals) ? chartData.yVals.slice() : [];
+          pressureRawData972b = Array.isArray(chartData.pressure972bVals)
+            ? chartData.pressure972bVals.slice()
+            : [];
+          pressureRawData902b =
+            chartData.view === 'short' && Array.isArray(chartData.pressure902bVals)
+              ? chartData.pressure902bVals.slice()
+              : [];
           pressureRawCursor = chartData.cursor;
           pressureRawIndexOffset = chartData.cacheStartIndex;
           pressureRawMaxPoints = Number(chartData.maxDataPoints) || pressureRawMaxPoints;
@@ -1709,21 +1809,31 @@ function renderDashboard(opts) {
 
         function appendPressureRawData(chartData) {
           const xVals = Array.isArray(chartData.xVals) ? chartData.xVals : [];
-          const yVals = Array.isArray(chartData.yVals) ? chartData.yVals : [];
+          const pressure972bVals = Array.isArray(chartData.pressure972bVals)
+            ? chartData.pressure972bVals
+            : [];
+          const pressure902bVals = Array.isArray(chartData.pressure902bVals)
+            ? chartData.pressure902bVals
+            : [];
           const nextCacheStartIndex = Number(chartData.cacheStartIndex);
           const expiredPointCount = Number.isInteger(nextCacheStartIndex)
             ? Math.max(0, nextCacheStartIndex - pressureRawIndexOffset)
             : 0;
           if (expiredPointCount > 0) {
             pressureRawDataX.splice(0, expiredPointCount);
-            pressureRawDataY.splice(0, expiredPointCount);
+            pressureRawData972b.splice(0, expiredPointCount);
+            pressureRawData902b.splice(0, expiredPointCount);
           }
           pressureRawDataX.push(...xVals);
-          pressureRawDataY.push(...yVals);
+          pressureRawData972b.push(...pressure972bVals);
+          if (currentPressureView === 'short') {
+            pressureRawData902b.push(...pressure902bVals);
+          }
           const overflow = pressureRawDataX.length - pressureRawMaxPoints;
           if (overflow > 0) {
             pressureRawDataX.splice(0, overflow);
-            pressureRawDataY.splice(0, overflow);
+            pressureRawData972b.splice(0, overflow);
+            pressureRawData902b.splice(0, overflow);
           }
           pressureRawCursor = chartData.cursor;
           pressureRawIndexOffset = chartData.cacheStartIndex;
@@ -1784,6 +1894,27 @@ function renderDashboard(opts) {
             pressureChartLabel.textContent = 'Historical (' + rangeLabel + ', 1-min averaged source data)';
             pressureViewToggle.textContent = 'Switch to Live View';
             pressureTimeRangeGroup.hidden = true;
+          }
+        }
+
+        function updatePressureSeriesVisibility() {
+          if (!pressureChart) return;
+
+          const isLiveView = currentPressureView === 'short';
+          const legendRows = pressureChart.root.querySelectorAll('.u-legend .u-series');
+          const pressure902bLegendRow = legendRows[2];
+
+          if (!isLiveView && !pressure902bSuppressedForHistorical) {
+            pressure902bLiveVisible = pressureChart.series[2].show !== false;
+            pressureChart.setSeries(2, { show: false });
+            pressure902bSuppressedForHistorical = true;
+          } else if (isLiveView && pressure902bSuppressedForHistorical) {
+            pressureChart.setSeries(2, { show: pressure902bLiveVisible });
+            pressure902bSuppressedForHistorical = false;
+          }
+
+          if (pressure902bLegendRow) {
+            pressure902bLegendRow.style.display = isLiveView ? '' : 'none';
           }
         }
 
@@ -2171,6 +2302,13 @@ function renderDashboard(opts) {
           if (powerSupplyMeasuredCurrentB3) powerSupplyMeasuredCurrentB3.textContent = 'Measured Current: ' + formatPowerSupplyCurrent(data.pos_3kv_i, experimentRunning);
 
           const dateObj = new Date(data.siteLastUpdated);
+          const serverNowMs = Date.parse(data.siteLastUpdated);
+          pressureViewportNow = Number.isFinite(serverNowMs)
+            ? serverNowMs / 1000
+            : Date.now() / 1000;
+          if (pressureViewportKind !== 'custom') {
+            schedulePressureViewportRender();
+          }
           const clean_string = dateObj.toLocaleString("en-US", {
             hour12: true,
             timeZone: "America/Chicago"
@@ -2339,5 +2477,6 @@ module.exports = {
   getPaddedPressureLogRange,
   filterPressureLogGridSplits,
   getPressureTimeWindowBounds,
+  clampPressureViewportRange,
   buildPressureViewportSample,
 };

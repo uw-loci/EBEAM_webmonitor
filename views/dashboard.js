@@ -188,6 +188,11 @@ function clampPressureViewportRange(
   return [min, max];
 }
 
+function getCCSTimeWindowBounds(nowSec) {
+  const rightEdge = Number.isFinite(nowSec) ? nowSec : Date.now() / 1000;
+  return [rightEdge - 60 * 60, rightEdge];
+}
+
 function buildPressureViewportSample(
   xVals,
   pressure972bVals,
@@ -324,6 +329,7 @@ function renderDashboard(opts) {
   const pressureTimeWindowBoundsSource = getPressureTimeWindowBounds.toString();
   const pressureViewportClampSource = clampPressureViewportRange.toString();
   const pressureViewportSampleSource = buildPressureViewportSample.toString();
+  const ccsTimeWindowBoundsSource = getCCSTimeWindowBounds.toString();
   const jsonFetchSource = fetchJsonWithTimeout.toString();
 
   function formatPressureChartStatus(meta) {
@@ -1979,6 +1985,22 @@ function renderDashboard(opts) {
       </div>
 
       <script>
+        ${ccsTimeWindowBoundsSource}
+
+        let ccsViewportNow = ${Date.now() / 1000};
+
+        function setCCSChartTimeWindow(chart, nowSec = ccsViewportNow) {
+          const [min, max] = getCCSTimeWindowBounds(nowSec);
+          chart.setScale('x', { min, max });
+        }
+
+        function updateCCSChartTimeWindows(nowSec = ccsViewportNow) {
+          ccsViewportNow = Number.isFinite(nowSec) ? nowSec : Date.now() / 1000;
+          setCCSChartTimeWindow(ccsChartA, ccsViewportNow);
+          setCCSChartTimeWindow(ccsChartB, ccsViewportNow);
+          setCCSChartTimeWindow(ccsChartC, ccsViewportNow);
+        }
+
         function createCCSUplotChart(container, config) {
           if (typeof container === 'string') container = document.querySelector(container);
 
@@ -2042,7 +2064,7 @@ function renderDashboard(opts) {
           });
 
           chartEl.ondblclick = () => {
-            uplot.setScale('x', { min: null, max: null });
+            setCCSChartTimeWindow(uplot);
           };
 
           return uplot;
@@ -2066,6 +2088,7 @@ function renderDashboard(opts) {
           seriesLabel: 'Temp C (°C)',
           stroke: '#fca5a5',
         });
+        updateCCSChartTimeWindows();
       </script>
 
       <!-- Log Viewer -->
@@ -2306,6 +2329,7 @@ function renderDashboard(opts) {
           pressureViewportNow = Number.isFinite(serverNowMs)
             ? serverNowMs / 1000
             : Date.now() / 1000;
+          ccsViewportNow = pressureViewportNow;
           if (pressureViewportKind !== 'custom') {
             schedulePressureViewportRender();
           }
@@ -2350,6 +2374,8 @@ function renderDashboard(opts) {
             ccsChartC.setData([ccsData.C.xVals, ccsData.C.yVals]);
           } catch (e) {
             console.error('CCS chart data update failed:', e);
+          } finally {
+            updateCCSChartTimeWindows(ccsViewportNow);
           }
 
           } catch (error) {
@@ -2478,5 +2504,6 @@ module.exports = {
   filterPressureLogGridSplits,
   getPressureTimeWindowBounds,
   clampPressureViewportRange,
+  getCCSTimeWindowBounds,
   buildPressureViewportSample,
 };

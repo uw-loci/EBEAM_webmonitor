@@ -180,7 +180,7 @@ The pressure toolbar defaults to **Zoom** mode, where dragging selects an X rang
 
 ### CCS clamp-temperature charts
 
-In addition to the pressure graphs, startup backfills three CCS clamp-temperature series from the last hour of short-term telemetry. These are stored in fixed-size ring buffers (`ccsGraphA`, `ccsGraphB`, and `ccsGraphC`) and served through `/ccs-chart-data` for the three cathode charts on the dashboard.
+In addition to the pressure graphs, startup backfills three CCS clamp-temperature series from the last hour of short-term telemetry. These are stored in fixed-size ring buffers (`ccsGraphA`, `ccsGraphB`, and `ccsGraphC`) and served through `/ccs-chart-data` for the three cathode charts on the dashboard. Each chart keeps an explicit moving X-axis window from one hour ago through the current server time, so time ticks remain visible even when every temperature value is missing.
 
 ### Beam Energy power-supply telemetry
 

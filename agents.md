@@ -71,6 +71,11 @@
 - dashboard polling: self-scheduled after completion; 10s request timeout
 - pressure raw polling: one delta request in flight; 30s snapshots; latest snapshot generation wins
 
+## CCS charts
+- X window: moving 1h ending at current server time; independent of temperature-point availability
+- X window refresh: initial render + each 3s dashboard poll; double-click restores current 1h
+- Y values: nullable; empty series retains time axis
+
 ## Deploy
 - Render.com, `render.yaml`, auto-deploy from `main`
 - `reversed.txt` written to project root at runtime — ephemeral on Render (re-fetched on restart)

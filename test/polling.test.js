@@ -252,6 +252,7 @@ const {
   filterPressureLogGridSplits,
   getPressureTimeWindowBounds,
   clampPressureViewportRange,
+  getCCSTimeWindowBounds,
   buildPressureViewportSample,
 } = require('../views/dashboard');
 const {
@@ -1344,6 +1345,10 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /Recent Log \(last 30 min\)/);
   assert.match(response.payload, /id="pressure972b">972B: 1\.234e-6 mbar<\/span>&nbsp;&nbsp;<span id="pressure902b" style="color:#818cf8;">902B: 5\.678e-7 mbar/);
   assert.match(response.payload, /title: 'Cathode C — Clamp Temperature',[\s\S]*?stroke: '#fca5a5'/);
+  assert.match(response.payload, /function setCCSChartTimeWindow\(chart, nowSec = ccsViewportNow\)/);
+  assert.match(response.payload, /chart\.setScale\('x', \{ min, max \}\)/);
+  assert.match(response.payload, /chartEl\.ondblclick = \(\) => \{\s*setCCSChartTimeWindow\(uplot\);/);
+  assert.match(response.payload, /finally \{\s*updateCCSChartTimeWindows\(ccsViewportNow\);/);
   assert.doesNotMatch(response.payload, /972B:[^<]*\|[^<]*902B:/);
   assert.match(response.payload, /return '-- mbar';/);
   assert.match(response.payload, /'972B: ' \+ formatPressureValue\(data\.pressure, experimentRunning\)/);
@@ -1602,6 +1607,10 @@ test('clampPressureViewportRange preserves larger source-cadence and short-data 
   assert.deepEqual(clampPressureViewportRange(0, 5, 2, 3, 3), [-5, 5]);
   assert.equal(clampPressureViewportRange(null, 100, 40, 42, 3), null);
   assert.equal(clampPressureViewportRange(0, 100, 42, 40, 3), null);
+});
+
+test('getCCSTimeWindowBounds returns the hour ending at now', () => {
+  assert.deepEqual(getCCSTimeWindowBounds(1_800_000_000), [1_799_996_400, 1_800_000_000]);
 });
 
 test('buildPressureViewportSample keeps power-of-two sampling stable as the cache advances', () => {

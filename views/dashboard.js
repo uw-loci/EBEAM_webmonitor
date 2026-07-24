@@ -536,6 +536,31 @@ function renderDashboard(opts) {
           transition: text-shadow 0.3s ease;
           font-size: 0.9em;
         }
+        .vacuum-indicators-header {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
+          margin-bottom: 8px;
+          padding-bottom: 6px;
+          border-bottom: 1px solid var(--border-subtle);
+        }
+        .vacuum-indicators-heading {
+          border-bottom: none;
+          margin: 0;
+          text-align: center;
+        }
+        .vacuum-pressure-readings {
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.75rem;
+          justify-self: end;
+          color: #7dd3fc;
+          font-size: 1.05rem;
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+          text-align: right;
+          white-space: nowrap;
+        }
         .vacuum-indicators-container {
           display: flex;
           justify-content: space-evenly;
@@ -840,6 +865,19 @@ function renderDashboard(opts) {
           .beam-energy-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
+          .vacuum-indicators-header {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto;
+            row-gap: 6px;
+          }
+          .vacuum-indicators-header-spacer {
+            display: none;
+          }
+          .vacuum-indicators-heading,
+          .vacuum-pressure-readings {
+            justify-self: center;
+            text-align: center;
+          }
         }
         @media (max-width: 600px) {
           .card-container {
@@ -852,6 +890,12 @@ function renderDashboard(opts) {
           .pressure-chart-controls {
             width: 100%;
             justify-content: flex-start;
+          }
+          .vacuum-pressure-readings {
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            white-space: normal;
           }
         }
         /* =========================
@@ -1036,11 +1080,12 @@ function renderDashboard(opts) {
         </div>
         <!-- Vacuum Indicators Section -->
         <div class="vacuum-indicators">
-          <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border-subtle);">
-            <span></span>
-            <h3 class="section-header" style="border-bottom:none; margin:0; text-align:center;">Vacuum Indicators</h3>
-            <span id="pressureReadings" style="font-size:1.05rem; font-weight:700; color:#7dd3fc; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap;">
-              <span id="pressure972b">972B: ${pressure !== null ? pressure + ' mbar' : '-- mbar'}</span>&nbsp;&nbsp;<span id="pressure902b" style="color:#818cf8;">902B: ${pressure902b !== null ? pressure902b + ' mbar' : '-- mbar'}</span>
+          <div class="vacuum-indicators-header">
+            <span class="vacuum-indicators-header-spacer"></span>
+            <h3 class="section-header vacuum-indicators-heading">Vacuum Indicators</h3>
+            <span id="pressureReadings" class="vacuum-pressure-readings">
+              <span id="pressure972b">972B: ${pressure !== null ? pressure + ' mbar' : '-- mbar'}</span>
+              <span id="pressure902b" style="color:#818cf8;">902B: ${pressure902b !== null ? pressure902b + ' mbar' : '-- mbar'}</span>
             </span>
           </div>
           <div class="vacuum-indicators-container">

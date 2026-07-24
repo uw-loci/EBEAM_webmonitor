@@ -1343,7 +1343,17 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
 
   assert.equal(response.statusCode, 200);
   assert.match(response.payload, /Recent Log \(last 30 min\)/);
-  assert.match(response.payload, /id="pressure972b">972B: 1\.234e-6 mbar<\/span>&nbsp;&nbsp;<span id="pressure902b" style="color:#818cf8;">902B: 5\.678e-7 mbar/);
+  assert.match(response.payload, /id="pressure972b">972B: 1\.234e-6 mbar<\/span>\s*<span id="pressure902b" style="color:#818cf8;">902B: 5\.678e-7 mbar/);
+  assert.match(response.payload, /class="vacuum-indicators-header"/);
+  assert.match(response.payload, /id="pressureReadings" class="vacuum-pressure-readings"/);
+  assert.match(
+    response.payload,
+    /@media \(max-width: 992px\)[\s\S]*?\.vacuum-indicators-header \{\s*grid-template-columns: 1fr;[\s\S]*?\.vacuum-pressure-readings \{\s*justify-self: center;/
+  );
+  assert.match(
+    response.payload,
+    /@media \(max-width: 600px\)[\s\S]*?\.vacuum-pressure-readings \{\s*flex-direction: column;/
+  );
   assert.match(response.payload, /title: 'Cathode C — Clamp Temperature',[\s\S]*?stroke: '#fca5a5'/);
   assert.match(response.payload, /function setCCSChartTimeWindow\(chart, nowSec = ccsViewportNow\)/);
   assert.match(response.payload, /chart\.setScale\('x', \{ min, max \}\)/);

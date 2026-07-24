@@ -76,6 +76,11 @@
 - X window refresh: initial render + each 3s dashboard poll; double-click restores current 1h
 - Y values: nullable; empty series retains time axis
 
+## Responsive layout
+- Vacuum header `>992px`: title + both pressure readings in one row
+- Vacuum header `601–992px`: title row + centered shared pressure row
+- Vacuum header `<=600px`: title row + separate centered 972B/902B rows
+
 ## Deploy
 - Render.com, `render.yaml`, auto-deploy from `main`
 - `reversed.txt` written to project root at runtime — ephemeral on Render (re-fetched on restart)

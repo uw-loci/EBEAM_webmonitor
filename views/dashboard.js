@@ -296,13 +296,13 @@ function renderDashboard(opts) {
 
   let pressure = data.pressure;
   if (pressure !== null){
-    pressure = Number(data.pressure).toExponential(3);
+    pressure = Number(data.pressure).toExponential(2);
   }
   let pressure902b = data.pressure_902b_mbar;
   if (pressure902b !== null && typeof pressure902b !== 'undefined') {
     const numericPressure902b = Number(pressure902b);
     pressure902b = Number.isFinite(numericPressure902b)
-      ? numericPressure902b.toExponential(3)
+      ? numericPressure902b.toExponential(2)
       : null;
   }
 
@@ -1672,7 +1672,7 @@ function renderDashboard(opts) {
                 label: '972B pressure (mbar)',
                 value: (u, v) => {
                   if (v == null) return "";
-                  return v.toExponential(4);
+                  return v.toExponential(2);
                 },
                 stroke: '#38bdf8',
                 points: { show: true, size: 2, fill: '#38bdf8', stroke: '#38bdf8' }
@@ -1681,7 +1681,7 @@ function renderDashboard(opts) {
                 label: '902B pressure (mbar)',
                 value: (u, v) => {
                   if (v == null) return "";
-                  return v.toExponential(4);
+                  return v.toExponential(2);
                 },
                 stroke: '#818cf8',
                 points: { show: true, size: 2, fill: '#818cf8', stroke: '#818cf8' }
@@ -2215,7 +2215,7 @@ function renderDashboard(opts) {
 
           const numericValue = Number(value);
           return Number.isFinite(numericValue)
-            ? numericValue.toExponential(3) + ' mbar'
+            ? numericValue.toExponential(2) + ' mbar'
             : '-- mbar';
         }
 

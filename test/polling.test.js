@@ -1343,7 +1343,7 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
 
   assert.equal(response.statusCode, 200);
   assert.match(response.payload, /Recent Log \(last 30 min\)/);
-  assert.match(response.payload, /id="pressure972b">972B: 1\.234e-6 mbar<\/span>\s*<span id="pressure902b" style="color:#818cf8;">902B: 5\.678e-7 mbar/);
+  assert.match(response.payload, /id="pressure972b">972B: 1\.23e-6 mbar<\/span>\s*<span id="pressure902b" style="color:#818cf8;">902B: 5\.68e-7 mbar/);
   assert.match(response.payload, /class="vacuum-indicators-header"/);
   assert.match(response.payload, /id="pressureReadings" class="vacuum-pressure-readings"/);
   assert.match(
@@ -1361,6 +1361,7 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /finally \{\s*updateCCSChartTimeWindows\(ccsViewportNow\);/);
   assert.doesNotMatch(response.payload, /972B:[^<]*\|[^<]*902B:/);
   assert.match(response.payload, /return '-- mbar';/);
+  assert.match(response.payload, /numericValue\.toExponential\(2\) \+ ' mbar'/);
   assert.match(response.payload, /'972B: ' \+ formatPressureValue\(data\.pressure, experimentRunning\)/);
   assert.match(response.payload, /formatPressureValue\(data\.pressure_902b_mbar, experimentRunning\)/);
   assert.match(response.payload, /Show Recent Log/);
@@ -1375,8 +1376,8 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
     response.payload,
     /Number\.isFinite\(v\) \? v\.toExponential\(2\) : ''/
   );
-  assert.match(response.payload, /label: '972B pressure \(mbar\)'[\s\S]*?stroke: '#38bdf8'/);
-  assert.match(response.payload, /label: '902B pressure \(mbar\)'[\s\S]*?stroke: '#818cf8'/);
+  assert.match(response.payload, /label: '972B pressure \(mbar\)'[\s\S]*?return v\.toExponential\(2\);[\s\S]*?stroke: '#38bdf8'/);
+  assert.match(response.payload, /label: '902B pressure \(mbar\)'[\s\S]*?return v\.toExponential\(2\);[\s\S]*?stroke: '#818cf8'/);
   assert.doesNotMatch(response.payload, /dash:/);
   assert.match(
     response.payload,

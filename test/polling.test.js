@@ -1391,10 +1391,23 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
     response.payload,
     /machine-status-red"[\s\S]*data-machine-status-key="machine_status_pressure_1e_4"/
   );
-  assert.match(response.payload, /\.experiment-progress-milestone\s*\{[\s\S]*clip-path:\s*polygon/);
-  assert.match(response.payload, /\.machine-status-gray\s*\{[\s\S]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.03\);/);
-  assert.match(response.payload, /\.machine-status-green\s*\{[\s\S]*rgba\(34,\s*197,\s*94,\s*0\.42\)/);
-  assert.match(response.payload, /\.machine-status-red\s*\{[\s\S]*rgba\(239,\s*68,\s*68,\s*0\.42\)/);
+  assert.match(
+    response.payload,
+    /class="experiment-progress-chevron"[\s\S]*<polygon points=/
+  );
+  assert.match(
+    response.payload,
+    /\.experiment-progress-chevron polygon\s*\{[\s\S]*fill:\s*var\(--milestone-fill\);[\s\S]*stroke:\s*var\(--milestone-border\);[\s\S]*stroke-width:\s*2px;/
+  );
+  assert.match(response.payload, /\.machine-status-gray\s*\{[\s\S]*--milestone-fill:\s*rgba\(148,\s*163,\s*184,\s*0\.08\);/);
+  assert.match(response.payload, /\.machine-status-green\s*\{[\s\S]*--milestone-border:\s*var\(--success\);[\s\S]*--milestone-fill:\s*rgba\(34,\s*197,\s*94,\s*0\.15\);[\s\S]*color:\s*white;/);
+  assert.match(response.payload, /\.machine-status-red\s*\{[\s\S]*--milestone-border:\s*var\(--danger\);[\s\S]*--milestone-fill:\s*rgba\(239,\s*68,\s*68,\s*0\.15\);[\s\S]*color:\s*white;/);
+  assert.match(
+    response.payload,
+    /\.experiment-progress-chevron polygon\s*\{[\s\S]*filter:\s*drop-shadow\(0 0 6px var\(--milestone-glow\)\);/
+  );
+  assert.match(response.payload, /text-shadow:\s*0 0 5px var\(--milestone-text-glow\);/);
+  assert.doesNotMatch(response.payload, /\.experiment-progress-milestone-shell\s*\{[^}]*filter:/);
   assert.match(response.payload, /updateExperimentProgress\(data, experimentRunning\)/);
 });
 

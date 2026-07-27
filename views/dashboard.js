@@ -437,37 +437,54 @@ function renderDashboard(opts) {
           width: max-content;
           min-width: 100%;
         }
-        .experiment-progress-milestone {
-          display: flex;
+        .experiment-progress-milestone-shell {
           flex: 1 0 124px;
-          align-items: center;
-          justify-content: center;
+          position: relative;
           min-width: 124px;
           min-height: 48px;
           margin-left: -10px;
+          color: var(--text-secondary);
+          transition: transform 0.25s ease;
+        }
+        .experiment-progress-chevron {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          width: 100%;
+          height: 100%;
+          overflow: visible;
+          pointer-events: none;
+        }
+        .experiment-progress-chevron polygon {
+          fill: var(--milestone-fill);
+          stroke: var(--milestone-border);
+          stroke-width: 2px;
+          stroke-linejoin: miter;
+          vector-effect: non-scaling-stroke;
+          filter: drop-shadow(0 0 6px var(--milestone-glow));
+          transition: fill 0.25s ease, stroke 0.25s ease, filter 0.25s ease;
+        }
+        .experiment-progress-milestone {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           padding: 7px 14px 7px 20px;
           box-sizing: border-box;
-          clip-path: polygon(
-            0 0,
-            calc(100% - 14px) 0,
-            100% 50%,
-            calc(100% - 14px) 100%,
-            0 100%,
-            14px 50%
-          );
           font-size: 0.62rem;
           font-weight: 700;
           letter-spacing: 0.015em;
           line-height: 1.15;
           text-align: center;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-          filter:
-            drop-shadow(1px 0 0 var(--milestone-border))
-            drop-shadow(0 0 6px var(--milestone-glow));
-          transition: filter 0.25s ease, transform 0.25s ease;
+          text-shadow: 0 0 5px var(--milestone-text-glow);
+          transition: color 0.25s ease;
         }
         .experiment-progress-label {
           display: flex;
+          position: relative;
+          z-index: 1;
           flex-direction: column;
           align-items: center;
         }
@@ -475,43 +492,36 @@ function renderDashboard(opts) {
           display: block;
           white-space: nowrap;
         }
-        .experiment-progress-milestone:hover {
+        .experiment-progress-milestone-shell:hover {
           z-index: 1;
           transform: translateY(-1px);
-          filter:
-            drop-shadow(1px 0 0 var(--milestone-border))
-            drop-shadow(0 0 8px var(--milestone-glow))
-            drop-shadow(0 3px 6px rgba(0, 0, 0, 0.32));
         }
-        .experiment-progress-milestone:first-child {
+        .experiment-progress-milestone-shell:first-child {
           margin-left: 0;
+        }
+        .experiment-progress-milestone-shell:first-child .experiment-progress-milestone {
           padding-left: 12px;
-          clip-path: polygon(
-            0 0,
-            calc(100% - 14px) 0,
-            100% 50%,
-            calc(100% - 14px) 100%,
-            0 100%
-          );
         }
         .machine-status-gray {
-          --milestone-border: rgba(255, 255, 255, 0.06);
+          --milestone-border: rgba(148, 163, 184, 0.22);
           --milestone-glow: transparent;
-          background: rgba(255, 255, 255, 0.03);
+          --milestone-fill: rgba(148, 163, 184, 0.08);
+          --milestone-text-glow: transparent;
           color: var(--text-secondary);
-          box-shadow: none;
         }
         .machine-status-green {
-          --milestone-border: #4ade80;
-          --milestone-glow: rgba(34, 197, 94, 0.42);
-          background: linear-gradient(145deg, #22c55e 0%, #15803d 48%, #14532d 100%);
-          color: #f0fdf4;
+          --milestone-border: var(--success);
+          --milestone-glow: rgba(34, 197, 94, 0.65);
+          --milestone-fill: rgba(34, 197, 94, 0.15);
+          --milestone-text-glow: rgba(34, 197, 94, 0.55);
+          color: white;
         }
         .machine-status-red {
-          --milestone-border: #f87171;
-          --milestone-glow: rgba(239, 68, 68, 0.42);
-          background: linear-gradient(145deg, #ef4444 0%, #b91c1c 48%, #7f1d1d 100%);
-          color: #fef2f2;
+          --milestone-border: var(--danger);
+          --milestone-glow: rgba(239, 68, 68, 0.65);
+          --milestone-fill: rgba(239, 68, 68, 0.15);
+          --milestone-text-glow: rgba(239, 68, 68, 0.55);
+          color: white;
         }
         /* =========================
            INTERLOCKS SECTION
@@ -1013,7 +1023,7 @@ function renderDashboard(opts) {
           <h3 class="section-header">Experiment Progress</h3>
           <div class="experiment-progress-viewport">
             <div class="experiment-progress-track" role="list" aria-label="Experiment progress milestones">
-              ${MACHINE_STATUS_MILESTONES.map(({ key, lines }) => {
+              ${MACHINE_STATUS_MILESTONES.map(({ key, lines }, milestoneIndex) => {
                 const label = lines.join(' ');
                 const milestoneState = getMachineStatusState(
                   data[key],
@@ -1021,18 +1031,30 @@ function renderDashboard(opts) {
                 );
                 return `
                   <div
-                    class="experiment-progress-milestone machine-status-${milestoneState}"
+                    class="experiment-progress-milestone-shell machine-status-${milestoneState}"
                     data-machine-status-key="${key}"
                     data-machine-status-label="${label}"
                     role="listitem"
                     aria-label="${label}: ${milestoneState}"
                     title="${label}: ${milestoneState}"
                   >
-                    <span class="experiment-progress-label">
-                      ${lines.map((line) => (
-                        `<span class="experiment-progress-label-line">${line}</span>`
-                      )).join('')}
-                    </span>
+                    <svg
+                      class="experiment-progress-chevron"
+                      viewBox="0 0 124 48"
+                      preserveAspectRatio="none"
+                      aria-hidden="true"
+                    >
+                      <polygon points="${milestoneIndex === 0
+                        ? '1,1 109.5,1 123,24 109.5,47 1,47'
+                        : '1,1 109.5,1 123,24 109.5,47 1,47 15,24'}"></polygon>
+                    </svg>
+                    <div class="experiment-progress-milestone">
+                      <span class="experiment-progress-label">
+                        ${lines.map((line) => (
+                          `<span class="experiment-progress-label-line">${line}</span>`
+                        )).join('')}
+                      </span>
+                    </div>
                   </div>
                 `;
               }).join('')}

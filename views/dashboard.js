@@ -1,5 +1,27 @@
 const { getGraphMetadata } = require('../services/graphs');
 
+const MACHINE_STATUS_MILESTONES = Object.freeze([
+  { key: 'machine_status_temps', lines: ['PMON Temperatures', 'OK'] },
+  { key: 'machine_status_pressure_1e_4', lines: ['Pressure Below', '1e\u20114\u00A0mbar'] },
+  { key: 'machine_status_interlocks', lines: ['All Safety', 'Interlocks Pass'] },
+  { key: 'machine_status_hv_panel', lines: ['High Voltage', 'Subpanel On'] },
+  { key: 'machine_status_pressure_1e_6', lines: ['Pressure Below', '1e\u20116\u00A0mbar'] },
+  { key: 'machine_status_hvps_nominal', lines: ['HV Power Supplies', 'Nominal'] },
+  { key: 'machine_status_bcon', lines: ['Beam Controller', 'Nominal'] },
+  { key: 'machine_status_cathodes', lines: ['Cathode Heating'] },
+  { key: 'machine_status_beams_ready', lines: ['Beams Ready'] },
+  { key: 'machine_status_beams_on', lines: ['Beams On'] },
+]);
+const VALID_MACHINE_STATUS_STATES = new Set(['gray', 'green', 'red']);
+
+function getMachineStatusState(state, experimentRunning) {
+  if (!experimentRunning) {
+    return 'gray';
+  }
+
+  return VALID_MACHINE_STATUS_STATES.has(state) ? state : 'gray';
+}
+
 function normalizePressureSeriesForLogScale(values) {
   if (!Array.isArray(values)) {
     return [];
@@ -329,6 +351,7 @@ function renderDashboard(opts) {
           margin: 0 auto;
         }
 
+        .experiment-progress-section,
         .interlocks-section,
         .env-section,
         .vacuum-indicators {
@@ -371,6 +394,124 @@ function renderDashboard(opts) {
           margin: 0 0 8px 0;
           padding-bottom: 6px;
           border-bottom: 1px solid var(--border-subtle);
+        }
+        /* =========================
+           EXPERIMENT PROGRESS
+        ========================== */
+        .experiment-progress-viewport {
+          --progress-highlight-x: 0px;
+          --progress-highlight-alpha: 0;
+          overflow-x: auto;
+          padding: 8px;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(148, 163, 184, 0.38) rgba(15, 23, 42, 0.55);
+          background:
+            radial-gradient(
+              circle at var(--progress-highlight-x) top,
+              rgba(56, 189, 248, var(--progress-highlight-alpha)),
+              transparent 58%
+            ),
+            rgba(2, 6, 23, 0.42);
+          border: 1px solid rgba(148, 163, 184, 0.14);
+          border-radius: 8px;
+          box-shadow: inset 0 1px 12px rgba(0, 0, 0, 0.28);
+        }
+        .experiment-progress-viewport::-webkit-scrollbar {
+          height: 8px;
+        }
+        .experiment-progress-viewport::-webkit-scrollbar-track {
+          background: rgba(15, 23, 42, 0.55);
+          border-radius: 999px;
+        }
+        .experiment-progress-viewport::-webkit-scrollbar-thumb {
+          background: rgba(148, 163, 184, 0.38);
+          border: 2px solid rgba(15, 23, 42, 0.55);
+          border-radius: 999px;
+        }
+        .experiment-progress-viewport::-webkit-scrollbar-thumb:hover {
+          background: rgba(148, 163, 184, 0.58);
+        }
+        .experiment-progress-track {
+          display: flex;
+          align-items: stretch;
+          width: max-content;
+          min-width: 100%;
+        }
+        .experiment-progress-milestone {
+          display: flex;
+          flex: 1 0 124px;
+          align-items: center;
+          justify-content: center;
+          min-width: 124px;
+          min-height: 48px;
+          margin-left: -10px;
+          padding: 7px 14px 7px 20px;
+          box-sizing: border-box;
+          clip-path: polygon(
+            0 0,
+            calc(100% - 14px) 0,
+            100% 50%,
+            calc(100% - 14px) 100%,
+            0 100%,
+            14px 50%
+          );
+          font-size: 0.62rem;
+          font-weight: 700;
+          letter-spacing: 0.015em;
+          line-height: 1.15;
+          text-align: center;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+          filter:
+            drop-shadow(1px 0 0 var(--milestone-border))
+            drop-shadow(0 0 6px var(--milestone-glow));
+          transition: filter 0.25s ease, transform 0.25s ease;
+        }
+        .experiment-progress-label {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .experiment-progress-label-line {
+          display: block;
+          white-space: nowrap;
+        }
+        .experiment-progress-milestone:hover {
+          z-index: 1;
+          transform: translateY(-1px);
+          filter:
+            drop-shadow(1px 0 0 var(--milestone-border))
+            drop-shadow(0 0 8px var(--milestone-glow))
+            drop-shadow(0 3px 6px rgba(0, 0, 0, 0.32));
+        }
+        .experiment-progress-milestone:first-child {
+          margin-left: 0;
+          padding-left: 12px;
+          clip-path: polygon(
+            0 0,
+            calc(100% - 14px) 0,
+            100% 50%,
+            calc(100% - 14px) 100%,
+            0 100%
+          );
+        }
+        .machine-status-gray {
+          --milestone-border: rgba(255, 255, 255, 0.06);
+          --milestone-glow: transparent;
+          background: rgba(255, 255, 255, 0.03);
+          color: var(--text-secondary);
+          box-shadow: none;
+        }
+        .machine-status-green {
+          --milestone-border: #4ade80;
+          --milestone-glow: rgba(34, 197, 94, 0.42);
+          background: linear-gradient(145deg, #22c55e 0%, #15803d 48%, #14532d 100%);
+          color: #f0fdf4;
+        }
+        .machine-status-red {
+          --milestone-border: #f87171;
+          --milestone-glow: rgba(239, 68, 68, 0.42);
+          background: linear-gradient(145deg, #ef4444 0%, #b91c1c 48%, #7f1d1d 100%);
+          color: #fef2f2;
         }
         /* =========================
            INTERLOCKS SECTION
@@ -867,6 +1008,37 @@ function renderDashboard(opts) {
         <p style="text-align:center; font-size:0.75rem; color:var(--text-secondary); margin:0 0 12px 0;">
           Log Modified: <span id="log-last-modified">${fileModified}</span> &nbsp;·&nbsp; Updated: <span id="site-last-updated">${currentTime}</span>
         </p>
+        <!-- Experiment Progress Section -->
+        <div class="experiment-progress-section">
+          <h3 class="section-header">Experiment Progress</h3>
+          <div class="experiment-progress-viewport">
+            <div class="experiment-progress-track" role="list" aria-label="Experiment progress milestones">
+              ${MACHINE_STATUS_MILESTONES.map(({ key, lines }) => {
+                const label = lines.join(' ');
+                const milestoneState = getMachineStatusState(
+                  data[key],
+                  experimentRunning
+                );
+                return `
+                  <div
+                    class="experiment-progress-milestone machine-status-${milestoneState}"
+                    data-machine-status-key="${key}"
+                    data-machine-status-label="${label}"
+                    role="listitem"
+                    aria-label="${label}: ${milestoneState}"
+                    title="${label}: ${milestoneState}"
+                  >
+                    <span class="experiment-progress-label">
+                      ${lines.map((line) => (
+                        `<span class="experiment-progress-label-line">${line}</span>`
+                      )).join('')}
+                    </span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
         <!-- Interlocks Section -->
         <div class="interlocks-section">
           <h3 class="section-header">Interlocks</h3>
@@ -1980,6 +2152,62 @@ function renderDashboard(opts) {
           elem.textContent = 'Output: ' + (enabled ? 'Enabled' : 'Disabled');
         }
 
+        const validMachineStatusStates = new Set(['gray', 'green', 'red']);
+        const progressViewport = document.querySelector('.experiment-progress-viewport');
+        let progressHighlightFrame = null;
+
+        function updateExperimentProgressHighlight() {
+          progressHighlightFrame = null;
+          if (!progressViewport) return;
+
+          const leftmostGray = progressViewport.querySelector('.machine-status-gray');
+          if (!leftmostGray) {
+            progressViewport.style.setProperty('--progress-highlight-alpha', '0');
+            return;
+          }
+
+          const viewportRect = progressViewport.getBoundingClientRect();
+          const milestoneRect = leftmostGray.getBoundingClientRect();
+          const centerX = milestoneRect.left - viewportRect.left + milestoneRect.width / 2;
+
+          progressViewport.style.setProperty('--progress-highlight-x', centerX + 'px');
+          progressViewport.style.setProperty('--progress-highlight-alpha', '0.05');
+        }
+
+        function scheduleExperimentProgressHighlight() {
+          if (progressHighlightFrame !== null) return;
+          progressHighlightFrame = requestAnimationFrame(updateExperimentProgressHighlight);
+        }
+
+        function updateExperimentProgress(telemetryData, isRunning) {
+          document.querySelectorAll('[data-machine-status-key]').forEach((milestone) => {
+            const key = milestone.dataset.machineStatusKey;
+            const label = milestone.dataset.machineStatusLabel;
+            const candidate = isRunning && telemetryData && typeof telemetryData === 'object'
+              ? telemetryData[key]
+              : null;
+            const state = validMachineStatusStates.has(candidate) ? candidate : 'gray';
+
+            milestone.classList.remove(
+              'machine-status-gray',
+              'machine-status-green',
+              'machine-status-red'
+            );
+            milestone.classList.add('machine-status-' + state);
+            milestone.setAttribute('aria-label', label + ': ' + state);
+            milestone.title = label + ': ' + state;
+          });
+          scheduleExperimentProgressHighlight();
+        }
+
+        if (progressViewport) {
+          progressViewport.addEventListener('scroll', scheduleExperimentProgressHighlight, {
+            passive: true,
+          });
+        }
+        window.addEventListener('resize', scheduleExperimentProgressHighlight);
+        scheduleExperimentProgressHighlight();
+
         setInterval(async() => {
           try {
 
@@ -2022,6 +2250,8 @@ function renderDashboard(opts) {
 
           statusDiv.classList.toggle('neon-success', experimentRunning);
           statusDiv.classList.toggle('neon-warning', !experimentRunning);
+
+          updateExperimentProgress(data, experimentRunning);
 
           interlockIds.forEach((id, i) => {
             const elem = document.getElementById(id);
@@ -2266,6 +2496,7 @@ function renderDashboard(opts) {
 
 module.exports = {
   renderDashboard,
+  getMachineStatusState,
   normalizePressureSeriesForLogScale,
   getPaddedPressureLogRange,
   filterPressureLogGridSplits,

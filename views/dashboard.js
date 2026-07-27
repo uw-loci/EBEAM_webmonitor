@@ -869,11 +869,18 @@ function renderDashboard(opts) {
             grid-template-columns: 1fr;
             grid-template-rows: auto auto;
             row-gap: 6px;
+            padding-bottom: 0;
+            border-bottom: none;
           }
           .vacuum-indicators-header-spacer {
             display: none;
           }
-          .vacuum-indicators-heading,
+          .vacuum-indicators-heading {
+            width: 100%;
+            justify-self: stretch;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-subtle);
+          }
           .vacuum-pressure-readings {
             justify-self: center;
             text-align: center;

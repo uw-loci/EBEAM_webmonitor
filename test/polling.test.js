@@ -1348,7 +1348,7 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /id="pressureReadings" class="vacuum-pressure-readings"/);
   assert.match(
     response.payload,
-    /@media \(max-width: 992px\)[\s\S]*?\.vacuum-indicators-header \{\s*grid-template-columns: 1fr;[\s\S]*?\.vacuum-pressure-readings \{\s*justify-self: center;/
+    /@media \(max-width: 992px\)[\s\S]*?\.vacuum-indicators-header \{\s*grid-template-columns: 1fr;[\s\S]*?border-bottom: none;[\s\S]*?\.vacuum-indicators-heading \{[\s\S]*?border-bottom: 1px solid var\(--border-subtle\);[\s\S]*?\.vacuum-pressure-readings \{\s*justify-self: center;/
   );
   assert.match(
     response.payload,

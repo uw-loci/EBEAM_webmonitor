@@ -247,6 +247,7 @@ const state = require('../services/state');
 const registerRoutes = require('../routes');
 const {
   getMachineStatusState,
+  fetchJsonWithTimeout,
   normalizePressureSeriesForLogScale,
   getPaddedPressureLogRange,
   filterPressureLogGridSplits,
@@ -1304,9 +1305,14 @@ test('chart-data returns density metadata for both short and long views', () => 
   assert.deepEqual(longResponse.payload.yVals, longTermPressureGraph.displayYVals);
 });
 
-test('dashboard HTML uses the recent-log viewer and does not force refresh on open', async () => {
+test('dashboard HTML uses the recent-log viewer and formats CCS temperatures to source precision', async () => {
   const app = createFakeApp();
   registerRoutes(app);
+
+  state.experimentRunning = true;
+  state.data.clamp_temperature_A = 123.456;
+  state.data.clamp_temperature_B = '234.567';
+  state.data.clamp_temperature_C = 345;
 
   const dashboardRoute = app.routes.find((route) => route.method === 'GET' && route.path === '/');
   assert.ok(dashboardRoute, 'expected / route to be registered');
@@ -1320,6 +1326,22 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /class="log-viewer-header"/);
   assert.match(response.payload, /class="btn-toggle log-toggle-button"/);
   assert.match(response.payload, /class="btn-toggle pressure-toggle-button"/);
+  assert.match(response.payload, /Clamp Temperature: 123\.5 C/);
+  assert.match(response.payload, /Clamp Temperature: 234\.6 C/);
+  assert.match(response.payload, /Clamp Temperature: 345\.0 C/);
+  assert.match(
+    response.payload,
+    /Number\(data\.clamp_temperature_A\)\.toFixed\(1\) \+ "°C"/
+  );
+  assert.match(
+    response.payload,
+    /Number\(v\)\.toFixed\(1\) \+ " °C"/
+  );
+  assert.match(
+    response.payload,
+    /v\.toFixed\(1\) : ""/
+  );
+  assert.doesNotMatch(response.payload, /Math\.round\(Number\(data\.clamp_temperature/);
   assert.match(response.payload, /chartEl\.getBoundingClientRect\(\)\.width/);
   assert.match(response.payload, /distr:\s*3,\s*log:\s*10,/);
   assert.match(response.payload, /getPaddedPressureLogRange\(uPlot\.rangeLog, dataMin, dataMax\)/);
@@ -1339,6 +1361,38 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /requestAnimationFrame/);
   assert.match(response.payload, /&raw=1&cursor=/);
   assert.match(response.payload, /nextCacheStartIndex - pressureRawIndexOffset/);
+  assert.match(response.payload, /if \(pressureRawRefreshInFlight\) return null;/);
+  assert.match(response.payload, /const REQUEST_TIMEOUT_MS = 10000;/);
+  assert.match(response.payload, /const PRESSURE_SNAPSHOT_TIMEOUT_MS = 30000;/);
+  assert.match(response.payload, /fetchJsonWithTimeout\(url\)/);
+  assert.match(response.payload, /const requestedView = currentPressureView;/);
+  assert.match(response.payload, /const requestedCursor = pressureRawCursor;/);
+  assert.match(
+    response.payload,
+    /requestedView !== currentPressureView \|\| requestedCursor !== pressureRawCursor/
+  );
+  assert.match(response.payload, /finally \{\s*pressureRawRefreshInFlight = false;/);
+  assert.match(response.payload, /const generation = \+\+pressureSnapshotGeneration;/);
+  assert.match(
+    response.payload,
+    /generation !== pressureSnapshotGeneration \|\|\s*view !== currentPressureView \|\|\s*chartData\.view !== view/
+  );
+  assert.match(response.payload, /replacePressureRawData\(chartData\);\s*return view;/);
+  assert.match(response.payload, /appendPressureRawData\(chartData\);\s*return requestedView;/);
+  assert.match(response.payload, /const refreshedView = await refreshPressureRawData\(\);/);
+  assert.match(
+    response.payload,
+    /if \(refreshedView === 'long'\) lastLongTermPollAt = Date\.now\(\);/
+  );
+  assert.doesNotMatch(
+    response.payload,
+    /if \(currentPressureView === 'long'\) lastLongTermPollAt = Date\.now\(\);/
+  );
+  assert.match(response.payload, /async function pollDashboard\(\)/);
+  assert.match(response.payload, /fetchJsonWithTimeout\('\/data'\)/);
+  assert.match(response.payload, /fetchJsonWithTimeout\('\/ccs-chart-data'\)/);
+  assert.match(response.payload, /setTimeout\(pollDashboard, 3000\)/);
+  assert.doesNotMatch(response.payload, /setInterval\(async/);
   assert.match(response.payload, /id="pressure-time-range"/);
   assert.match(response.payload, /<option value="1">Last 1h<\/option>/);
   assert.match(response.payload, /<option value="24" selected>Last 24h<\/option>/);
@@ -1409,6 +1463,41 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
   assert.match(response.payload, /text-shadow:\s*0 0 5px var\(--milestone-text-glow\);/);
   assert.doesNotMatch(response.payload, /\.experiment-progress-milestone-shell\s*\{[^}]*filter:/);
   assert.match(response.payload, /updateExperimentProgress\(data, experimentRunning\)/);
+});
+
+test('fetchJsonWithTimeout returns parsed data and passes an abort signal', async () => {
+  let requestSignal;
+  const chartData = await fetchJsonWithTimeout('/chart-data', 5, async (_url, options) => {
+    requestSignal = options.signal;
+    return { ok: true, json: async () => ({ cursor: 12 }) };
+  });
+
+  assert.deepEqual(chartData, { cursor: 12 });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.equal(requestSignal.aborted, false);
+});
+
+test('fetchJsonWithTimeout aborts a hung request and reports a timeout', async () => {
+  let requestSignal;
+  const hungFetch = (_url, options) => new Promise((_resolve, reject) => {
+    requestSignal = options.signal;
+    requestSignal.addEventListener('abort', () => {
+      reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+    }, { once: true });
+  });
+
+  await assert.rejects(
+    fetchJsonWithTimeout('/chart-data', 5, hungFetch),
+    /Request timed out/
+  );
+  assert.equal(requestSignal.aborted, true);
+});
+
+test('fetchJsonWithTimeout preserves HTTP failures', async () => {
+  await assert.rejects(
+    fetchJsonWithTimeout('/chart-data', 50, async () => ({ ok: false, status: 503 })),
+    /Request failed: 503/
+  );
 });
 
 test('normalizePressureSeriesForLogScale keeps positive finite pressures and gaps invalid values', () => {

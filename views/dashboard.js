@@ -22,6 +22,29 @@ function getMachineStatusState(state, experimentRunning) {
   return VALID_MACHINE_STATUS_STATES.has(state) ? state : 'gray';
 }
 
+const REQUEST_TIMEOUT_MS = 10_000;
+const PRESSURE_SNAPSHOT_TIMEOUT_MS = 30_000;
+
+async function fetchJsonWithTimeout(
+  url,
+  timeoutMs = REQUEST_TIMEOUT_MS,
+  fetchImpl = fetch
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetchImpl(url, { signal: controller.signal });
+    if (!response.ok) throw new Error('Request failed: ' + response.status);
+    return await response.json();
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('Request timed out');
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function normalizePressureSeriesForLogScale(values) {
   if (!Array.isArray(values)) {
     return [];
@@ -236,6 +259,7 @@ function renderDashboard(opts) {
   const pressureLogGridFilterSource = filterPressureLogGridSplits.toString();
   const pressureTimeWindowBoundsSource = getPressureTimeWindowBounds.toString();
   const pressureViewportSampleSource = buildPressureViewportSample.toString();
+  const jsonFetchSource = fetchJsonWithTimeout.toString();
 
   function formatPressureChartStatus(meta) {
     const rawPointCount = Number(meta.rawPointCount ?? 0);
@@ -1169,15 +1193,15 @@ function renderDashboard(opts) {
             </div>
             <div class="gauge" id="sensor-3">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] === "DISCONNECTED" || temperatures["3"] === "None" ? '--' : temperatures["3"] + '°C'}</div></div>
-              <div class="sensor-label">Chmbr Bot</div>
+              <div class="sensor-label">Chamber Top</div>
             </div>
             <div class="gauge" id="sensor-4">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] === "DISCONNECTED" || temperatures["4"] === "None" ? '--' : temperatures["4"] + '°C'}</div></div>
-              <div class="sensor-label">Chmbr Top</div>
+              <div class="sensor-label">Chamber Bot</div>
             </div>
             <div class="gauge" id="sensor-5">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] === "DISCONNECTED" || temperatures["5"] === "None" ? '--' : temperatures["5"] + '°C'}</div></div>
-              <div class="sensor-label">Air temp</div>
+              <div class="sensor-label">Air Temp</div>
             </div>
             <div class="gauge" id="sensor-6">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] === "DISCONNECTED" || temperatures["6"] === "None" ? '--' : temperatures["6"] + '°C'}</div></div>
@@ -1200,7 +1224,7 @@ function renderDashboard(opts) {
                 : '--'}
               </div>
                 <div id="heaterTemperatureA" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_A != null && experimentRunning
-                ? data.clamp_temperature_A.toFixed(2) + ' C'
+                ? Number(data.clamp_temperature_A).toFixed(1) + ' C'
                 : '--'}
               </div>
             </div>
@@ -1215,7 +1239,7 @@ function renderDashboard(opts) {
                 : '--'}
               </div>
               <div id="heaterTemperatureB" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_B != null && experimentRunning
-              ? data.clamp_temperature_B.toFixed(2) + ' C'
+              ? Number(data.clamp_temperature_B).toFixed(1) + ' C'
               : '--'}
               </div>
             </div>
@@ -1230,7 +1254,7 @@ function renderDashboard(opts) {
                 : '--'}
               </div>
               <div id="heaterTemperatureC" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_C != null && experimentRunning
-                ? data.clamp_temperature_C.toFixed(2) + ' C'
+                ? Number(data.clamp_temperature_C).toFixed(1) + ' C'
                 : '--'}
               </div>
             </div>
@@ -1325,6 +1349,9 @@ function renderDashboard(opts) {
         ${pressureLogGridFilterSource}
         ${pressureTimeWindowBoundsSource}
         ${pressureViewportSampleSource}
+        const REQUEST_TIMEOUT_MS = ${REQUEST_TIMEOUT_MS};
+        const PRESSURE_SNAPSHOT_TIMEOUT_MS = ${PRESSURE_SNAPSHOT_TIMEOUT_MS};
+        ${jsonFetchSource}
 
         let currentPressureView = 'short';
         let pressureInteractionMode = 'zoom';
@@ -1339,11 +1366,13 @@ function renderDashboard(opts) {
         let pressureSourceResolutionLabel = ${JSON.stringify(shortTermPressureGraph.sourceResolutionLabel)};
         let pressureMinimumXSpan = getMinimumPressureXSpan(pressureRawDataX);
         let pressureViewportRenderFrame = null;
+        let pressureRawRefreshInFlight = false;
+        let pressureSnapshotGeneration = 0;
         let pressureChart = null;
         let pressureChartInitialized = false;
         let applyingPressureViewport = false;
-        let longTermPollCounter = 0;
-        const LONG_TERM_POLL_EVERY = 20; // 20 * 3s = 60s
+        let lastLongTermPollAt = Date.now();
+        const LONG_TERM_POLL_INTERVAL_MS = 60_000;
 
         const pressureChartRoot = document.getElementById('chart-root-3');
         const pressureViewToggle = document.getElementById('pressure-view-toggle');
@@ -1889,24 +1918,41 @@ function renderDashboard(opts) {
         }
 
         async function loadPressureRawSnapshot(view = currentPressureView) {
-          const response = await fetch('/chart-data?view=' + view + '&raw=1');
-          if (!response.ok) throw new Error('Chart data request failed: ' + response.status);
-          const chartData = await response.json();
-          if (view === currentPressureView) replacePressureRawData(chartData);
+          const generation = ++pressureSnapshotGeneration;
+          const chartData = await fetchJsonWithTimeout(
+            '/chart-data?view=' + view + '&raw=1',
+            PRESSURE_SNAPSHOT_TIMEOUT_MS
+          );
+          if (
+            generation !== pressureSnapshotGeneration ||
+            view !== currentPressureView ||
+            chartData.view !== view
+          ) return null;
+          replacePressureRawData(chartData);
+          return view;
         }
 
         async function refreshPressureRawData() {
-          if (!Number.isInteger(pressureRawCursor)) {
-            return loadPressureRawSnapshot(currentPressureView);
-          }
+          if (pressureRawRefreshInFlight) return null;
+          pressureRawRefreshInFlight = true;
+          const requestedView = currentPressureView;
+          const requestedCursor = pressureRawCursor;
 
-          const url = '/chart-data?view=' + currentPressureView + '&raw=1&cursor=' + pressureRawCursor;
-          const response = await fetch(url);
-          if (!response.ok) throw new Error('Chart data request failed: ' + response.status);
-          const chartData = await response.json();
-          if (chartData.view !== currentPressureView) return;
-          if (chartData.resetRequired) return loadPressureRawSnapshot(currentPressureView);
-          appendPressureRawData(chartData);
+          try {
+            if (!Number.isInteger(requestedCursor)) {
+              return await loadPressureRawSnapshot(requestedView);
+            }
+
+            const url = '/chart-data?view=' + requestedView + '&raw=1&cursor=' + requestedCursor;
+            const chartData = await fetchJsonWithTimeout(url);
+            if (requestedView !== currentPressureView || requestedCursor !== pressureRawCursor) return null;
+            if (chartData.view !== requestedView) return null;
+            if (chartData.resetRequired) return await loadPressureRawSnapshot(requestedView);
+            appendPressureRawData(chartData);
+            return requestedView;
+          } finally {
+            pressureRawRefreshInFlight = false;
+          }
         }
 
         function updatePressureChartViewText() {
@@ -2016,7 +2062,7 @@ function renderDashboard(opts) {
               {},
               {
                 label: seriesLabel,
-                value: (u, v) => v == null ? "" : v.toFixed(1) + " °C",
+                value: (u, v) => v == null ? "" : Number(v).toFixed(1) + " °C",
                 stroke,
                 points: { show: false },
               }
@@ -2230,11 +2276,10 @@ function renderDashboard(opts) {
         window.addEventListener('resize', scheduleExperimentProgressHighlight);
         scheduleExperimentProgressHighlight();
 
-        setInterval(async() => {
+        async function pollDashboard() {
           try {
 
-          const res = await fetch('/data');
-          const data = await res.json();
+          const data = await fetchJsonWithTimeout('/data');
 
           const interlockIds = ['sic-door', 'sic-water', 'sic-vacuum-power', 'sic-vacuum-pressure', 'sic-oil-low', 'sic-oil-high', 'sic-estop', 'sic-estopExt', 'all-interlocks', 'g9-output', 'hvolt'];
           const vacuumIds = ['vac-indicator-0', 'vac-indicator-1', 'vac-indicator-2', 'vac-indicator-3', 'vac-indicator-4', 'vac-indicator-5', 'vac-indicator-6', 'vac-indicator-7'];
@@ -2318,9 +2363,9 @@ function renderDashboard(opts) {
           heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && experimentRunning? "Voltage: " + Number(data.heaterVoltage_B).toFixed(2) + " V" : "Voltage: " + "--");
           heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && experimentRunning? "Voltage: " + Number(data.heaterVoltage_C).toFixed(2) + " V" : "Voltage: " + "--");
 
-          heaterTemperatureA.textContent = (data.clamp_temperature_A !== null && data.clamp_temperature_A !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_A)) + "°C" : "Clamp Temperature: " + "--");
-          heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_B)) + "°C" : "Clamp Temperature: " + "--");
-          heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_C)) + "°C" : "Clamp Temperature: " + "--");
+          heaterTemperatureA.textContent = (data.clamp_temperature_A !== null && data.clamp_temperature_A !== undefined && experimentRunning? "Clamp Temperature: " + Number(data.clamp_temperature_A).toFixed(1) + "°C" : "Clamp Temperature: " + "--");
+          heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + Number(data.clamp_temperature_B).toFixed(1) + "°C" : "Clamp Temperature: " + "--");
+          heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + Number(data.clamp_temperature_C).toFixed(1) + "°C" : "Clamp Temperature: " + "--");
 
           // Update power-supply cards (Pos1: pos_1kv)
           const powerSupplySetVoltagePos1 = document.getElementById('powerSupplySetVoltagePos1');
@@ -2379,21 +2424,19 @@ function renderDashboard(opts) {
           console.log(data.sicColors);
 
           // Live chart update
-          longTermPollCounter++;
-          const shouldUpdateLongTerm = longTermPollCounter >= LONG_TERM_POLL_EVERY;
-          if (shouldUpdateLongTerm) longTermPollCounter = 0;
+          const shouldUpdateLongTerm = Date.now() - lastLongTermPollAt >= LONG_TERM_POLL_INTERVAL_MS;
 
           if (currentPressureView === 'short' || (currentPressureView === 'long' && shouldUpdateLongTerm)) {
             try {
-              await refreshPressureRawData();
+              const refreshedView = await refreshPressureRawData();
+              if (refreshedView === 'long') lastLongTermPollAt = Date.now();
             } catch (e) {
               console.error('Chart data update failed:', e);
             }
           }
 
           try {
-            const ccsRes = await fetch('/ccs-chart-data');
-            const ccsData = await ccsRes.json();
+            const ccsData = await fetchJsonWithTimeout('/ccs-chart-data');
             ccsChartA.setData([ccsData.A.xVals, ccsData.A.yVals]);
             ccsChartB.setData([ccsData.B.xVals, ccsData.B.yVals]);
             ccsChartC.setData([ccsData.C.xVals, ccsData.C.yVals]);
@@ -2401,11 +2444,14 @@ function renderDashboard(opts) {
             console.error('CCS chart data update failed:', e);
           }
 
+          } catch (error) {
+            console.error('Failed to load the dashboard!', error);
+          } finally {
+            setTimeout(pollDashboard, 3000);
           }
-          catch {
-          console.error('Failed to load the dashboard!')
-            }
-          }, 3000)
+        }
+
+        setTimeout(pollDashboard, 3000);
 
         toggleButton.addEventListener('click', async () => {
           if (!showingFull) {
@@ -2517,6 +2563,7 @@ function renderDashboard(opts) {
 }
 
 module.exports = {
+  fetchJsonWithTimeout,
   renderDashboard,
   getMachineStatusState,
   normalizePressureSeriesForLogScale,

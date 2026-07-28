@@ -17,7 +17,7 @@ const FOLDER_ID = process.env.FOLDER_ID;
 const API_KEY = process.env.API_KEY;
 const PORT = process.env.PORT || 3000;
 const REVERSED_FILE_PATH = path.join(__dirname, 'reversed.txt');
-const INACTIVE_THRESHOLD = 15 * 60 * 1000; // 15 min in ms
+const INACTIVE_THRESHOLD = 2 * 60 * 1000; // 2 min in ms
 
 // Initialize Supabase client
 const supabase = createClient(

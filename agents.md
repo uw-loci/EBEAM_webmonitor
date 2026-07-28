@@ -24,7 +24,7 @@
 
 ## Routes (`routes.js`)
 - `GET /` — SSR HTML; chart data inlined as JSON literals at page load
-- `GET /data` — JSON scalars + beam-energy output booleans + `sicColors[11]` + `vacuumColors[8]`; client polls 3s after prior poll completion
+- `GET /data` — JSON scalars + backend `experimentRunning` + beam-energy output booleans + `sicColors[11]` + `vacuumColors[8]`; client polls 3s after prior poll completion
 - `GET /chart-data?view=short|long` — downsampled display arrays + graph metadata
 - `GET /ccs-chart-data` — CCS ring buffer arrays A/B/C
 - `GET /health` — live Supabase ping + `experimentRunning`
@@ -33,9 +33,9 @@
 - `POST /experiment-reset` — body `{ password }`, deletes both log tables + clears in-memory arrays
 
 ## Module roles
-- `config.js` — env validation, Supabase client init, exports `INACTIVE_THRESHOLD`
+- `config.js` — env validation, Supabase client init, exports `INACTIVE_THRESHOLD` (2 min)
 - `services/state.js` — single mutable object shared across all modules by reference
-- `services/polling.js` — orchestration + overlap guards + cursor advancement
+- `services/polling.js` — orchestration + overlap guards + stale-activity expiry + cursor advancement
 - `services/supabase.js` — all DB queries; backfill + paginated `fetchEntriesSince`
 - `services/graphs.js` — graph object factory, downsampling logic, CCS ring buffers
 - `services/interlocks.js` — pure color functions; no I/O

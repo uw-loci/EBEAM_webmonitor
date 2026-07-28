@@ -52,6 +52,7 @@ function registerRoutes(app) {
     const { sicColors, vacColors } = computeAllColors(state.data, state.experimentRunning);
 
     res.json({
+      experimentRunning: state.experimentRunning,
       pressure: state.data.pressure,
       pressureTimestamp: state.data.pressureTimestamp,
       safetyInputStatusFlags: state.data.safetyInputStatusFlags,

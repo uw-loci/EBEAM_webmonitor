@@ -2,7 +2,7 @@
 
 ## Shared state (`state.js`)
 - Single exported object; all modules mutate directly — no getters/setters
-- `experimentRunning`: false when newest row age > `INACTIVE_THRESHOLD` (15 min)
+- `experimentRunning`: false when newest row age > `INACTIVE_THRESHOLD` (2 min)
 - `lastShortTermCursor` / `lastLongTermCursor`: `{ timestamp: string, id: number|string|null }`
 - `state.data` fields set to `null` when inactive (via `resetData()` in supabase.js)
 - `baseStatus` — static defaults for sample-data generation only; not live telemetry
@@ -25,6 +25,7 @@
 ## Overlap guards (polling.js)
 - Three booleans: `telemetrySyncInProgress`, `longTermSyncInProgress`, `displayRefreshInProgress`
 - Skip (not queue) on collision — safe for `setInterval`
+- Overlapping telemetry poll: expire `experimentRunning` when `webMonitorLastModified` exceeds `INACTIVE_THRESHOLD`
 - `fetchAndUpdateFile()` calls `pollShortTerm()` internally — do not put `pollShortTerm` on its own interval
 
 ## Graph objects (graphs.js)
@@ -72,7 +73,7 @@
 ## Key constants
 | Constant | Value | File |
 |---|---|---|
-| `INACTIVE_THRESHOLD` | 15 min (ms) | config.js |
+| `INACTIVE_THRESHOLD` | 2 min (ms) | config.js |
 | `SHORT_TERM_EXPECTED_INTERVAL_MS` | 3000 | polling.js |
 | `LONG_TERM_EXPECTED_INTERVAL_MS` | 60000 | polling.js |
 | `CCS_MAX_POINTS` | 1200 | graphs.js |

@@ -25,6 +25,20 @@ let telemetrySyncInProgress = false;
 let longTermSyncInProgress = false;
 let displayRefreshInProgress = false;
 
+function expireExperimentIfStale(now = Date.now()) {
+  const lastUpdateMs = state.webMonitorLastModified instanceof Date
+    ? state.webMonitorLastModified.getTime()
+    : NaN;
+
+  if (Number.isFinite(lastUpdateMs) && now - lastUpdateMs <= INACTIVE_THRESHOLD) {
+    return false;
+  }
+
+  state.experimentRunning = false;
+  resetData();
+  return true;
+}
+
 function parseTimestampMs(timestamp) {
   const parsed = Date.parse(timestamp);
   return Number.isFinite(parsed) ? parsed : null;
@@ -294,6 +308,7 @@ async function pollLongTerm() {
  */
 async function fetchAndUpdateFile() {
   if (telemetrySyncInProgress) {
+    expireExperimentIfStale();
     console.warn('Telemetry sync skipped because the previous run is still in progress');
     return;
   }
@@ -312,12 +327,9 @@ async function fetchAndUpdateFile() {
     const latestCursor = buildCursor(latestEntry.created_at, latestEntry.id);
 
     const experimentTime = new Date(latestEntry.created_at);
-    const experimentTimestamp = experimentTime.getTime();
     state.webMonitorLastModified = experimentTime;
 
-    const now = Date.now();
-
-    if (now - experimentTimestamp > INACTIVE_THRESHOLD) {
+    if (expireExperimentIfStale()) {
       console.log('Experiment inactive - last update too old');
       if (isCursorAfter(latestCursor, state.lastShortTermCursor)) {
         state.lastShortTermCursor = latestCursor;
@@ -328,6 +340,11 @@ async function fetchAndUpdateFile() {
     }
 
     await pollShortTerm();
+
+    if (expireExperimentIfStale()) {
+      console.log('Experiment inactive - update became stale during telemetry sync');
+      return;
+    }
 
     const mappedData = mapSupabaseDataToAppFormat(latestEntry.data);
 

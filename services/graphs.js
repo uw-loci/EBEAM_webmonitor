@@ -1,10 +1,12 @@
 function createGraphObj(options = {}) {
   const fullXVals = options.fullXVals || [];
-  return {
+  const graph = {
     fullXVals,
     fullYVals: options.fullYVals || [],
+    fullPressure902bVals: options.fullPressure902bVals || [],
     displayXVals: options.displayXVals || [],
     displayYVals: options.displayYVals || [],
+    displayPressure902bVals: options.displayPressure902bVals || [],
     maxDataPoints: options.maxDataPoints ?? 1000,
     maxTimeWindowSeconds: options.maxTimeWindowSeconds ?? null,
     maxDisplayPoints: options.maxDisplayPoints ?? 256,
@@ -15,11 +17,25 @@ function createGraphObj(options = {}) {
     chartDataIntervalDuration: options.chartDataIntervalDuration ?? 1,
     nextPointIndex: options.nextPointIndex ?? fullXVals.length,
   };
+
+  return graph;
+}
+
+function parsePressureForLogScale(value) {
+  if (
+    (typeof value !== 'number' && typeof value !== 'string') ||
+    (typeof value === 'string' && value.trim() === '')
+  ) {
+    return null;
+  }
+  const pressure = Number(value);
+  return Number.isFinite(pressure) && pressure > 0 ? pressure : null;
 }
 
 function resetPressureGraphDisplayState(graph) {
   graph.displayXVals.length = 0;
   graph.displayYVals.length = 0;
+  graph.displayPressure902bVals.length = 0;
   graph.lastUsedFactor = 1;
   graph.lastPermanentIndex = -1;
   graph.chartDataIntervalCount = 0;
@@ -52,29 +68,36 @@ function updateDisplayData(graph) {
     graph.lastPermanentIndex = -1;
     graph.displayXVals.length = 0;
     graph.displayYVals.length = 0;
+    graph.displayPressure902bVals.length = 0;
 
     for (let i = 0; i < len - 1; i += graph.lastUsedFactor) {
       graph.displayXVals.push(graph.fullXVals[i]);
       graph.displayYVals.push(graph.fullYVals[i]);
+      graph.displayPressure902bVals.push(graph.fullPressure902bVals[i]);
       graph.lastPermanentIndex = i;
     }
 
     graph.displayXVals.push(graph.fullXVals[len - 1]);
     graph.displayYVals.push(graph.fullYVals[len - 1]);
+    graph.displayPressure902bVals.push(graph.fullPressure902bVals[len - 1]);
 
   } else {
     if (len - 1 === graph.lastPermanentIndex + graph.lastUsedFactor + 1) {
       graph.displayXVals.push(graph.fullXVals[len - 1]);
       graph.displayYVals.push(graph.fullYVals[len - 1]);
+      graph.displayPressure902bVals.push(graph.fullPressure902bVals[len - 1]);
       graph.lastPermanentIndex = len - 2;
 
     } else {
       if (graph.displayXVals.length > 0) {
         graph.displayXVals[graph.displayXVals.length - 1] = graph.fullXVals[len - 1];
         graph.displayYVals[graph.displayYVals.length - 1] = graph.fullYVals[len - 1];
+        graph.displayPressure902bVals[graph.displayPressure902bVals.length - 1] =
+          graph.fullPressure902bVals[len - 1];
       } else {
         graph.displayXVals.push(graph.fullXVals[len - 1]);
         graph.displayYVals.push(graph.fullYVals[len - 1]);
+        graph.displayPressure902bVals.push(graph.fullPressure902bVals[len - 1]);
       }
     }
   }
@@ -101,6 +124,7 @@ function rebuildDisplayData(graph) {
   if (downsampleFactor === 1) {
     graph.displayXVals.push(...graph.fullXVals);
     graph.displayYVals.push(...graph.fullYVals);
+    graph.displayPressure902bVals.push(...graph.fullPressure902bVals);
     graph.lastPermanentIndex = len - 2;
     return;
   }
@@ -108,16 +132,19 @@ function rebuildDisplayData(graph) {
   for (let i = 0; i < len - 1; i += downsampleFactor) {
     graph.displayXVals.push(graph.fullXVals[i]);
     graph.displayYVals.push(graph.fullYVals[i]);
+    graph.displayPressure902bVals.push(graph.fullPressure902bVals[i]);
     graph.lastPermanentIndex = i;
   }
 
   graph.displayXVals.push(graph.fullXVals[len - 1]);
   graph.displayYVals.push(graph.fullYVals[len - 1]);
+  graph.displayPressure902bVals.push(graph.fullPressure902bVals[len - 1]);
 }
 
-function appendPressurePoint(graph, tSec, pressure) {
+function appendPressurePoint(graph, tSec, pressure972b, pressure902b = null) {
   graph.fullXVals.push(tSec);
-  graph.fullYVals.push(pressure);
+  graph.fullYVals.push(pressure972b ?? null);
+  graph.fullPressure902bVals.push(pressure902b ?? null);
   graph.nextPointIndex++;
 
   const cutoffTimeSec = graph.maxTimeWindowSeconds
@@ -136,6 +163,7 @@ function appendPressurePoint(graph, tSec, pressure) {
   if (trimCount > 0) {
     graph.fullXVals.splice(0, trimCount);
     graph.fullYVals.splice(0, trimCount);
+    graph.fullPressure902bVals.splice(0, trimCount);
     rebuildDisplayData(graph);
     return;
   }
@@ -146,6 +174,7 @@ function appendPressurePoint(graph, tSec, pressure) {
 function clearPressureGraph(graph) {
   graph.fullXVals.length = 0;
   graph.fullYVals.length = 0;
+  graph.fullPressure902bVals.length = 0;
   resetPressureGraphDisplayState(graph);
   graph.nextPointIndex = 0;
 }
@@ -180,6 +209,7 @@ const ccsGraphC = createCCSGraphObj();
 
 module.exports = {
   createGraphObj,
+  parsePressureForLogScale,
   resetPressureGraphDisplayState,
   updateDisplayData,
   rebuildDisplayData,

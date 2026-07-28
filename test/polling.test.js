@@ -252,11 +252,14 @@ const {
   getPaddedPressureLogRange,
   filterPressureLogGridSplits,
   getPressureTimeWindowBounds,
+  clampPressureViewportRange,
+  getCCSTimeWindowBounds,
   buildPressureViewportSample,
 } = require('../views/dashboard');
 const {
   createGraphObj,
   appendPressurePoint,
+  clearPressureGraph,
   shortTermPressureGraph,
   longTermPressureGraph,
   ccsGraphA,
@@ -317,6 +320,7 @@ function buildShortTermEntries(count, options = {}) {
     startMs = Date.parse('2026-03-21T12:00:00.000Z'),
     intervalMs = 3_000,
     pressureFactory = (index) => `${1e-6 + index * 1e-7}`,
+    pressure902bFactory = (index) => `${2e-6 + index * 1e-7}`,
     idFactory = (index) => `short-${String(index).padStart(6, '0')}`,
   } = options;
 
@@ -325,6 +329,7 @@ function buildShortTermEntries(count, options = {}) {
     created_at: new Date(startMs + index * intervalMs).toISOString(),
     data: {
       pressure: pressureFactory(index),
+      pressure_902b_mbar: pressure902bFactory(index),
       cathode: {
         A: { clamp_temperature: 100 + index },
         B: { clamp_temperature: 200 + index },
@@ -354,6 +359,8 @@ function resetPressureGraph(graph) {
   graph.fullYVals.length = 0;
   graph.displayXVals.length = 0;
   graph.displayYVals.length = 0;
+  graph.fullPressure902bVals.length = 0;
+  graph.displayPressure902bVals.length = 0;
   graph.lastUsedFactor = 1;
   graph.lastPermanentIndex = -1;
   graph.chartDataIntervalCount = 0;
@@ -371,6 +378,16 @@ function assertPressureGraphDisplayIntegrity(graph) {
     graph.displayXVals.length,
     graph.displayYVals.length,
     'expected pressure display x/y arrays to stay aligned'
+  );
+  assert.equal(
+    graph.fullXVals.length,
+    graph.fullPressure902bVals.length,
+    'expected raw pressure x/902B arrays to stay aligned'
+  );
+  assert.equal(
+    graph.displayXVals.length,
+    graph.displayPressure902bVals.length,
+    'expected display pressure x/902B arrays to stay aligned'
   );
   assert.ok(
     graph.displayXVals.length <= graph.maxDisplayPoints,
@@ -391,6 +408,7 @@ function assertPressureGraphDisplayIntegrity(graph) {
 
   assert.equal(graph.displayXVals.at(-1), graph.fullXVals.at(-1));
   assert.equal(graph.displayYVals.at(-1), graph.fullYVals.at(-1));
+  assert.equal(graph.displayPressure902bVals.at(-1), graph.fullPressure902bVals.at(-1));
 }
 
 function resetSingletonState() {
@@ -402,6 +420,7 @@ function resetSingletonState() {
   state.experimentRunning = false;
   state.data = {
     pressure: null,
+    pressure_902b_mbar: null,
     pressureTimestamp: null,
     safetyOutputDataFlags: null,
     safetyInputDataFlags: null,
@@ -494,6 +513,16 @@ beforeEach(() => {
   resetCCSGraph(ccsGraphA);
   resetCCSGraph(ccsGraphB);
   resetCCSGraph(ccsGraphC);
+});
+
+test('maps the 902B Supabase pressure into scalar state', () => {
+  const mapped = mapSupabaseDataToAppFormat({
+    pressure: '1.234e-6',
+    pressure_902b_mbar: 5.678e-7,
+  });
+
+  assert.equal(mapped.pressure, '1.234e-6');
+  assert.equal(mapped.pressure_902b_mbar, 5.678e-7);
 });
 
 test('Supabase mapping extracts every machine status milestone into a flat field', () => {
@@ -605,9 +634,13 @@ test('applyShortTermEntries catches up every unseen short-term row in order', ()
   assert.equal(graph.fullXVals.length, 10);
   assert.deepEqual(
     graph.fullXVals,
-    entries.map((entry) => Math.floor(Date.parse(entry.created_at) / 1000))
+    entries.map((entry) => Date.parse(entry.created_at) / 1000)
   );
-  assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).created_at) / 1000));
+  assert.deepEqual(
+    graph.fullPressure902bVals,
+    entries.map((entry) => Number.parseFloat(entry.data.pressure_902b_mbar))
+  );
+  assert.equal(graph.displayXVals.at(-1), Date.parse(entries.at(-1).created_at) / 1000);
   assert.deepEqual(stateRef.lastShortTermCursor, {
     timestamp: entries.at(-1).created_at,
     id: entries.at(-1).id,
@@ -619,14 +652,17 @@ test('applyShortTermEntries catches up every unseen short-term row in order', ()
   assert.match(logs[0], /Short-term sync processed 10 rows/);
 });
 
-test('applyShortTermEntries skips malformed pressure rows but still advances the cursor', () => {
+test('applyShortTermEntries retains aligned null gaps for independently invalid readings', () => {
   const graph = createGraphObj({ maxDisplayPoints: 256 });
   const ccsA = createCCSGraph();
   const ccsB = createCCSGraph();
   const ccsC = createCCSGraph();
   const stateRef = { lastShortTermCursor: null };
-  const entries = buildShortTermEntries(3, {
-    pressureFactory: (index) => (index === 1 ? null : `${1e-6 + index * 1e-7}`),
+  const pressure972bValues = ['1e-6', null, 'bad', 0, -1];
+  const pressure902bValues = [null, '2e-6', 'bad', 0, -1];
+  const entries = buildShortTermEntries(5, {
+    pressureFactory: (index) => pressure972bValues[index],
+    pressure902bFactory: (index) => pressure902bValues[index],
   });
   const { logger, warns } = createLogger();
 
@@ -640,20 +676,23 @@ test('applyShortTermEntries skips malformed pressure rows but still advances the
     logger,
   });
 
-  assert.equal(summary.batchSize, 3);
-  assert.equal(summary.appendedCount, 2);
-  assert.equal(summary.skippedCount, 1);
-  assert.equal(graph.fullXVals.length, 2);
+  assert.equal(summary.batchSize, 5);
+  assert.equal(summary.appendedCount, 5);
+  assert.equal(summary.skippedCount, 0);
+  assert.equal(graph.fullXVals.length, 5);
   assert.deepEqual(
     graph.fullXVals,
-    [entries[0], entries[2]].map((entry) => Math.floor(Date.parse(entry.created_at) / 1000))
+    entries.map((entry) => Date.parse(entry.created_at) / 1000)
   );
+  assert.deepEqual(graph.fullYVals, [1e-6, null, null, null, null]);
+  assert.deepEqual(graph.fullPressure902bVals, [null, 2e-6, null, null, null]);
   assert.deepEqual(stateRef.lastShortTermCursor, {
-    timestamp: entries[2].created_at,
-    id: entries[2].id,
+    timestamp: entries.at(-1).created_at,
+    id: entries.at(-1).id,
   });
-  assert.equal(ccsA.xVals.length, 3);
-  assert.ok(warns.some((line) => line.includes('invalid pressure value')));
+  assert.equal(ccsA.xVals.length, 5);
+  assert.equal(warns.length, 0);
+  assertPressureGraphDisplayIntegrity(graph);
 });
 
 test('applyLongTermEntries drains missed long-term rows in order', () => {
@@ -674,9 +713,9 @@ test('applyLongTermEntries drains missed long-term rows in order', () => {
   assert.equal(graph.fullXVals.length, 6);
   assert.deepEqual(
     graph.fullXVals,
-    entries.map((entry) => Math.floor(Date.parse(entry.recorded_at) / 1000))
+    entries.map((entry) => Date.parse(entry.recorded_at) / 1000)
   );
-  assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).recorded_at) / 1000));
+  assert.equal(graph.displayXVals.at(-1), Date.parse(entries.at(-1).recorded_at) / 1000);
   assert.deepEqual(stateRef.lastLongTermCursor, {
     timestamp: entries.at(-1).recorded_at,
     id: entries.at(-1).id,
@@ -709,7 +748,7 @@ test('applyLongTermEntries ignores stale long-term rows that were already covere
   assert.equal(graph.fullXVals.length, 4);
   assert.deepEqual(
     graph.fullXVals,
-    entries.map((entry) => Math.floor(Date.parse(entry.recorded_at) / 1000))
+    entries.map((entry) => Date.parse(entry.recorded_at) / 1000)
   );
   assert.deepEqual(stateRef.lastLongTermCursor, {
     timestamp: entries.at(-1).recorded_at,
@@ -731,7 +770,7 @@ test('pollLongTerm skips overlapping runs instead of fetching the same batch twi
   assert.equal(longTermPressureGraph.fullXVals.length, 2);
   assert.deepEqual(
     longTermPressureGraph.fullXVals,
-    entries.map((entry) => Math.floor(Date.parse(entry.recorded_at) / 1000))
+    entries.map((entry) => Date.parse(entry.recorded_at) / 1000)
   );
   assert.equal(firstResult?.appendedCount, 2);
   assert.equal(secondResult, null);
@@ -800,11 +839,15 @@ test('fetchAndUpdateFile only catches up fresh rows after a stale baseline seeds
   });
   assert.deepEqual(
     shortTermPressureGraph.fullXVals,
-    freshEntries.map((entry) => Math.floor(Date.parse(entry.created_at) / 1000))
+    freshEntries.map((entry) => Date.parse(entry.created_at) / 1000)
   );
   assert.deepEqual(
     shortTermPressureGraph.fullYVals,
     freshEntries.map((entry) => Number.parseFloat(entry.data.pressure))
+  );
+  assert.deepEqual(
+    shortTermPressureGraph.fullPressure902bVals,
+    freshEntries.map((entry) => Number.parseFloat(entry.data.pressure_902b_mbar))
   );
   assert.deepEqual(
     ccsGraphA.xVals,
@@ -1067,6 +1110,35 @@ test('fetchLongTermEntriesSince resumes within a tied timestamp using the id cur
   );
 });
 
+test('backfillShortTermGraph aligns fractional 972B and 902B values including null gaps', async () => {
+  const graph = createGraphObj({
+    maxDataPoints: 30_000,
+    maxTimeWindowSeconds: 24 * 60 * 60,
+    maxDisplayPoints: 1024,
+  });
+  const entries = buildShortTermEntries(3, {
+    startMs: Date.now() - 10_000 + 123,
+    pressureFactory: (index) => [null, '1.5e-6', 'bad'][index],
+    pressure902bFactory: (index) => ['2.5e-6', null, 'bad'][index],
+  });
+  setSupabaseTableRows('short_term_logs', entries);
+
+  const lastCursor = await backfillShortTermGraph(graph);
+
+  assert.deepEqual(lastCursor, {
+    timestamp: entries.at(-1).created_at,
+    id: entries.at(-1).id,
+  });
+  assert.deepEqual(
+    graph.fullXVals,
+    entries.map((entry) => Date.parse(entry.created_at) / 1000)
+  );
+  assert.ok(graph.fullXVals.some((timestamp) => !Number.isInteger(timestamp)));
+  assert.deepEqual(graph.fullYVals, [null, 1.5e-6, null]);
+  assert.deepEqual(graph.fullPressure902bVals, [2.5e-6, null, null]);
+  assertPressureGraphDisplayIntegrity(graph);
+});
+
 test('backfillLongTermGraph retains the newest points within the configured cap', async () => {
   const graph = createGraphObj({
     maxDataPoints: 5,
@@ -1085,9 +1157,9 @@ test('backfillLongTermGraph retains the newest points within the configured cap'
   assert.equal(graph.fullXVals.length, 5);
   assert.deepEqual(
     graph.fullXVals,
-    entries.slice(-5).map((entry) => Math.floor(Date.parse(entry.recorded_at) / 1000))
+    entries.slice(-5).map((entry) => Date.parse(entry.recorded_at) / 1000)
   );
-  assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).recorded_at) / 1000));
+  assert.equal(graph.displayXVals.at(-1), Date.parse(entries.at(-1).recorded_at) / 1000);
 });
 
 test('24-hour short-term data keeps a denser live display than the old 256-point cap', () => {
@@ -1144,9 +1216,9 @@ test('applyShortTermEntries caps raw points at maxDataPoints and keeps the newes
   assert.equal(graph.fullXVals.length, 5);
   assert.deepEqual(
     graph.fullXVals,
-    entries.slice(-5).map((entry) => Math.floor(Date.parse(entry.created_at) / 1000))
+    entries.slice(-5).map((entry) => Date.parse(entry.created_at) / 1000)
   );
-  assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).created_at) / 1000));
+  assert.equal(graph.displayXVals.at(-1), Date.parse(entries.at(-1).created_at) / 1000);
   assertPressureGraphDisplayIntegrity(graph);
 });
 
@@ -1159,11 +1231,12 @@ test('appendPressurePoint trims raw points outside the configured time window', 
   });
 
   [0, 5, 10, 15, 20].forEach((tSec, index) => {
-    appendPressurePoint(graph, tSec, index);
+    appendPressurePoint(graph, tSec, index, index + 10);
   });
 
   assert.deepEqual(graph.fullXVals, [10, 15, 20]);
   assert.deepEqual(graph.fullYVals, [2, 3, 4]);
+  assert.deepEqual(graph.fullPressure902bVals, [12, 13, 14]);
   assert.equal(graph.nextPointIndex, 5);
   assertPressureGraphDisplayIntegrity(graph);
 });
@@ -1176,19 +1249,37 @@ test('appendPressurePoint preserves graph array references and display invariant
   });
   const fullXRef = graph.fullXVals;
   const fullYRef = graph.fullYVals;
+  const full902bRef = graph.fullPressure902bVals;
 
   for (let index = 0; index < 12; index++) {
-    appendPressurePoint(graph, 1_000 + index, index);
+    appendPressurePoint(graph, 1_000 + index, index, index + 100);
 
     assert.strictEqual(graph.fullXVals, fullXRef);
     assert.strictEqual(graph.fullYVals, fullYRef);
+    assert.strictEqual(graph.fullPressure902bVals, full902bRef);
     assert.ok(graph.fullXVals.length <= graph.maxDataPoints);
     assertPressureGraphDisplayIntegrity(graph);
   }
 
   assert.deepEqual(graph.fullXVals, [1007, 1008, 1009, 1010, 1011]);
   assert.deepEqual(graph.fullYVals, [7, 8, 9, 10, 11]);
+  assert.deepEqual(graph.fullPressure902bVals, [107, 108, 109, 110, 111]);
   assert.equal(graph.nextPointIndex, 12);
+});
+
+test('clearPressureGraph clears both aligned pressure series', () => {
+  const graph = createGraphObj();
+  appendPressurePoint(graph, 1, 1e-6, 2e-6);
+
+  clearPressureGraph(graph);
+
+  assert.deepEqual(graph.fullXVals, []);
+  assert.deepEqual(graph.fullYVals, []);
+  assert.deepEqual(graph.fullPressure902bVals, []);
+  assert.deepEqual(graph.displayXVals, []);
+  assert.deepEqual(graph.displayYVals, []);
+  assert.deepEqual(graph.displayPressure902bVals, []);
+  assert.equal(graph.nextPointIndex, 0);
 });
 
 test('long-term data remains capped at the lower historical display density', () => {
@@ -1231,9 +1322,9 @@ test('applyLongTermEntries caps raw points at maxDataPoints and keeps the newest
   assert.equal(graph.fullXVals.length, 5);
   assert.deepEqual(
     graph.fullXVals,
-    entries.slice(-5).map((entry) => Math.floor(Date.parse(entry.recorded_at) / 1000))
+    entries.slice(-5).map((entry) => Date.parse(entry.recorded_at) / 1000)
   );
-  assert.equal(graph.displayXVals.at(-1), Math.floor(Date.parse(entries.at(-1).recorded_at) / 1000));
+  assert.equal(graph.displayXVals.at(-1), Date.parse(entries.at(-1).recorded_at) / 1000);
   assertPressureGraphDisplayIntegrity(graph);
 });
 
@@ -1257,28 +1348,41 @@ test('chart-data returns density metadata for both short and long views', () => 
   assert.equal(response.payload.view, 'short');
   assert.equal(
     response.payload.xVals.at(-1),
-    Math.floor(Date.parse(shortEntries.at(-1).created_at) / 1000)
+    Date.parse(shortEntries.at(-1).created_at) / 1000
   );
   assert.equal(
-    response.payload.yVals.at(-1),
+    response.payload.pressure972bVals.at(-1),
     Number.parseFloat(shortEntries.at(-1).data.pressure)
+  );
+  assert.equal(
+    response.payload.pressure902bVals.at(-1),
+    Number.parseFloat(shortEntries.at(-1).data.pressure_902b_mbar)
   );
   assert.equal(response.payload.rawPointCount, shortTermPressureGraph.fullXVals.length);
   assert.equal(response.payload.displayPointCount, shortTermPressureGraph.displayXVals.length);
   assert.equal(response.payload.downsampleFactor, shortTermPressureGraph.lastUsedFactor);
   assert.equal(response.payload.sourceResolutionLabel, shortTermPressureGraph.sourceResolutionLabel);
   assert.deepEqual(response.payload.xVals, shortTermPressureGraph.displayXVals);
-  assert.deepEqual(response.payload.yVals, shortTermPressureGraph.displayYVals);
+  assert.deepEqual(response.payload.pressure972bVals, shortTermPressureGraph.displayYVals);
+  assert.deepEqual(
+    response.payload.pressure902bVals,
+    shortTermPressureGraph.displayPressure902bVals
+  );
+  assert.equal('yVals' in response.payload, false);
 
   const snapshotResponse = createResponseRecorder();
   chartRoute.handler({ query: { view: 'short', raw: '1' } }, snapshotResponse);
   assert.equal(snapshotResponse.payload.resetRequired, false);
   assert.deepEqual(snapshotResponse.payload.xVals, shortTermPressureGraph.fullXVals);
-  assert.deepEqual(snapshotResponse.payload.yVals, shortTermPressureGraph.fullYVals);
+  assert.deepEqual(snapshotResponse.payload.pressure972bVals, shortTermPressureGraph.fullYVals);
+  assert.deepEqual(
+    snapshotResponse.payload.pressure902bVals,
+    shortTermPressureGraph.fullPressure902bVals
+  );
 
   const lastTimestamp = shortTermPressureGraph.fullXVals.at(-1);
   const snapshotCursor = snapshotResponse.payload.cursor;
-  appendPressurePoint(shortTermPressureGraph, lastTimestamp, 42);
+  appendPressurePoint(shortTermPressureGraph, lastTimestamp, 42, 84);
 
   const deltaResponse = createResponseRecorder();
   chartRoute.handler({
@@ -1290,7 +1394,8 @@ test('chart-data returns density metadata for both short and long views', () => 
   }, deltaResponse);
   assert.equal(deltaResponse.payload.resetRequired, false);
   assert.deepEqual(deltaResponse.payload.xVals, [lastTimestamp]);
-  assert.deepEqual(deltaResponse.payload.yVals, [42]);
+  assert.deepEqual(deltaResponse.payload.pressure972bVals, [42]);
+  assert.deepEqual(deltaResponse.payload.pressure902bVals, [84]);
 
   const longResponse = createResponseRecorder();
   chartRoute.handler({ query: { view: 'long' } }, longResponse);
@@ -1302,10 +1407,27 @@ test('chart-data returns density metadata for both short and long views', () => 
   assert.equal(longResponse.payload.downsampleFactor, longTermPressureGraph.lastUsedFactor);
   assert.equal(longResponse.payload.sourceResolutionLabel, longTermPressureGraph.sourceResolutionLabel);
   assert.deepEqual(longResponse.payload.xVals, longTermPressureGraph.displayXVals);
-  assert.deepEqual(longResponse.payload.yVals, longTermPressureGraph.displayYVals);
+  assert.deepEqual(longResponse.payload.pressure972bVals, longTermPressureGraph.displayYVals);
+  assert.equal('pressure902bVals' in longResponse.payload, false);
+  assert.equal('yVals' in longResponse.payload, false);
 });
 
-test('dashboard HTML uses the recent-log viewer and formats CCS temperatures to source precision', async () => {
+test('/data exposes the latest 902B pressure', () => {
+  state.data.pressure_902b_mbar = 5.678e-7;
+  const app = createFakeApp();
+  registerRoutes(app);
+
+  const dataRoute = app.routes.find((route) => route.method === 'GET' && route.path === '/data');
+  const response = createResponseRecorder();
+  dataRoute.handler({}, response);
+
+  assert.equal(response.payload.pressure_902b_mbar, 5.678e-7);
+});
+
+test('dashboard HTML uses the recent-log viewer, pressure readings, and source-precision CCS temperatures', async () => {
+  state.experimentRunning = true;
+  state.data.pressure = 1.234e-6;
+  state.data.pressure_902b_mbar = 5.678e-7;
   const app = createFakeApp();
   registerRoutes(app);
 
@@ -1322,6 +1444,30 @@ test('dashboard HTML uses the recent-log viewer and formats CCS temperatures to 
 
   assert.equal(response.statusCode, 200);
   assert.match(response.payload, /Recent Log \(last 30 min\)/);
+  assert.match(response.payload, /id="pressure972b">972B: 1\.23e-6 mbar<\/span>\s*<span id="pressure902b" style="color:#818cf8;">902B: 5\.68e-7 mbar/);
+  assert.match(response.payload, /class="vacuum-indicators-header"/);
+  assert.match(response.payload, /id="pressureReadings" class="vacuum-pressure-readings"/);
+  assert.match(
+    response.payload,
+    /@media \(max-width: 992px\)[\s\S]*?\.vacuum-indicators-header \{\s*grid-template-columns: 1fr;[\s\S]*?border-bottom: none;[\s\S]*?\.vacuum-indicators-heading \{[\s\S]*?border-bottom: 1px solid var\(--border-subtle\);[\s\S]*?\.vacuum-pressure-readings \{\s*justify-self: center;/
+  );
+  assert.match(
+    response.payload,
+    /@media \(max-width: 600px\)[\s\S]*?\.vacuum-pressure-readings \{\s*flex-direction: column;/
+  );
+  assert.match(response.payload, /title: 'Cathode C — Clamp Temperature',[\s\S]*?stroke: '#fca5a5'/);
+  assert.match(response.payload, /function setCCSChartTimeWindow\(chart, nowSec = ccsViewportNow\)/);
+  assert.match(response.payload, /chart\.setScale\('x', \{ min, max \}\)/);
+  assert.match(response.payload, /chartEl\.ondblclick = \(\) => \{\s*setCCSChartTimeWindow\(uplot\);/);
+  assert.match(response.payload, /finally \{\s*updateCCSChartTimeWindows\(ccsViewportNow\);/);
+  assert.doesNotMatch(response.payload, /972B:[^<]*\|[^<]*902B:/);
+  assert.match(response.payload, /return '-- mbar';/);
+  assert.match(
+    response.payload,
+    /Number\.isFinite\(numericValue\) && numericValue > 0\s*\? numericValue\.toExponential\(2\) \+ ' mbar'/
+  );
+  assert.match(response.payload, /'972B: ' \+ formatPressureValue\(data\.pressure, experimentRunning\)/);
+  assert.match(response.payload, /formatPressureValue\(data\.pressure_902b_mbar, experimentRunning\)/);
   assert.match(response.payload, /Show Recent Log/);
   assert.match(response.payload, /class="log-viewer-header"/);
   assert.match(response.payload, /class="btn-toggle log-toggle-button"/);
@@ -1350,14 +1496,19 @@ test('dashboard HTML uses the recent-log viewer and formats CCS temperatures to 
     response.payload,
     /Number\.isFinite\(v\) \? v\.toExponential\(2\) : ''/
   );
+  assert.match(response.payload, /label: '972B pressure \(mbar\)'[\s\S]*?return v\.toExponential\(2\);[\s\S]*?stroke: '#38bdf8'/);
+  assert.match(response.payload, /label: '902B pressure \(mbar\)'[\s\S]*?return v\.toExponential\(2\);[\s\S]*?stroke: '#818cf8'/);
+  assert.doesNotMatch(response.payload, /dash:/);
   assert.match(
     response.payload,
-    /normalizePressureSeriesForLogScale\(\[\]\),\s*\n\s*\],/
+    /normalizePressureSeriesForLogScale\(sample\.pressure972bVals\)/
   );
   assert.match(
     response.payload,
-    /normalizePressureSeriesForLogScale\(sample\.yVals\)/
+    /normalizePressureSeriesForLogScale\(sample\.pressure902bVals\)/
   );
+  assert.match(response.payload, /chartData\.pressure972bVals/);
+  assert.match(response.payload, /chartData\.pressure902bVals/);
   assert.match(response.payload, /requestAnimationFrame/);
   assert.match(response.payload, /&raw=1&cursor=/);
   assert.match(response.payload, /nextCacheStartIndex - pressureRawIndexOffset/);
@@ -1400,6 +1551,7 @@ test('dashboard HTML uses the recent-log viewer and formats CCS temperatures to 
   assert.match(response.payload, /id="pressure-pan-mode"[^>]*aria-pressed="false"/);
   assert.match(response.payload, /id="pressure-reset-view"/);
   assert.match(response.payload, /createPressureInteractionPlugin\(\{/);
+  assert.match(response.payload, /clampPressureViewportRange\(/);
   assert.match(response.payload, /#chart-root-3 \.u-select \{\s*display: none;/);
   assert.match(response.payload, /#chart-root-3\.is-zoom-selecting \.u-select \{\s*display: block;/);
   assert.match(response.payload, /uplotRef\.setSelect\(\{ left, top: 0, width, height: rect\.height \}, false\)/);
@@ -1407,7 +1559,16 @@ test('dashboard HTML uses the recent-log viewer and formats CCS temperatures to 
   assert.match(response.payload, /focus:\s*\{\s*prox:\s*-1\s*\}/);
   assert.match(response.payload, /points:\s*\{\s*size:\s*8,/);
   assert.match(response.payload, /filter:\s*filterPressureLogGridSplits/);
-  assert.match(response.payload, /pressureChart\.setData\(\[sample\.xVals, normalizedYVals\], false\)/);
+  assert.match(
+    response.payload,
+    /pressureChart\.setData\(\s*\[sample\.xVals, normalizedPressure972bVals, normalizedPressure902bVals\]/
+  );
+  assert.match(response.payload, /pressureChart\.setSeries\(2, \{ show: false \}\)/);
+  assert.match(response.payload, /pressureViewportNow = Number\.isFinite\(serverNowMs\)/);
+  assert.match(
+    response.payload,
+    /getPressureTimeWindowBounds\(\s*pressureRawDataX,\s*selectedLiveHours,\s*pressureViewportNow/
+  );
   assert.match(response.payload, /pressureViewportKind = 'custom'/);
   assert.match(response.payload, /pressureChart\.setScale\('y', \{ min: null, max: null \}\)/);
   assert.match(response.payload, /overflow:\s*hidden;/);
@@ -1415,6 +1576,48 @@ test('dashboard HTML uses the recent-log viewer and formats CCS temperatures to 
   assert.doesNotMatch(response.payload, /fetch\('\/refresh-display'\)/);
   assert.doesNotMatch(response.payload, /margin-top:\s*-3\.5em/);
   assert.doesNotMatch(response.payload, /float:\s*right/);
+
+  const inlineScripts = Array.from(
+    response.payload.matchAll(/<script>([\s\S]*?)<\/script>/g),
+    (match) => match[1]
+  );
+  assert.ok(inlineScripts.length > 0);
+  inlineScripts.forEach((source) => assert.doesNotThrow(() => new Function(source)));
+});
+
+test('fetchJsonWithTimeout returns parsed data and passes an abort signal', async () => {
+  let requestSignal;
+  const chartData = await fetchJsonWithTimeout('/chart-data', 5, async (_url, options) => {
+    requestSignal = options.signal;
+    return { ok: true, json: async () => ({ cursor: 12 }) };
+  });
+
+  assert.deepEqual(chartData, { cursor: 12 });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.equal(requestSignal.aborted, false);
+});
+
+test('fetchJsonWithTimeout aborts a hung request and reports a timeout', async () => {
+  let requestSignal;
+  const hungFetch = (_url, options) => new Promise((_resolve, reject) => {
+    requestSignal = options.signal;
+    requestSignal.addEventListener('abort', () => {
+      reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+    }, { once: true });
+  });
+
+  await assert.rejects(
+    fetchJsonWithTimeout('/chart-data', 5, hungFetch),
+    /Request timed out/
+  );
+  assert.equal(requestSignal.aborted, true);
+});
+
+test('fetchJsonWithTimeout preserves HTTP failures', async () => {
+  await assert.rejects(
+    fetchJsonWithTimeout('/chart-data', 50, async () => ({ ok: false, status: 503 })),
+    /Request failed: 503/
+  );
 });
 
 test('dashboard HTML renders the live Experiment Progress chevron card above Interlocks', async () => {
@@ -1465,41 +1668,6 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
   assert.match(response.payload, /updateExperimentProgress\(data, experimentRunning\)/);
 });
 
-test('fetchJsonWithTimeout returns parsed data and passes an abort signal', async () => {
-  let requestSignal;
-  const chartData = await fetchJsonWithTimeout('/chart-data', 5, async (_url, options) => {
-    requestSignal = options.signal;
-    return { ok: true, json: async () => ({ cursor: 12 }) };
-  });
-
-  assert.deepEqual(chartData, { cursor: 12 });
-  await new Promise((resolve) => setTimeout(resolve, 10));
-  assert.equal(requestSignal.aborted, false);
-});
-
-test('fetchJsonWithTimeout aborts a hung request and reports a timeout', async () => {
-  let requestSignal;
-  const hungFetch = (_url, options) => new Promise((_resolve, reject) => {
-    requestSignal = options.signal;
-    requestSignal.addEventListener('abort', () => {
-      reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
-    }, { once: true });
-  });
-
-  await assert.rejects(
-    fetchJsonWithTimeout('/chart-data', 5, hungFetch),
-    /Request timed out/
-  );
-  assert.equal(requestSignal.aborted, true);
-});
-
-test('fetchJsonWithTimeout preserves HTTP failures', async () => {
-  await assert.rejects(
-    fetchJsonWithTimeout('/chart-data', 50, async () => ({ ok: false, status: 503 })),
-    /Request failed: 503/
-  );
-});
-
 test('normalizePressureSeriesForLogScale keeps positive finite pressures and gaps invalid values', () => {
   const pressures = [1200, 1, 1e-3, 1e-6, 0, -1, null, Number.NaN, Infinity, -Infinity];
 
@@ -1542,7 +1710,7 @@ test('getPaddedPressureLogRange leaves at least half a decade below positive dat
   assert.deepEqual(getPaddedPressureLogRange(rangeLog, -1, 1), [-1, 1]);
 });
 
-test('filterPressureLogGridSplits keeps at most ten preferred-mantissa grid lines', () => {
+test('filterPressureLogGridSplits keeps at most ten exact preferred-mantissa grid lines', () => {
   const splits = [
     1e-6, 2e-6, 3e-6, 4e-6, 5e-6, 6e-6, 7e-6, 8e-6, 9e-6,
     1e-3, 2e-3, 3e-3, 4e-3, 5e-3, 6e-3, 7e-3, 8e-3, 9e-3,
@@ -1557,9 +1725,18 @@ test('filterPressureLogGridSplits keeps at most ten preferred-mantissa grid line
   assert.ok([1e-6, 1e-3, 1, 10].every((value) => filtered.includes(value)));
   assert.ok(filtered.every((value) => {
     const magnitude = 10 ** Math.floor(Math.log10(value));
-    const mantissa = Math.round(value / magnitude);
-    return mantissa === 2 || mantissa % 2 === 1;
+    const mantissa = value / magnitude;
+    return [1, 2, 3, 5, 7, 9].some((allowed) => (
+      Math.abs(mantissa - allowed) < Number.EPSILON * 10
+    ));
   }));
+  assert.deepEqual(
+    filterPressureLogGridSplits(
+      null,
+      [1.01e-6, 2.02e-6, 3.04e-6, 4.04e-6, 5.05e-6, 6.06e-6, 7.07e-6, 8.08e-6, 9.09e-6]
+    ),
+    [1e-6, 2e-6, 3e-6, null, 5e-6, null, 7e-6, null, 9e-6]
+  );
   assert.deepEqual(
     filterPressureLogGridSplits(null, [1, 2, 3, 4, 5, 6, 7, 8, 9]),
     [1, 2, 3, null, 5, null, 7, null, 9]
@@ -1576,32 +1753,99 @@ test('filterPressureLogGridSplits keeps at most ten preferred-mantissa grid line
   assert.deepEqual(filterPressureLogGridSplits(null, null), []);
 });
 
-test('getPressureTimeWindowBounds anchors presets to the newest loaded timestamp', () => {
+test('getPressureTimeWindowBounds can advance live and historical right edges to now', () => {
   const newest = 1_800_000_000;
   const oldest = newest - (24 * 60 * 60);
   const xVals = [oldest, newest - 30, newest];
+  const now = newest + 120;
 
   for (const hours of [1, 3, 6, 12, 24]) {
     assert.deepEqual(
-      getPressureTimeWindowBounds(xVals, hours),
-      [Math.max(oldest, newest - (hours * 60 * 60)), newest]
+      getPressureTimeWindowBounds(xVals, hours, now),
+      [Math.max(oldest, now - (hours * 60 * 60)), now]
     );
   }
 
+  assert.deepEqual(getPressureTimeWindowBounds(xVals, null, now), [oldest, now]);
   assert.deepEqual(getPressureTimeWindowBounds(xVals, null), [oldest, newest]);
   assert.deepEqual(getPressureTimeWindowBounds([null, oldest, newest, null], 1), [newest - 3600, newest]);
   assert.deepEqual(getPressureTimeWindowBounds([], 1), [null, null]);
+  assert.deepEqual(getPressureTimeWindowBounds([], 1, now), [now - 3600, now]);
   assert.deepEqual(getPressureTimeWindowBounds([null, Number.NaN], 1), [null, null]);
+});
+
+test('clampPressureViewportRange enforces a ten-second minimum around the requested center', () => {
+  assert.deepEqual(clampPressureViewportRange(0, 100, 40, 42, 3), [36, 46]);
+  assert.deepEqual(clampPressureViewportRange(0, 100, 20, 40, 3), [20, 40]);
+  assert.deepEqual(clampPressureViewportRange(0, 100, -1, 1, 3), [0, 10]);
+  assert.deepEqual(clampPressureViewportRange(0, 100, 99, 101, 3), [90, 100]);
+});
+
+test('clampPressureViewportRange preserves larger source-cadence and short-data limits', () => {
+  assert.deepEqual(clampPressureViewportRange(0, 100, 40, 42, 60), [11, 71]);
+  assert.deepEqual(clampPressureViewportRange(0, 5, 2, 3, 3), [-5, 5]);
+  assert.equal(clampPressureViewportRange(null, 100, 40, 42, 3), null);
+  assert.equal(clampPressureViewportRange(0, 100, 42, 40, 3), null);
+});
+
+test('getCCSTimeWindowBounds returns the hour ending at now', () => {
+  assert.deepEqual(getCCSTimeWindowBounds(1_800_000_000), [1_799_996_400, 1_800_000_000]);
 });
 
 test('buildPressureViewportSample keeps power-of-two sampling stable as the cache advances', () => {
   const xVals = Array.from({ length: 17 }, (_value, index) => index);
-  const yVals = xVals.map((value) => value * 10);
-  const initial = buildPressureViewportSample(xVals.slice(0, 16), yVals.slice(0, 16), 0, 15, 5, 0);
-  const advanced = buildPressureViewportSample(xVals.slice(1), yVals.slice(1), 1, 16, 5, 1);
+  const pressure972bVals = xVals.map((value) => value * 10);
+  const pressure902bVals = xVals.map((value) => value * 100);
+  const initial = buildPressureViewportSample(
+    xVals.slice(0, 16),
+    pressure972bVals.slice(0, 16),
+    pressure902bVals.slice(0, 16),
+    0,
+    15,
+    5,
+    0
+  );
+  const advanced = buildPressureViewportSample(
+    xVals.slice(1),
+    pressure972bVals.slice(1),
+    pressure902bVals.slice(1),
+    1,
+    16,
+    5,
+    1
+  );
 
   assert.equal(initial.downsampleFactor, 4);
   assert.equal(advanced.downsampleFactor, 4);
   assert.deepEqual(initial.xVals, [0, 4, 8, 12, 15]);
+  assert.deepEqual(initial.pressure972bVals, [0, 40, 80, 120, 150]);
+  assert.deepEqual(initial.pressure902bVals, [0, 400, 800, 1200, 1500]);
   assert.deepEqual(advanced.xVals, [4, 8, 12, 16]);
+});
+
+test('advancing now through empty graph space does not change sampled points', () => {
+  const xVals = Array.from({ length: 16 }, (_value, index) => 100 + index);
+  const pressure972bVals = xVals.map((value) => value * 10);
+  const pressure902bVals = xVals.map((value) => value * 100);
+
+  const first = buildPressureViewportSample(
+    xVals,
+    pressure972bVals,
+    pressure902bVals,
+    0,
+    120,
+    5,
+    0
+  );
+  const later = buildPressureViewportSample(
+    xVals,
+    pressure972bVals,
+    pressure902bVals,
+    0,
+    180,
+    5,
+    0
+  );
+
+  assert.deepEqual(later, first);
 });

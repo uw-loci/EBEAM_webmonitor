@@ -53,6 +53,7 @@ function registerRoutes(app) {
 
     res.json({
       pressure: state.data.pressure,
+      pressure_902b_mbar: state.data.pressure_902b_mbar,
       pressureTimestamp: state.data.pressureTimestamp,
       safetyInputStatusFlags: state.data.safetyInputStatusFlags,
       safetyOutputStatusFlags: state.data.safetyOutputStatusFlags,
@@ -149,7 +150,10 @@ function registerRoutes(app) {
         view,
         resetRequired: false,
         xVals: graph.fullXVals.slice(sliceIndex),
-        yVals: graph.fullYVals.slice(sliceIndex),
+        pressure972bVals: graph.fullYVals.slice(sliceIndex),
+        ...(view === 'short' && {
+          pressure902bVals: graph.fullPressure902bVals.slice(sliceIndex),
+        }),
         cursor: graph.nextPointIndex,
         cacheStartIndex,
         maxDataPoints: graph.maxDataPoints,
@@ -160,7 +164,10 @@ function registerRoutes(app) {
     res.json({
       view,
       xVals: graph.displayXVals,
-      yVals: graph.displayYVals,
+      pressure972bVals: graph.displayYVals,
+      ...(view === 'short' && {
+        pressure902bVals: graph.displayPressure902bVals,
+      }),
       ...getGraphMetadata(graph),
     });
   });

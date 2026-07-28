@@ -113,9 +113,9 @@ Express routes:
 The startup sequence in `index.js` warms the pressure caches, CCS caches, and display-log cache before calling `app.listen()`, so the first page load has data ready instead of starting cold.
 
 The browser then:
-- polls `/data` every 3 seconds for scalar values, status badges, and Beam Energy power-supply cards
-- polls `/chart-data` for the active pressure view
-- polls `/ccs-chart-data` for the three clamp-temperature charts
+- starts each dashboard poll 3 seconds after the previous poll finishes, preventing overlapping requests
+- applies a 10-second timeout to `/data`, pressure deltas, and `/ccs-chart-data`
+- applies a 30-second timeout and latest-generation check to full pressure snapshots
 - fetches `/raw` only when the full log viewer is expanded
 
 ## Project Structure

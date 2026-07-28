@@ -246,6 +246,7 @@ Module._load = function mockExternalDependencies(request, parent, isMain) {
 const state = require('../services/state');
 const registerRoutes = require('../routes');
 const {
+  getMachineStatusState,
   fetchJsonWithTimeout,
   normalizePressureSeriesForLogScale,
   getPaddedPressureLogRange,
@@ -263,6 +264,8 @@ const {
   ccsGraphC,
 } = require('../services/graphs');
 const {
+  mapSupabaseDataToAppFormat,
+  resetData,
   backfillShortTermGraph,
   backfillLongTermGraph,
   fetchShortTermEntriesSince,
@@ -406,6 +409,16 @@ function resetSingletonState() {
     safetyInputStatusFlags: null,
     temperatures: null,
     vacuumBits: null,
+    machine_status_temps: null,
+    machine_status_pressure_1e_4: null,
+    machine_status_interlocks: null,
+    machine_status_hv_panel: null,
+    machine_status_pressure_1e_6: null,
+    machine_status_hvps_nominal: null,
+    machine_status_bcon: null,
+    machine_status_cathodes: null,
+    machine_status_beams_ready: null,
+    machine_status_beams_on: null,
     heaterCurrent_A: null,
     heaterCurrent_B: null,
     heaterCurrent_C: null,
@@ -481,6 +494,90 @@ beforeEach(() => {
   resetCCSGraph(ccsGraphA);
   resetCCSGraph(ccsGraphB);
   resetCCSGraph(ccsGraphC);
+});
+
+test('Supabase mapping extracts every machine status milestone into a flat field', () => {
+  const machineStatus = {
+    STATUS_TEMPS: 'green',
+    STATUS_PRESSURE_1E_4: 'red',
+    STATUS_INTERLOCKS: 'gray',
+    STATUS_HV_PANEL: 'green',
+    STATUS_PRESSURE_1E_6: 'red',
+    STATUS_HVPS_NOMINAL: 'green',
+    STATUS_BCON: 'gray',
+    STATUS_CATHODES: 'green',
+    STATUS_BEAMS_READY: 'red',
+    STATUS_BEAMS_ON: 'green',
+  };
+
+  const mapped = mapSupabaseDataToAppFormat({ machine_status: machineStatus });
+
+  assert.deepEqual(
+    {
+      machine_status_temps: mapped.machine_status_temps,
+      machine_status_pressure_1e_4: mapped.machine_status_pressure_1e_4,
+      machine_status_interlocks: mapped.machine_status_interlocks,
+      machine_status_hv_panel: mapped.machine_status_hv_panel,
+      machine_status_pressure_1e_6: mapped.machine_status_pressure_1e_6,
+      machine_status_hvps_nominal: mapped.machine_status_hvps_nominal,
+      machine_status_bcon: mapped.machine_status_bcon,
+      machine_status_cathodes: mapped.machine_status_cathodes,
+      machine_status_beams_ready: mapped.machine_status_beams_ready,
+      machine_status_beams_on: mapped.machine_status_beams_on,
+    },
+    {
+      machine_status_temps: 'green',
+      machine_status_pressure_1e_4: 'red',
+      machine_status_interlocks: 'gray',
+      machine_status_hv_panel: 'green',
+      machine_status_pressure_1e_6: 'red',
+      machine_status_hvps_nominal: 'green',
+      machine_status_bcon: 'gray',
+      machine_status_cathodes: 'green',
+      machine_status_beams_ready: 'red',
+      machine_status_beams_on: 'green',
+    }
+  );
+  assert.equal(Object.hasOwn(mapped, 'machineStatus'), false);
+  assert.equal(
+    mapSupabaseDataToAppFormat({ machine_status: [] }).machine_status_temps,
+    null
+  );
+});
+
+test('resetData clears machine status with other inactive telemetry', () => {
+  state.data.machine_status_temps = 'green';
+  state.data.machine_status_beams_on = 'red';
+
+  resetData();
+
+  assert.equal(state.data.machine_status_temps, null);
+  assert.equal(state.data.machine_status_beams_on, null);
+});
+
+test('machine status state validation falls back to gray', () => {
+  assert.equal(getMachineStatusState('green', true), 'green');
+  assert.equal(getMachineStatusState('red', true), 'red');
+  assert.equal(getMachineStatusState('gray', true), 'gray');
+  assert.equal(getMachineStatusState('blue', true), 'gray');
+  assert.equal(getMachineStatusState('green', false), 'gray');
+  assert.equal(getMachineStatusState(null, true), 'gray');
+});
+
+test('/data exposes the latest machine status fields individually', () => {
+  state.data.machine_status_temps = 'green';
+  state.data.machine_status_pressure_1e_4 = 'red';
+
+  const app = createFakeApp();
+  registerRoutes(app);
+  const dataRoute = app.routes.find((route) => route.method === 'GET' && route.path === '/data');
+  const response = createResponseRecorder();
+
+  dataRoute.handler({}, response);
+
+  assert.equal(response.payload.machine_status_temps, 'green');
+  assert.equal(response.payload.machine_status_pressure_1e_4, 'red');
+  assert.equal(Object.hasOwn(response.payload, 'machineStatus'), false);
 });
 
 test('applyShortTermEntries catches up every unseen short-term row in order', () => {
@@ -1318,6 +1415,54 @@ test('dashboard HTML uses the recent-log viewer and formats CCS temperatures to 
   assert.doesNotMatch(response.payload, /fetch\('\/refresh-display'\)/);
   assert.doesNotMatch(response.payload, /margin-top:\s*-3\.5em/);
   assert.doesNotMatch(response.payload, /float:\s*right/);
+});
+
+test('dashboard HTML renders the live Experiment Progress chevron card above Interlocks', async () => {
+  state.experimentRunning = true;
+  state.data.machine_status_temps = 'green';
+  state.data.machine_status_pressure_1e_4 = 'red';
+
+  const app = createFakeApp();
+  registerRoutes(app);
+  const dashboardRoute = app.routes.find((route) => route.method === 'GET' && route.path === '/');
+  const response = createResponseRecorder();
+
+  await dashboardRoute.handler({}, response);
+
+  const progressIndex = response.payload.indexOf('Experiment Progress');
+  const interlocksIndex = response.payload.indexOf('<!-- Interlocks Section -->');
+  assert.ok(progressIndex >= 0);
+  assert.ok(progressIndex < interlocksIndex);
+  assert.equal(
+    (response.payload.match(/data-machine-status-key="/g) || []).length,
+    10
+  );
+  assert.match(
+    response.payload,
+    /machine-status-green"[\s\S]*data-machine-status-key="machine_status_temps"/
+  );
+  assert.match(
+    response.payload,
+    /machine-status-red"[\s\S]*data-machine-status-key="machine_status_pressure_1e_4"/
+  );
+  assert.match(
+    response.payload,
+    /class="experiment-progress-chevron"[\s\S]*<polygon points=/
+  );
+  assert.match(
+    response.payload,
+    /\.experiment-progress-chevron polygon\s*\{[\s\S]*fill:\s*var\(--milestone-fill\);[\s\S]*stroke:\s*var\(--milestone-border\);[\s\S]*stroke-width:\s*2px;/
+  );
+  assert.match(response.payload, /\.machine-status-gray\s*\{[\s\S]*--milestone-fill:\s*rgba\(148,\s*163,\s*184,\s*0\.08\);/);
+  assert.match(response.payload, /\.machine-status-green\s*\{[\s\S]*--milestone-border:\s*var\(--success\);[\s\S]*--milestone-fill:\s*rgba\(34,\s*197,\s*94,\s*0\.15\);[\s\S]*color:\s*white;/);
+  assert.match(response.payload, /\.machine-status-red\s*\{[\s\S]*--milestone-border:\s*var\(--danger\);[\s\S]*--milestone-fill:\s*rgba\(239,\s*68,\s*68,\s*0\.15\);[\s\S]*color:\s*white;/);
+  assert.match(
+    response.payload,
+    /\.experiment-progress-chevron polygon\s*\{[\s\S]*filter:\s*drop-shadow\(0 0 6px var\(--milestone-glow\)\);/
+  );
+  assert.match(response.payload, /text-shadow:\s*0 0 5px var\(--milestone-text-glow\);/);
+  assert.doesNotMatch(response.payload, /\.experiment-progress-milestone-shell\s*\{[^}]*filter:/);
+  assert.match(response.payload, /updateExperimentProgress\(data, experimentRunning\)/);
 });
 
 test('fetchJsonWithTimeout returns parsed data and passes an abort signal', async () => {

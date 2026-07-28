@@ -999,15 +999,15 @@ function renderDashboard(opts) {
             </div>
             <div class="gauge" id="sensor-3">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] === "DISCONNECTED" || temperatures["3"] === "None" ? '--' : temperatures["3"] + '°C'}</div></div>
-              <div class="sensor-label">Chmbr Bot</div>
+              <div class="sensor-label">Chamber Top</div>
             </div>
             <div class="gauge" id="sensor-4">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] === "DISCONNECTED" || temperatures["4"] === "None" ? '--' : temperatures["4"] + '°C'}</div></div>
-              <div class="sensor-label">Chmbr Top</div>
+              <div class="sensor-label">Chamber Bot</div>
             </div>
             <div class="gauge" id="sensor-5">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] === "DISCONNECTED" || temperatures["5"] === "None" ? '--' : temperatures["5"] + '°C'}</div></div>
-              <div class="sensor-label">Air temp</div>
+              <div class="sensor-label">Air Temp</div>
             </div>
             <div class="gauge" id="sensor-6">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] === "DISCONNECTED" || temperatures["6"] === "None" ? '--' : temperatures["6"] + '°C'}</div></div>

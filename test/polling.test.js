@@ -1658,11 +1658,37 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
   );
   assert.match(
     response.payload,
-    /\.experiment-progress-milestone-shell\s*\{[^}]*flex:\s*1 0 115px;[^}]*min-width:\s*115px;[^}]*min-height:\s*38px;[^}]*margin-left:\s*-8px;/
+    /\.experiment-progress-milestone-shell\s*\{[^}]*flex:\s*0 0 var\(--progress-chevron-width,\s*100px\);[^}]*min-width:\s*100px;[^}]*min-height:\s*38px;/
   );
   assert.match(
     response.payload,
-    /\.experiment-progress-milestone\s*\{[^}]*font-weight:\s*400;/
+    /\.experiment-progress-track\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*width:\s*100%;[^}]*row-gap:\s*8px;/
+  );
+  assert.match(response.payload, /const minimumProgressChevronWidth = 100;/);
+  assert.match(response.payload, /const progressChevronOverlap = 8;/);
+  assert.match(
+    response.payload,
+    /function getMinimumExperimentProgressRowWidth\(chevronCount\) \{[\s\S]*return chevronCount \* minimumProgressChevronWidth;[\s\S]*\}/
+  );
+  assert.doesNotMatch(
+    response.payload,
+    /function getMinimumExperimentProgressRowWidth\(chevronCount\) \{[^}]*progressChevronOverlap/
+  );
+  assert.match(response.payload, /availableWidth > getMinimumExperimentProgressRowWidth\(10\)/);
+  assert.match(response.payload, /availableWidth > getMinimumExperimentProgressRowWidth\(5\)/);
+  assert.match(response.payload, /availableWidth > getMinimumExperimentProgressRowWidth\(4\)/);
+  assert.match(response.payload, /availableWidth > getMinimumExperimentProgressRowWidth\(3\)/);
+  assert.match(response.payload, /availableWidth > getMinimumExperimentProgressRowWidth\(2\)/);
+  assert.match(response.payload, /return \[1, 1, 1, 1, 1, 1, 1, 1, 1, 1\];/);
+  assert.match(response.payload, /\.experiment-progress-row\s*\{[^}]*justify-content:\s*center;/);
+  assert.match(response.payload, /new ResizeObserver\(layoutExperimentProgress\)/);
+  assert.match(
+    response.payload,
+    /milestone === progressMilestones\[0\][\s\S]*\? firstChevronPoints[\s\S]*: joinedChevronPoints/
+  );
+  assert.match(
+    response.payload,
+    /\.experiment-progress-milestone\s*\{[^}]*font-weight:\s*500;/
   );
   assert.match(response.payload, /\.dashboard-title\s*\{[^}]*font-weight:\s*700;/);
   assert.match(

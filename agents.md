@@ -84,9 +84,14 @@
 - Vacuum pressure validity: finite `> 0`; empty/nonpositive/invalid → `-- mbar`
 
 ## Experiment progress
-- chevrons: 115px minimum width, 38px minimum height, -8px overlap
+- chevrons: 100px minimum width, 38px minimum height, -8px overlap
+- layout: balanced rows `10`; `5,5`; `4,3,3`; `3,3,2,2`; `2,2,2,2,2`; ten `1`s
+- row sizing: widest-row chevron width shared across rows, shorter rows centered, 8px row gap
+- row transition: next pattern at `widest row count * 100px`; overlap excluded
+- overflow: wrapping page rows; no scrollbar, backlight, or background wrapper
+- left edge: squared only for `Temperatures` / `OK`; diagonal notch for all others
 - text glow: 3px blur, 0.35 active alpha
-- text weight: 400
+- text weight: 500
 - temperature label: `Temperatures` / `OK`
 - HV power label: `HV Power` / `Supplies Nominal`
 

@@ -1208,9 +1208,14 @@ test('chart-data returns density metadata for both short and long views', () => 
   assert.deepEqual(longResponse.payload.yVals, longTermPressureGraph.displayYVals);
 });
 
-test('dashboard HTML uses the recent-log viewer and does not force refresh on open', async () => {
+test('dashboard HTML uses the recent-log viewer and formats CCS temperatures to source precision', async () => {
   const app = createFakeApp();
   registerRoutes(app);
+
+  state.experimentRunning = true;
+  state.data.clamp_temperature_A = 123.456;
+  state.data.clamp_temperature_B = '234.567';
+  state.data.clamp_temperature_C = 345;
 
   const dashboardRoute = app.routes.find((route) => route.method === 'GET' && route.path === '/');
   assert.ok(dashboardRoute, 'expected / route to be registered');
@@ -1224,6 +1229,22 @@ test('dashboard HTML uses the recent-log viewer and does not force refresh on op
   assert.match(response.payload, /class="log-viewer-header"/);
   assert.match(response.payload, /class="btn-toggle log-toggle-button"/);
   assert.match(response.payload, /class="btn-toggle pressure-toggle-button"/);
+  assert.match(response.payload, /Clamp Temperature: 123\.5 C/);
+  assert.match(response.payload, /Clamp Temperature: 234\.6 C/);
+  assert.match(response.payload, /Clamp Temperature: 345\.0 C/);
+  assert.match(
+    response.payload,
+    /Number\(data\.clamp_temperature_A\)\.toFixed\(1\) \+ "°C"/
+  );
+  assert.match(
+    response.payload,
+    /Number\(v\)\.toFixed\(1\) \+ " °C"/
+  );
+  assert.match(
+    response.payload,
+    /v\.toFixed\(1\) : ""/
+  );
+  assert.doesNotMatch(response.payload, /Math\.round\(Number\(data\.clamp_temperature/);
   assert.match(response.payload, /chartEl\.getBoundingClientRect\(\)\.width/);
   assert.match(response.payload, /distr:\s*3,\s*log:\s*10,/);
   assert.match(response.payload, /getPaddedPressureLogRange\(uPlot\.rangeLog, dataMin, dataMax\)/);

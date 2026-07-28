@@ -1644,6 +1644,10 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
     response.payload,
     /machine-status-green"[\s\S]*data-machine-status-key="machine_status_temps"/
   );
+  assert.match(response.payload, />Temperatures<\/span>[\s\S]*>OK<\/span>/);
+  assert.doesNotMatch(response.payload, />PMON Temperatures<\/span>/);
+  assert.match(response.payload, />HV Power<\/span>[\s\S]*>Supplies Nominal<\/span>/);
+  assert.doesNotMatch(response.payload, />HV Power Supplies<\/span>/);
   assert.match(
     response.payload,
     /machine-status-red"[\s\S]*data-machine-status-key="machine_status_pressure_1e_4"/
@@ -1652,6 +1656,15 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
     response.payload,
     /class="experiment-progress-chevron"[\s\S]*<polygon points=/
   );
+  assert.match(
+    response.payload,
+    /\.experiment-progress-milestone-shell\s*\{[^}]*flex:\s*1 0 115px;[^}]*min-width:\s*115px;[^}]*min-height:\s*38px;[^}]*margin-left:\s*-8px;/
+  );
+  assert.match(
+    response.payload,
+    /\.experiment-progress-milestone\s*\{[^}]*font-weight:\s*400;/
+  );
+  assert.match(response.payload, /\.dashboard-title\s*\{[^}]*font-weight:\s*700;/);
   assert.match(
     response.payload,
     /\.experiment-progress-chevron polygon\s*\{[\s\S]*fill:\s*var\(--milestone-fill\);[\s\S]*stroke:\s*var\(--milestone-border\);[\s\S]*stroke-width:\s*2px;/
@@ -1663,7 +1676,9 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
     response.payload,
     /\.experiment-progress-chevron polygon\s*\{[\s\S]*filter:\s*drop-shadow\(0 0 6px var\(--milestone-glow\)\);/
   );
-  assert.match(response.payload, /text-shadow:\s*0 0 5px var\(--milestone-text-glow\);/);
+  assert.match(response.payload, /text-shadow:\s*0 0 3px var\(--milestone-text-glow\);/);
+  assert.match(response.payload, /\.machine-status-green\s*\{[\s\S]*--milestone-text-glow:\s*rgba\(34,\s*197,\s*94,\s*0\.35\);/);
+  assert.match(response.payload, /\.machine-status-red\s*\{[\s\S]*--milestone-text-glow:\s*rgba\(239,\s*68,\s*68,\s*0\.35\);/);
   assert.doesNotMatch(response.payload, /\.experiment-progress-milestone-shell\s*\{[^}]*filter:/);
   assert.match(response.payload, /updateExperimentProgress\(data, experimentRunning\)/);
 });

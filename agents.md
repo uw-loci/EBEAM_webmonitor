@@ -83,6 +83,13 @@
 - Vacuum pressure precision: 972B + 902B scalar and graph-hover values use 2 mantissa decimals
 - Vacuum pressure validity: finite `> 0`; empty/nonpositive/invalid → `-- mbar`
 
+## Experiment progress
+- chevrons: 115px minimum width, 38px minimum height, -8px overlap
+- text glow: 3px blur, 0.35 active alpha
+- text weight: 400
+- temperature label: `Temperatures` / `OK`
+- HV power label: `HV Power` / `Supplies Nominal`
+
 ## Deploy
 - Render.com, `render.yaml`, auto-deploy from `main`
 - `reversed.txt` written to project root at runtime — ephemeral on Render (re-fetched on restart)

@@ -1,12 +1,12 @@
 const { getGraphMetadata } = require('../services/graphs');
 
 const MACHINE_STATUS_MILESTONES = Object.freeze([
-  { key: 'machine_status_temps', lines: ['PMON Temperatures', 'OK'] },
+  { key: 'machine_status_temps', lines: ['Temperatures', 'OK'] },
   { key: 'machine_status_pressure_1e_4', lines: ['Pressure Below', '1e\u20114\u00A0mbar'] },
   { key: 'machine_status_interlocks', lines: ['All Safety', 'Interlocks Pass'] },
   { key: 'machine_status_hv_panel', lines: ['High Voltage', 'Subpanel On'] },
   { key: 'machine_status_pressure_1e_6', lines: ['Pressure Below', '1e\u20116\u00A0mbar'] },
-  { key: 'machine_status_hvps_nominal', lines: ['HV Power Supplies', 'Nominal'] },
+  { key: 'machine_status_hvps_nominal', lines: ['HV Power', 'Supplies Nominal'] },
   { key: 'machine_status_bcon', lines: ['Beam Controller', 'Nominal'] },
   { key: 'machine_status_cathodes', lines: ['Cathode Heating'] },
   { key: 'machine_status_beams_ready', lines: ['Beams Ready'] },
@@ -552,11 +552,11 @@ function renderDashboard(opts) {
           min-width: 100%;
         }
         .experiment-progress-milestone-shell {
-          flex: 1 0 124px;
+          flex: 1 0 115px;
           position: relative;
-          min-width: 124px;
-          min-height: 48px;
-          margin-left: -10px;
+          min-width: 115px;
+          min-height: 38px;
+          margin-left: -8px;
           color: var(--text-secondary);
           transition: transform 0.25s ease;
         }
@@ -588,11 +588,11 @@ function renderDashboard(opts) {
           padding: 7px 14px 7px 20px;
           box-sizing: border-box;
           font-size: 0.62rem;
-          font-weight: 700;
+          font-weight: 500;
           letter-spacing: 0.015em;
           line-height: 1.15;
           text-align: center;
-          text-shadow: 0 0 5px var(--milestone-text-glow);
+          text-shadow: 0 0 3px var(--milestone-text-glow);
           transition: color 0.25s ease;
         }
         .experiment-progress-label {
@@ -627,14 +627,14 @@ function renderDashboard(opts) {
           --milestone-border: var(--success);
           --milestone-glow: rgba(34, 197, 94, 0.65);
           --milestone-fill: rgba(34, 197, 94, 0.15);
-          --milestone-text-glow: rgba(34, 197, 94, 0.55);
+          --milestone-text-glow: rgba(34, 197, 94, 0.35);
           color: white;
         }
         .machine-status-red {
           --milestone-border: var(--danger);
           --milestone-glow: rgba(239, 68, 68, 0.65);
           --milestone-fill: rgba(239, 68, 68, 0.15);
-          --milestone-text-glow: rgba(239, 68, 68, 0.55);
+          --milestone-text-glow: rgba(239, 68, 68, 0.35);
           color: white;
         }
         /* =========================

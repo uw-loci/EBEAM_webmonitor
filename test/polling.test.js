@@ -244,6 +244,7 @@ Module._load = function mockExternalDependencies(request, parent, isMain) {
 };
 
 const state = require('../services/state');
+const { INACTIVE_THRESHOLD } = require('../config');
 const registerRoutes = require('../routes');
 const {
   getMachineStatusState,
@@ -593,7 +594,12 @@ test('machine status state validation falls back to gray', () => {
   assert.equal(getMachineStatusState(null, true), 'gray');
 });
 
-test('/data exposes the latest machine status fields individually', () => {
+test('inactivity threshold is two minutes', () => {
+  assert.equal(INACTIVE_THRESHOLD, 2 * 60 * 1000);
+});
+
+test('/data exposes backend activity and the latest machine status fields individually', () => {
+  state.experimentRunning = true;
   state.data.machine_status_temps = 'green';
   state.data.machine_status_pressure_1e_4 = 'red';
 
@@ -604,6 +610,7 @@ test('/data exposes the latest machine status fields individually', () => {
 
   dataRoute.handler({}, response);
 
+  assert.equal(response.payload.experimentRunning, true);
   assert.equal(response.payload.machine_status_temps, 'green');
   assert.equal(response.payload.machine_status_pressure_1e_4, 'red');
   assert.equal(Object.hasOwn(response.payload, 'machineStatus'), false);
@@ -778,6 +785,53 @@ test('pollLongTerm skips overlapping runs instead of fetching the same batch twi
     timestamp: entries.at(-1).recorded_at,
     id: entries.at(-1).id,
   });
+});
+
+test('fetchAndUpdateFile expires stale activity while a telemetry sync is still in progress', async () => {
+  const freshEntries = buildShortTermEntries(1, {
+    startMs: Date.now() - 3_000,
+  });
+  setSupabaseTableRows('short_term_logs', freshEntries);
+  setSupabaseQueryDelay('short_term_logs', 25);
+
+  state.experimentRunning = true;
+  state.webMonitorLastModified = new Date(Date.now() - INACTIVE_THRESHOLD - 1);
+  state.data.pressure = '1e-6';
+
+  const inProgressSync = fetchAndUpdateFile();
+  await fetchAndUpdateFile();
+
+  assert.equal(state.experimentRunning, false);
+  assert.equal(state.data.pressure, null);
+  assert.equal(getSupabaseQueryCount('short_term_logs'), 1);
+
+  await inProgressSync;
+  assert.equal(state.experimentRunning, true);
+});
+
+test('fetchAndUpdateFile does not reactivate an update that became stale during telemetry sync', async () => {
+  const freshEntries = buildShortTermEntries(1, {
+    startMs: Date.now() - 3_000,
+  });
+  setSupabaseTableRows('short_term_logs', freshEntries);
+  setSupabaseQueryDelay('short_term_logs', 25);
+
+  const inProgressSync = fetchAndUpdateFile();
+  while (getSupabaseQueryCount('short_term_logs') < 2) {
+    await new Promise((resolve) => setTimeout(resolve, 1));
+  }
+
+  state.experimentRunning = true;
+  state.webMonitorLastModified = new Date(Date.now() - INACTIVE_THRESHOLD - 1);
+  state.data.pressure = '1e-6';
+
+  await fetchAndUpdateFile();
+  assert.equal(state.experimentRunning, false);
+  assert.equal(state.data.pressure, null);
+
+  await inProgressSync;
+  assert.equal(state.experimentRunning, false);
+  assert.equal(state.data.pressure, null);
 });
 
 test('fetchAndUpdateFile seeds the short-term cursor from a stale latest row without draining history', async () => {
@@ -1665,7 +1719,18 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
   );
   assert.match(response.payload, /text-shadow:\s*0 0 5px var\(--milestone-text-glow\);/);
   assert.doesNotMatch(response.payload, /\.experiment-progress-milestone-shell\s*\{[^}]*filter:/);
+  assert.match(response.payload, /const experimentRunning = data\.experimentRunning === true;/);
+  assert.doesNotMatch(response.payload, /const THRESHOLD = 2 \* 60 \* 1000;/);
+  assert.doesNotMatch(response.payload, /now - dateObject1/);
+  assert.match(response.payload, /statusDiv\.classList\.toggle\('neon-success', experimentRunning\)/);
   assert.match(response.payload, /updateExperimentProgress\(data, experimentRunning\)/);
+  assert.match(response.payload, /experimentRunning \? data\.sicColors\[i\] : 'grey'/);
+  assert.match(response.payload, /experimentRunning \? data\.vacuumColors\[i\] : 'grey'/);
+  assert.match(response.payload, /data\.heaterCurrent_A[\s\S]*&& experimentRunning\s*\?/);
+  assert.match(
+    response.payload,
+    /updatePowerSupplyOutput\('powerSupplyOutputPos1', data\.pos_1kv_output, experimentRunning\)/
+  );
 });
 
 test('normalizePressureSeriesForLogScale keeps positive finite pressures and gaps invalid values', () => {

@@ -2526,11 +2526,7 @@ function renderDashboard(opts) {
           logLastModified.textContent = clean_string_1;
           displayLastModified.textContent = clean_string_2;
 
-          const now = Date.now();
-
-          const THRESHOLD = 2 * 60 * 1000;
-
-          let experimentRunning = (now - dateObject1) <= THRESHOLD;
+          const experimentRunning = data.experimentRunning === true;
 
           statusDiv.textContent = experimentRunning
           ? 'Dashboard is running'

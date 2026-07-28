@@ -1462,7 +1462,10 @@ test('dashboard HTML uses the recent-log viewer, pressure readings, and source-p
   assert.match(response.payload, /finally \{\s*updateCCSChartTimeWindows\(ccsViewportNow\);/);
   assert.doesNotMatch(response.payload, /972B:[^<]*\|[^<]*902B:/);
   assert.match(response.payload, /return '-- mbar';/);
-  assert.match(response.payload, /numericValue\.toExponential\(2\) \+ ' mbar'/);
+  assert.match(
+    response.payload,
+    /Number\.isFinite\(numericValue\) && numericValue > 0\s*\? numericValue\.toExponential\(2\) \+ ' mbar'/
+  );
   assert.match(response.payload, /'972B: ' \+ formatPressureValue\(data\.pressure, experimentRunning\)/);
   assert.match(response.payload, /formatPressureValue\(data\.pressure_902b_mbar, experimentRunning\)/);
   assert.match(response.payload, /Show Recent Log/);

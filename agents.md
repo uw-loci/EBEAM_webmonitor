@@ -81,6 +81,7 @@
 - Vacuum header `601–992px`: title row + centered shared pressure row
 - Vacuum header `<=600px`: title row + separate centered 972B/902B rows
 - Vacuum pressure precision: 972B + 902B scalar and graph-hover values use 2 mantissa decimals
+- Vacuum pressure validity: finite `> 0`; empty/nonpositive/invalid → `-- mbar`
 
 ## Deploy
 - Render.com, `render.yaml`, auto-deploy from `main`

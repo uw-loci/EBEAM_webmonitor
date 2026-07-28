@@ -316,17 +316,14 @@ function renderDashboard(opts) {
     : "N/A";
   const currentTime = new Date().toLocaleString("en-US", {timeZone: "America/Chicago"});
 
-  let pressure = data.pressure;
-  if (pressure !== null){
-    pressure = Number(data.pressure).toExponential(2);
-  }
-  let pressure902b = data.pressure_902b_mbar;
-  if (pressure902b !== null && typeof pressure902b !== 'undefined') {
-    const numericPressure902b = Number(pressure902b);
-    pressure902b = Number.isFinite(numericPressure902b)
-      ? numericPressure902b.toExponential(2)
-      : null;
-  }
+  const numericPressure = Number(data.pressure);
+  const pressure = Number.isFinite(numericPressure) && numericPressure > 0
+    ? numericPressure.toExponential(2)
+    : null;
+  const numericPressure902b = Number(data.pressure_902b_mbar);
+  const pressure902b = Number.isFinite(numericPressure902b) && numericPressure902b > 0
+    ? numericPressure902b.toExponential(2)
+    : null;
 
   const temperatures = (data && data.temperatures) || {
     "1": "DISCONNECTED",
@@ -2415,7 +2412,7 @@ function renderDashboard(opts) {
           }
 
           const numericValue = Number(value);
-          return Number.isFinite(numericValue)
+          return Number.isFinite(numericValue) && numericValue > 0
             ? numericValue.toExponential(2) + ' mbar'
             : '-- mbar';
         }

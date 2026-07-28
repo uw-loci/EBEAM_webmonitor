@@ -1,6 +1,10 @@
 const { supabase } = require('../config');
 const state = require('./state');
-const { appendPressurePoint, addCCSPoint } = require('./graphs');
+const {
+  appendPressurePoint,
+  addCCSPoint,
+  parsePressureForLogScale,
+} = require('./graphs');
 
 const PAGE_SIZE = 1000;
 
@@ -105,6 +109,7 @@ function mapSupabaseDataToAppFormat(logData) {
 
   return {
     pressure: logData.pressure || null,
+    pressure_902b_mbar: logData.pressure_902b_mbar ?? null,
     pressureTimestamp: logData.pressureTimestamp || null,
     safetyInputDataFlags: logData.safetyInputDataFlags || null,
     safetyOutputDataFlags: logData.safetyOutputDataFlags || null,
@@ -158,6 +163,7 @@ function mapSupabaseDataToAppFormat(logData) {
 function resetData() {
   state.data = {
     pressure: null,
+    pressure_902b_mbar: null,
     pressureTimestamp: null,
     safetyOutputDataFlags: null,
     safetyInputDataFlags: null,
@@ -231,10 +237,14 @@ async function backfillShortTermGraph(graph) {
       if (!data || data.length === 0) break;
 
       for (const row of data) {
-        const pressure = row.data?.pressure;
-        if (pressure == null) continue;
-        const tSec = Math.floor(new Date(row.created_at).getTime() / 1000);
-        appendPressurePoint(graph, tSec, parseFloat(pressure));
+        const timestampMs = Date.parse(row.created_at);
+        if (!Number.isFinite(timestampMs)) continue;
+        appendPressurePoint(
+          graph,
+          timestampMs / 1000,
+          parsePressureForLogScale(row.data?.pressure),
+          parsePressureForLogScale(row.data?.pressure_902b_mbar)
+        );
       }
 
       lastCursor = buildCursorFromRow(data[data.length - 1], 'created_at');
@@ -282,7 +292,8 @@ async function backfillLongTermGraph(graph) {
 
       for (const row of data) {
         if (row.avg_pressure == null) continue;
-        const tSec = Math.floor(new Date(row.recorded_at).getTime() / 1000);
+        const tSec = Date.parse(row.recorded_at) / 1000;
+        if (!Number.isFinite(tSec)) continue;
         appendPressurePoint(graph, tSec, row.avg_pressure);
       }
 

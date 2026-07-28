@@ -168,19 +168,19 @@ The dashboard treats the experiment as inactive when the newest short-term row i
 
 ### Pressure graph density
 
-The server keeps the full in-memory pressure arrays separately from the display arrays sent to the browser. Short-term pressure data keeps a denser live view (`maxDisplayPoints: 1024`) because it represents recent ~3 second data over the last 24 hours, while the long-term historical view stays capped at a lower display density (`maxDisplayPoints: 256`) because it already uses 1-minute averaged source data.
+The server keeps full in-memory pressure arrays separately from the display arrays sent to the browser. Live data uses one fractional-Unix-second X array with independently nullable, index-aligned 972B and 902B arrays. Rows remain present when either or both readings are invalid so sensor outages render as gaps. Short-term pressure keeps a denser view (`maxDisplayPoints: 1024`) because it represents recent ~3 second data over the last 24 hours, while Historical stays 972B-only and capped at a lower display density (`maxDisplayPoints: 256`) because it already uses 1-minute averaged source data.
 
 When a pressure graph would exceed its display cap, the server re-samples older points using a larger power-of-two stride while still keeping the newest point visible. That lets the UI stay responsive without hiding the latest reading, and it applies to both pressure views even though they use different source resolutions and display limits.
 
-Both pressure views use a base-10 logarithmic Y axis so atmospheric pressure and turbo-pump readings near `1e-6` mbar remain visible in the same chart. Tick and hover values stay in scientific notation, while zero, negative, or otherwise invalid pressure values render as gaps. The visible Y range automatically follows the current X viewport and leaves at least half a decade below its lowest valid reading; horizontal grid lines use the `1`, `3`, `5`, `7`, and `9` mantissas in each decade.
+Both pressure views use a shared base-10 logarithmic Y axis so atmospheric pressure and turbo-pump readings near `1e-6` mbar remain visible in the same chart. Live View shows solid, independently toggleable 972B and 902B series; Historical shows 972B only. Tick and hover values stay in scientific notation, while missing, zero, negative, or otherwise invalid values render as gaps. The visible Y range automatically follows the current X viewport and leaves at least half a decade below its lowest valid reading. The axis shows no more than ten exact ticks, prioritizing decade values (`1.00e±n`) before the `2`, `3`, `5`, `7`, and `9` mantissas.
 
-The pressure toolbar defaults to **Zoom** mode, where dragging selects an X range. **Pan** mode moves the visible range, wheel/trackpad input zooms around the pointer, touch supports pinch zoom, and **Reset** or a double-click restores the applicable default. Live View includes `1h`, `3h`, `6h`, `12h`, and `24h` presets anchored to the newest loaded sample. A preset follows new data during polling, while any manual navigation becomes a fixed **Custom** range; Historical View defaults to all loaded history and supports the same manual navigation. Switching back to Live View restores the last selected live preset.
+The pressure toolbar defaults to **Zoom** mode, where dragging selects an X range. **Pan** mode moves the visible range, wheel/trackpad input zooms around the pointer, touch supports pinch zoom, and **Reset** or a double-click restores the applicable default. Drag, wheel, and pinch zooming enforce a minimum 10-second X-axis window. Live View includes `1h`, `3h`, `6h`, `12h`, and `24h` presets whose right edge advances to the current server time after each dashboard poll. Historical View’s default all-time range also ends at the current time, while any manual navigation becomes a fixed **Custom** range. Advancing this empty X-axis tail does not add synthetic points or alter the absolute-index downsampling selection. Switching back to Live View restores the last selected live preset.
 
-`/chart-data` now returns both the plotted points and graph metadata such as `rawPointCount`, `displayPointCount`, `downsampleFactor`, and `sourceResolutionLabel`, allowing the UI to explain what the chart is showing.
+`/chart-data` returns shared `xVals`, explicit `pressure972bVals`, and graph metadata such as `rawPointCount`, `displayPointCount`, `downsampleFactor`, and `sourceResolutionLabel`. Short-term responses also include aligned `pressure902bVals`; Historical remains 972B-only.
 
 ### CCS clamp-temperature charts
 
-In addition to the pressure graphs, startup backfills three CCS clamp-temperature series from the last hour of short-term telemetry. These are stored in fixed-size ring buffers (`ccsGraphA`, `ccsGraphB`, and `ccsGraphC`) and served through `/ccs-chart-data` for the three cathode charts on the dashboard.
+In addition to the pressure graphs, startup backfills three CCS clamp-temperature series from the last hour of short-term telemetry. These are stored in fixed-size ring buffers (`ccsGraphA`, `ccsGraphB`, and `ccsGraphC`) and served through `/ccs-chart-data` for the three cathode charts on the dashboard. Each chart keeps an explicit moving X-axis window from one hour ago through the current server time, so time ticks remain visible even when every temperature value is missing.
 
 ### Beam Energy power-supply telemetry
 
@@ -208,7 +208,7 @@ See [SUPABASE-README.md](./SUPABASE-README.md) for the database-side hot/cold ta
 |---|---|---|
 | `/` | GET | Server-rendered HTML dashboard |
 | `/data` | GET | JSON with current scalar values, Beam Energy power-supply readings, computed colors, and last-modified timestamps |
-| `/chart-data?view=short\|long` | GET | JSON for the selected pressure graph plus `rawPointCount`, `displayPointCount`, `downsampleFactor`, and `sourceResolutionLabel` |
+| `/chart-data?view=short\|long` | GET | Shared `xVals`, `pressure972bVals`, optional Live-only `pressure902bVals`, and graph-density metadata |
 | `/ccs-chart-data` | GET | JSON with the A/B/C CCS clamp-temperature chart series |
 | `/health` | GET | Supabase connection status and experiment state |
 | `/raw` | GET | Plain text content of the cached reversed display log file |

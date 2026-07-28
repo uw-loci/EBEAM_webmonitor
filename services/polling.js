@@ -12,6 +12,7 @@ const {
   shortTermPressureGraph,
   longTermPressureGraph,
   appendPressurePoint,
+  parsePressureForLogScale,
   addCCSPoint,
   ccsGraphA,
   ccsGraphB,
@@ -164,24 +165,19 @@ function applyShortTermEntries(entries, options = {}) {
       expectedIntervalMs,
     });
 
-    const tSec = Math.floor(entryMs / 1000);
+    const tSec = entryMs / 1000;
+    const ccsTimestampSec = Math.floor(tSec);
 
-    ccsPointAdder(ccsA, tSec, entry.data?.cathode?.A?.clamp_temperature ?? null);
-    ccsPointAdder(ccsB, tSec, entry.data?.cathode?.B?.clamp_temperature ?? null);
-    ccsPointAdder(ccsC, tSec, entry.data?.cathode?.C?.clamp_temperature ?? null);
+    ccsPointAdder(ccsA, ccsTimestampSec, entry.data?.cathode?.A?.clamp_temperature ?? null);
+    ccsPointAdder(ccsB, ccsTimestampSec, entry.data?.cathode?.B?.clamp_temperature ?? null);
+    ccsPointAdder(ccsC, ccsTimestampSec, entry.data?.cathode?.C?.clamp_temperature ?? null);
 
-    const pressure = Number.parseFloat(entry.data?.pressure);
-    if (!Number.isFinite(pressure)) {
-      summary.skippedCount++;
-      logger.warn(`Skipping short-term pressure row at ${entryTimestamp}: invalid pressure value`);
-      stateRef.lastShortTermCursor = entryCursor;
-      previousTimestamp = entryTimestamp;
-      previousMs = entryMs;
-      summary.lastTimestamp = entryTimestamp;
-      continue;
-    }
-
-    pressurePointAppender(graph, tSec, pressure);
+    pressurePointAppender(
+      graph,
+      tSec,
+      parsePressureForLogScale(entry.data?.pressure),
+      parsePressureForLogScale(entry.data?.pressure_902b_mbar)
+    );
 
     summary.appendedCount++;
     stateRef.lastShortTermCursor = entryCursor;
@@ -254,7 +250,7 @@ function applyLongTermEntries(entries, options = {}) {
       continue;
     }
 
-    const tSec = Math.floor(entryMs / 1000);
+    const tSec = entryMs / 1000;
     pressurePointAppender(graph, tSec, pressure);
 
     summary.appendedCount++;

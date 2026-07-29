@@ -1637,15 +1637,18 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
   assert.ok(progressIndex >= 0);
   assert.ok(progressIndex < interlocksIndex);
   assert.equal(
-    (response.payload.match(/data-machine-status-key="/g) || []).length,
+    (
+      response.payload.match(
+        /data-machine-status-key="machine_status_[^"]+"\s+data-machine-status-label=/g
+      ) || []
+    ).length,
     10
   );
   assert.match(
     response.payload,
     /machine-status-green"[\s\S]*data-machine-status-key="machine_status_temps"/
   );
-  assert.match(response.payload, />Temperatures<\/span>[\s\S]*>OK<\/span>/);
-  assert.doesNotMatch(response.payload, />PMON Temperatures<\/span>/);
+  assert.match(response.payload, />PMON<\/span>[\s\S]*>Temperatures OK<\/span>/);
   assert.match(response.payload, />HVolt Power<\/span>[\s\S]*>Supplies Nominal<\/span>/);
   assert.doesNotMatch(response.payload, />HV Power<\/span>/);
   assert.match(

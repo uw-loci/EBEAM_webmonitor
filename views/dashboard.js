@@ -570,7 +570,8 @@ function renderDashboard(opts) {
           z-index: 1;
           transform: translateY(-1px);
         }
-        .experiment-progress-milestone-shell:first-child .experiment-progress-milestone {
+        .experiment-progress-milestone-shell[data-machine-status-key="machine_status_temps"]
+          .experiment-progress-milestone {
           padding-left: 12px;
         }
         .machine-status-gray {

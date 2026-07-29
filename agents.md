@@ -89,10 +89,11 @@
 - row sizing: widest-row chevron width shared across rows, shorter rows centered, 8px row gap
 - row transition: next pattern at `widest row count * 100px`; overlap excluded
 - overflow: wrapping page rows; no scrollbar, backlight, or background wrapper
-- left edge: squared only for `Temperatures` / `OK`; diagonal notch for all others
+- left edge: squared only for `PMON` / `Temperatures OK`; diagonal notch for all others
+- left padding: 12px only for `machine_status_temps`; 20px for joined chevrons
 - text glow: 3px blur, 0.35 active alpha
 - text weight: 500
-- temperature label: `Temperatures` / `OK`
+- temperature label: `PMON` / `Temperatures OK`
 - HV power label: `HVolt Power` / `Supplies Nominal`
 
 ## Deploy

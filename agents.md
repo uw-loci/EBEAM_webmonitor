@@ -93,7 +93,7 @@
 - text glow: 3px blur, 0.35 active alpha
 - text weight: 500
 - temperature label: `Temperatures` / `OK`
-- HV power label: `HV Power` / `Supplies Nominal`
+- HV power label: `HVolt Power` / `Supplies Nominal`
 
 ## Deploy
 - Render.com, `render.yaml`, auto-deploy from `main`

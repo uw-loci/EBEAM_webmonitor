@@ -6,7 +6,7 @@ const MACHINE_STATUS_MILESTONES = Object.freeze([
   { key: 'machine_status_interlocks', lines: ['All Safety', 'Interlocks Pass'] },
   { key: 'machine_status_hv_panel', lines: ['High Voltage', 'Subpanel On'] },
   { key: 'machine_status_pressure_1e_6', lines: ['Pressure Below', '1e\u20116\u00A0mbar'] },
-  { key: 'machine_status_hvps_nominal', lines: ['HV Power', 'Supplies Nominal'] },
+  { key: 'machine_status_hvps_nominal', lines: ['HVolt Power', 'Supplies Nominal'] },
   { key: 'machine_status_bcon', lines: ['Beam Controller', 'Nominal'] },
   { key: 'machine_status_cathodes', lines: ['Cathode Heating'] },
   { key: 'machine_status_beams_ready', lines: ['Beams Ready'] },

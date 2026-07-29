@@ -1646,8 +1646,8 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
   );
   assert.match(response.payload, />Temperatures<\/span>[\s\S]*>OK<\/span>/);
   assert.doesNotMatch(response.payload, />PMON Temperatures<\/span>/);
-  assert.match(response.payload, />HV Power<\/span>[\s\S]*>Supplies Nominal<\/span>/);
-  assert.doesNotMatch(response.payload, />HV Power Supplies<\/span>/);
+  assert.match(response.payload, />HVolt Power<\/span>[\s\S]*>Supplies Nominal<\/span>/);
+  assert.doesNotMatch(response.payload, />HV Power<\/span>/);
   assert.match(
     response.payload,
     /machine-status-red"[\s\S]*data-machine-status-key="machine_status_pressure_1e_4"/

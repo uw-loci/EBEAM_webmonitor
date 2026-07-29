@@ -1,7 +1,7 @@
 const { getGraphMetadata } = require('../services/graphs');
 
 const MACHINE_STATUS_MILESTONES = Object.freeze([
-  { key: 'machine_status_temps', lines: ['Temperatures', 'OK'] },
+  { key: 'machine_status_temps', lines: ['PMON', 'Temperatures OK'] },
   { key: 'machine_status_pressure_1e_4', lines: ['Pressure Below', '1e\u20114\u00A0mbar'] },
   { key: 'machine_status_interlocks', lines: ['All Safety', 'Interlocks Pass'] },
   { key: 'machine_status_hv_panel', lines: ['High Voltage', 'Subpanel On'] },

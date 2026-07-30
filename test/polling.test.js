@@ -1721,6 +1721,19 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
     response.payload,
     /\.experiment-progress-track\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*width:\s*100%;[^}]*row-gap:\s*8px;/
   );
+  assert.match(
+    response.payload,
+    /\.experiment-progress-viewport\s*\{[^}]*overflow:\s*hidden;[^}]*padding:\s*8px;[^}]*background:\s*rgba\(2,\s*6,\s*23,\s*0\.42\);[^}]*border:\s*1px solid rgba\(148,\s*163,\s*184,\s*0\.14\);/
+  );
+  assert.doesNotMatch(response.payload, /experiment-progress-viewport::-(?:webkit-)?scrollbar/);
+  assert.match(
+    response.payload,
+    /\.experiment-progress-viewport::before\s*\{[\s\S]*left:\s*var\(--progress-highlight-x\);[\s\S]*top:\s*var\(--progress-highlight-y\);[\s\S]*width:\s*260px;[\s\S]*height:\s*260px;[\s\S]*background:\s*radial-gradient\([\s\S]*rgba\(56,\s*189,\s*248,\s*0\.025\)/
+  );
+  assert.doesNotMatch(
+    response.payload,
+    /\.experiment-progress-viewport::before\s*\{[^}]*transition:/
+  );
   assert.match(response.payload, /const minimumProgressChevronWidth = 100;/);
   assert.match(response.payload, /const progressChevronOverlap = 8;/);
   assert.match(
@@ -1739,6 +1752,22 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
   assert.match(response.payload, /return \[1, 1, 1, 1, 1, 1, 1, 1, 1, 1\];/);
   assert.match(response.payload, /\.experiment-progress-row\s*\{[^}]*justify-content:\s*center;/);
   assert.match(response.payload, /new ResizeObserver\(layoutExperimentProgress\)/);
+  assert.match(
+    response.payload,
+    /const firstGrayMilestone = progressMilestones\.find\([\s\S]*classList\.contains\('machine-status-gray'\)/
+  );
+  assert.match(
+    response.payload,
+    /const centerY = milestoneRect\.top - viewportRect\.top \+ milestoneRect\.height \/ 2;/
+  );
+  assert.match(
+    response.payload,
+    /progressViewport\.style\.setProperty\('--progress-highlight-y', centerY \+ 'px'\);/
+  );
+  assert.match(
+    response.payload,
+    /progressLayoutSignature = nextSignature;\s*scheduleExperimentProgressHighlight\(\);/
+  );
   assert.match(
     response.payload,
     /milestone === progressMilestones\[0\][\s\S]*\? firstChevronPoints[\s\S]*: joinedChevronPoints/

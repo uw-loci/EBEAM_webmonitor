@@ -88,7 +88,8 @@
 - layout: balanced rows `10`; `5,5`; `4,3,3`; `3,3,2,2`; `2,2,2,2,2`; ten `1`s
 - row sizing: widest-row chevron width shared across rows, shorter rows centered, 8px row gap
 - row transition: next pattern at `widest row count * 100px`; overlap excluded
-- overflow: wrapping page rows; no scrollbar, backlight, or background wrapper
+- overflow: wrapping page rows; boxed background; no scrollbar
+- progress spotlight: 260px low-intensity cyan radial; centered on first gray milestone; no movement animation; hidden when complete
 - left edge: squared only for `PMON` / `Temperatures OK`; diagonal notch for all others
 - left padding: 12px only for `machine_status_temps`; 20px for joined chevrons
 - text glow: 3px blur, 0.35 active alpha

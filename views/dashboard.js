@@ -496,8 +496,41 @@ function renderDashboard(opts) {
         /* =========================
            EXPERIMENT PROGRESS
         ========================== */
+        .experiment-progress-viewport {
+          --progress-highlight-x: 0px;
+          --progress-highlight-y: 0px;
+          --progress-highlight-alpha: 0;
+          position: relative;
+          overflow: hidden;
+          padding: 8px;
+          background: rgba(2, 6, 23, 0.42);
+          border: 1px solid rgba(148, 163, 184, 0.14);
+          border-radius: 8px;
+          box-shadow: inset 0 1px 12px rgba(0, 0, 0, 0.28);
+        }
+        .experiment-progress-viewport::before {
+          content: '';
+          position: absolute;
+          z-index: 0;
+          left: var(--progress-highlight-x);
+          top: var(--progress-highlight-y);
+          width: 260px;
+          height: 260px;
+          border-radius: 50%;
+          pointer-events: none;
+          opacity: var(--progress-highlight-alpha);
+          transform: translate(-50%, -50%);
+          background: radial-gradient(
+            circle,
+            rgba(56, 189, 248, 0.04) 0%,
+            rgba(56, 189, 248, 0.02) 42%,
+            transparent 72%
+          );
+        }
         .experiment-progress-track {
           display: flex;
+          position: relative;
+          z-index: 1;
           flex-direction: column;
           width: 100%;
           min-width: 0;
@@ -1144,43 +1177,45 @@ function renderDashboard(opts) {
         <!-- Experiment Progress Section -->
         <div class="experiment-progress-section">
           <h3 class="section-header">Experiment Progress</h3>
-          <div class="experiment-progress-track" role="list" aria-label="Experiment progress milestones">
-            <div class="experiment-progress-row">
-              ${MACHINE_STATUS_MILESTONES.map(({ key, lines }, milestoneIndex) => {
-                const label = lines.join(' ');
-                const milestoneState = getMachineStatusState(
-                  data[key],
-                  experimentRunning
-                );
-                return `
-                  <div
-                    class="experiment-progress-milestone-shell machine-status-${milestoneState}"
-                    data-machine-status-key="${key}"
-                    data-machine-status-label="${label}"
-                    role="listitem"
-                    aria-label="${label}: ${milestoneState}"
-                    title="${label}: ${milestoneState}"
-                  >
-                    <svg
-                      class="experiment-progress-chevron"
-                      viewBox="0 0 124 48"
-                      preserveAspectRatio="none"
-                      aria-hidden="true"
+          <div class="experiment-progress-viewport">
+            <div class="experiment-progress-track" role="list" aria-label="Experiment progress milestones">
+              <div class="experiment-progress-row">
+                ${MACHINE_STATUS_MILESTONES.map(({ key, lines }, milestoneIndex) => {
+                  const label = lines.join(' ');
+                  const milestoneState = getMachineStatusState(
+                    data[key],
+                    experimentRunning
+                  );
+                  return `
+                    <div
+                      class="experiment-progress-milestone-shell machine-status-${milestoneState}"
+                      data-machine-status-key="${key}"
+                      data-machine-status-label="${label}"
+                      role="listitem"
+                      aria-label="${label}: ${milestoneState}"
+                      title="${label}: ${milestoneState}"
                     >
-                      <polygon points="${milestoneIndex === 0
-                        ? '1,1 109.5,1 123,24 109.5,47 1,47'
-                        : '1,1 109.5,1 123,24 109.5,47 1,47 15,24'}"></polygon>
-                    </svg>
-                    <div class="experiment-progress-milestone">
-                      <span class="experiment-progress-label">
-                        ${lines.map((line) => (
-                          `<span class="experiment-progress-label-line">${line}</span>`
-                        )).join('')}
-                      </span>
+                      <svg
+                        class="experiment-progress-chevron"
+                        viewBox="0 0 124 48"
+                        preserveAspectRatio="none"
+                        aria-hidden="true"
+                      >
+                        <polygon points="${milestoneIndex === 0
+                          ? '1,1 109.5,1 123,24 109.5,47 1,47'
+                          : '1,1 109.5,1 123,24 109.5,47 1,47 15,24'}"></polygon>
+                      </svg>
+                      <div class="experiment-progress-milestone">
+                        <span class="experiment-progress-label">
+                          ${lines.map((line) => (
+                            `<span class="experiment-progress-label-line">${line}</span>`
+                          )).join('')}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                `;
-              }).join('')}
+                  `;
+                }).join('')}
+              </div>
             </div>
           </div>
         </div>
@@ -2400,6 +2435,7 @@ function renderDashboard(opts) {
         }
 
         const validMachineStatusStates = new Set(['gray', 'green', 'red']);
+        const progressViewport = document.querySelector('.experiment-progress-viewport');
         const progressTrack = document.querySelector('.experiment-progress-track');
         const progressMilestones = progressTrack
           ? Array.from(progressTrack.querySelectorAll('.experiment-progress-milestone-shell'))
@@ -2409,6 +2445,34 @@ function renderDashboard(opts) {
         const firstChevronPoints = '1,1 109.5,1 123,24 109.5,47 1,47';
         const joinedChevronPoints = '1,1 109.5,1 123,24 109.5,47 1,47 15,24';
         let progressLayoutSignature = '10';
+        let progressHighlightFrame = null;
+
+        function updateExperimentProgressHighlight() {
+          progressHighlightFrame = null;
+          if (!progressViewport) return;
+
+          const firstGrayMilestone = progressMilestones.find(
+            (milestone) => milestone.classList.contains('machine-status-gray')
+          );
+          if (!firstGrayMilestone) {
+            progressViewport.style.setProperty('--progress-highlight-alpha', '0');
+            return;
+          }
+
+          const viewportRect = progressViewport.getBoundingClientRect();
+          const milestoneRect = firstGrayMilestone.getBoundingClientRect();
+          const centerX = milestoneRect.left - viewportRect.left + milestoneRect.width / 2;
+          const centerY = milestoneRect.top - viewportRect.top + milestoneRect.height / 2;
+
+          progressViewport.style.setProperty('--progress-highlight-x', centerX + 'px');
+          progressViewport.style.setProperty('--progress-highlight-y', centerY + 'px');
+          progressViewport.style.setProperty('--progress-highlight-alpha', '1');
+        }
+
+        function scheduleExperimentProgressHighlight() {
+          if (progressHighlightFrame !== null) return;
+          progressHighlightFrame = requestAnimationFrame(updateExperimentProgressHighlight);
+        }
 
         function getMinimumExperimentProgressRowWidth(chevronCount) {
           return chevronCount * minimumProgressChevronWidth;
@@ -2443,7 +2507,10 @@ function renderDashboard(opts) {
           progressTrack.style.setProperty('--progress-chevron-width', chevronWidth + 'px');
 
           const nextSignature = rowSizes.join(',');
-          if (nextSignature === progressLayoutSignature) return;
+          if (nextSignature === progressLayoutSignature) {
+            scheduleExperimentProgressHighlight();
+            return;
+          }
 
           progressTrack.replaceChildren();
           let milestoneIndex = 0;
@@ -2469,6 +2536,7 @@ function renderDashboard(opts) {
             milestoneIndex += rowSize;
           });
           progressLayoutSignature = nextSignature;
+          scheduleExperimentProgressHighlight();
         }
 
         if (progressTrack) {
@@ -2498,6 +2566,7 @@ function renderDashboard(opts) {
             milestone.setAttribute('aria-label', label + ': ' + state);
             milestone.title = label + ': ' + state;
           });
+          scheduleExperimentProgressHighlight();
         }
 
         async function pollDashboard() {

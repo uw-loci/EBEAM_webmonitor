@@ -1691,13 +1691,20 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
   assert.ok(progressIndex >= 0);
   assert.ok(progressIndex < interlocksIndex);
   assert.equal(
-    (response.payload.match(/data-machine-status-key="/g) || []).length,
+    (
+      response.payload.match(
+        /data-machine-status-key="machine_status_[^"]+"\s+data-machine-status-label=/g
+      ) || []
+    ).length,
     10
   );
   assert.match(
     response.payload,
     /machine-status-green"[\s\S]*data-machine-status-key="machine_status_temps"/
   );
+  assert.match(response.payload, />PMON<\/span>[\s\S]*>Temperatures OK<\/span>/);
+  assert.match(response.payload, />HVolt Power<\/span>[\s\S]*>Supplies Nominal<\/span>/);
+  assert.doesNotMatch(response.payload, />HV Power<\/span>/);
   assert.match(
     response.payload,
     /machine-status-red"[\s\S]*data-machine-status-key="machine_status_pressure_1e_4"/
@@ -1706,6 +1713,70 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
     response.payload,
     /class="experiment-progress-chevron"[\s\S]*<polygon points=/
   );
+  assert.match(
+    response.payload,
+    /\.experiment-progress-milestone-shell\s*\{[^}]*flex:\s*0 0 var\(--progress-chevron-width,\s*100px\);[^}]*min-width:\s*100px;[^}]*min-height:\s*38px;/
+  );
+  assert.match(
+    response.payload,
+    /\.experiment-progress-track\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*width:\s*100%;[^}]*row-gap:\s*8px;/
+  );
+  assert.match(
+    response.payload,
+    /\.experiment-progress-viewport\s*\{[^}]*overflow:\s*hidden;[^}]*padding:\s*8px;[^}]*background:\s*rgba\(2,\s*6,\s*23,\s*0\.42\);[^}]*border:\s*1px solid rgba\(148,\s*163,\s*184,\s*0\.14\);/
+  );
+  assert.doesNotMatch(response.payload, /experiment-progress-viewport::-(?:webkit-)?scrollbar/);
+  assert.match(
+    response.payload,
+    /\.experiment-progress-viewport::before\s*\{[\s\S]*left:\s*var\(--progress-highlight-x\);[\s\S]*top:\s*var\(--progress-highlight-y\);[\s\S]*width:\s*260px;[\s\S]*height:\s*260px;[\s\S]*background:\s*radial-gradient\([\s\S]*rgba\(56,\s*189,\s*248,\s*0\.025\)/
+  );
+  assert.doesNotMatch(
+    response.payload,
+    /\.experiment-progress-viewport::before\s*\{[^}]*transition:/
+  );
+  assert.match(response.payload, /const minimumProgressChevronWidth = 100;/);
+  assert.match(response.payload, /const progressChevronOverlap = 8;/);
+  assert.match(
+    response.payload,
+    /function getMinimumExperimentProgressRowWidth\(chevronCount\) \{[\s\S]*return chevronCount \* minimumProgressChevronWidth;[\s\S]*\}/
+  );
+  assert.doesNotMatch(
+    response.payload,
+    /function getMinimumExperimentProgressRowWidth\(chevronCount\) \{[^}]*progressChevronOverlap/
+  );
+  assert.match(response.payload, /availableWidth > getMinimumExperimentProgressRowWidth\(10\)/);
+  assert.match(response.payload, /availableWidth > getMinimumExperimentProgressRowWidth\(5\)/);
+  assert.match(response.payload, /availableWidth > getMinimumExperimentProgressRowWidth\(4\)/);
+  assert.match(response.payload, /availableWidth > getMinimumExperimentProgressRowWidth\(3\)/);
+  assert.match(response.payload, /availableWidth > getMinimumExperimentProgressRowWidth\(2\)/);
+  assert.match(response.payload, /return \[1, 1, 1, 1, 1, 1, 1, 1, 1, 1\];/);
+  assert.match(response.payload, /\.experiment-progress-row\s*\{[^}]*justify-content:\s*center;/);
+  assert.match(response.payload, /new ResizeObserver\(layoutExperimentProgress\)/);
+  assert.match(
+    response.payload,
+    /const firstGrayMilestone = progressMilestones\.find\([\s\S]*classList\.contains\('machine-status-gray'\)/
+  );
+  assert.match(
+    response.payload,
+    /const centerY = milestoneRect\.top - viewportRect\.top \+ milestoneRect\.height \/ 2;/
+  );
+  assert.match(
+    response.payload,
+    /progressViewport\.style\.setProperty\('--progress-highlight-y', centerY \+ 'px'\);/
+  );
+  assert.match(
+    response.payload,
+    /progressLayoutSignature = nextSignature;\s*scheduleExperimentProgressHighlight\(\);/
+  );
+  assert.match(
+    response.payload,
+    /milestone === progressMilestones\[0\][\s\S]*\? firstChevronPoints[\s\S]*: joinedChevronPoints/
+  );
+  assert.match(
+    response.payload,
+    /\.experiment-progress-milestone\s*\{[^}]*font-weight:\s*500;/
+  );
+  assert.match(response.payload, /\.dashboard-title\s*\{[^}]*font-weight:\s*700;/);
   assert.match(
     response.payload,
     /\.experiment-progress-chevron polygon\s*\{[\s\S]*fill:\s*var\(--milestone-fill\);[\s\S]*stroke:\s*var\(--milestone-border\);[\s\S]*stroke-width:\s*2px;/
@@ -1717,7 +1788,9 @@ test('dashboard HTML renders the live Experiment Progress chevron card above Int
     response.payload,
     /\.experiment-progress-chevron polygon\s*\{[\s\S]*filter:\s*drop-shadow\(0 0 6px var\(--milestone-glow\)\);/
   );
-  assert.match(response.payload, /text-shadow:\s*0 0 5px var\(--milestone-text-glow\);/);
+  assert.match(response.payload, /text-shadow:\s*0 0 3px var\(--milestone-text-glow\);/);
+  assert.match(response.payload, /\.machine-status-green\s*\{[\s\S]*--milestone-text-glow:\s*rgba\(34,\s*197,\s*94,\s*0\.35\);/);
+  assert.match(response.payload, /\.machine-status-red\s*\{[\s\S]*--milestone-text-glow:\s*rgba\(239,\s*68,\s*68,\s*0\.35\);/);
   assert.doesNotMatch(response.payload, /\.experiment-progress-milestone-shell\s*\{[^}]*filter:/);
   assert.match(response.payload, /const experimentRunning = data\.experimentRunning === true;/);
   assert.doesNotMatch(response.payload, /const THRESHOLD = 2 \* 60 \* 1000;/);

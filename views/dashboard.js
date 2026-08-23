@@ -1497,17 +1497,14 @@ function renderDashboard(opts) {
         let selectedLiveHours = 24;
         let pressureViewportKind = 'preset';
         let pressureCustomRange = null;
-        let pressureRawDataX = ${JSON.stringify(shortTermPressureGraph.displayXVals)};
-        let pressureRawData972b = ${JSON.stringify(shortTermPressureGraph.displayYVals)};
-        let pressureRawData902b = ${JSON.stringify(shortTermPressureGraph.displayPressure902bVals)};
-        let pressureRawCursor = null;
-        let pressureRawIndexOffset = 0;
-        let pressureRawMaxPoints = ${shortTermPressureGraph.maxDataPoints};
+        let pressureDisplayDataX = ${JSON.stringify(shortTermPressureGraph.displayXVals)};
+        let pressureDisplayData972b = ${JSON.stringify(shortTermPressureGraph.displayYVals)};
+        let pressureDisplayData902b = ${JSON.stringify(shortTermPressureGraph.displayPressure902bVals)};
         let pressureSourceResolutionLabel = ${JSON.stringify(shortTermPressureGraph.sourceResolutionLabel)};
         let pressureViewportNow = Date.now() / 1000;
-        let pressureMinimumXSpan = getMinimumPressureXSpan(pressureRawDataX);
+        let pressureMinimumXSpan = getMinimumPressureXSpan(pressureDisplayDataX);
         let pressureViewportRenderFrame = null;
-        let pressureRawRefreshInFlight = false;
+        let pressureDisplayRefreshInFlight = false;
         let pressureSnapshotGeneration = 0;
         let pressureChart = null;
         let pressureChartInitialized = false;
@@ -1528,7 +1525,7 @@ function renderDashboard(opts) {
         const pressureResetView = document.getElementById('pressure-reset-view');
 
         function getPressureDataExtent() {
-          return getPressureTimeWindowBounds(pressureRawDataX, null, pressureViewportNow);
+          return getPressureTimeWindowBounds(pressureDisplayDataX, null, pressureViewportNow);
         }
 
         function resolvePressureViewport() {
@@ -1557,7 +1554,7 @@ function renderDashboard(opts) {
 
           if (currentPressureView === 'short') {
             return getPressureTimeWindowBounds(
-              pressureRawDataX,
+              pressureDisplayDataX,
               selectedLiveHours,
               pressureViewportNow
             );
@@ -1991,13 +1988,13 @@ function renderDashboard(opts) {
         function renderPressureViewport() {
           const [min, max] = resolvePressureViewport();
           const sample = buildPressureViewportSample(
-            pressureRawDataX,
-            pressureRawData972b,
-            pressureRawData902b,
+            pressureDisplayDataX,
+            pressureDisplayData972b,
+            pressureDisplayData902b,
             min,
             max,
             1000,
-            pressureRawIndexOffset
+            0
           );
           const normalizedPressure972bVals =
             normalizePressureSeriesForLogScale(sample.pressure972bVals);
@@ -2035,60 +2032,45 @@ function renderDashboard(opts) {
           });
         }
 
-        function replacePressureRawData(chartData) {
-          pressureRawDataX = Array.isArray(chartData.xVals) ? chartData.xVals.slice() : [];
-          pressureRawData972b = Array.isArray(chartData.pressure972bVals)
-            ? chartData.pressure972bVals.slice()
-            : [];
-          pressureRawData902b =
-            chartData.view === 'short' && Array.isArray(chartData.pressure902bVals)
-              ? chartData.pressure902bVals.slice()
-              : [];
-          pressureRawCursor = chartData.cursor;
-          pressureRawIndexOffset = chartData.cacheStartIndex;
-          pressureRawMaxPoints = Number(chartData.maxDataPoints) || pressureRawMaxPoints;
-          pressureSourceResolutionLabel = chartData.sourceResolutionLabel || pressureSourceResolutionLabel;
-          pressureMinimumXSpan = getMinimumPressureXSpan(pressureRawDataX);
-          renderPressureViewport();
-        }
-
-        function appendPressureRawData(chartData) {
+        function replacePressureDisplayData(chartData) {
           const xVals = Array.isArray(chartData.xVals) ? chartData.xVals : [];
           const pressure972bVals = Array.isArray(chartData.pressure972bVals)
             ? chartData.pressure972bVals
             : [];
-          const pressure902bVals = Array.isArray(chartData.pressure902bVals)
+          const pressure902bVals = chartData.view === 'short' && Array.isArray(chartData.pressure902bVals)
             ? chartData.pressure902bVals
-            : [];
-          const nextCacheStartIndex = Number(chartData.cacheStartIndex);
-          const expiredPointCount = Number.isInteger(nextCacheStartIndex)
-            ? Math.max(0, nextCacheStartIndex - pressureRawIndexOffset)
-            : 0;
-          if (expiredPointCount > 0) {
-            pressureRawDataX.splice(0, expiredPointCount);
-            pressureRawData972b.splice(0, expiredPointCount);
-            pressureRawData902b.splice(0, expiredPointCount);
+            : new Array(xVals.length).fill(null);
+          const alignedLength = Math.min(
+            xVals.length,
+            pressure972bVals.length,
+            pressure902bVals.length
+          );
+          const alignedXVals = [];
+          const alignedPressure972bVals = [];
+          const alignedPressure902bVals = [];
+
+          for (let index = 0; index < alignedLength; index++) {
+            const timestamp = Number(xVals[index]);
+            if (!Number.isFinite(timestamp)) continue;
+            if (alignedXVals.length > 0 && timestamp <= alignedXVals.at(-1)) continue;
+
+            alignedXVals.push(timestamp);
+            alignedPressure972bVals.push(pressure972bVals[index]);
+            alignedPressure902bVals.push(pressure902bVals[index]);
           }
-          pressureRawDataX.push(...xVals);
-          pressureRawData972b.push(...pressure972bVals);
-          if (currentPressureView === 'short') {
-            pressureRawData902b.push(...pressure902bVals);
-          }
-          const overflow = pressureRawDataX.length - pressureRawMaxPoints;
-          if (overflow > 0) {
-            pressureRawDataX.splice(0, overflow);
-            pressureRawData972b.splice(0, overflow);
-            pressureRawData902b.splice(0, overflow);
-          }
-          pressureRawCursor = chartData.cursor;
-          pressureRawIndexOffset = chartData.cacheStartIndex;
+
+          pressureDisplayDataX = alignedXVals;
+          pressureDisplayData972b = alignedPressure972bVals;
+          pressureDisplayData902b = alignedPressure902bVals;
+          pressureSourceResolutionLabel = chartData.sourceResolutionLabel || pressureSourceResolutionLabel;
+          pressureMinimumXSpan = getMinimumPressureXSpan(pressureDisplayDataX);
           renderPressureViewport();
         }
 
-        async function loadPressureRawSnapshot(view = currentPressureView) {
+        async function loadPressureDisplaySnapshot(view = currentPressureView) {
           const generation = ++pressureSnapshotGeneration;
           const chartData = await fetchJsonWithTimeout(
-            '/chart-data?view=' + view + '&raw=1',
+            '/chart-data?view=' + view,
             PRESSURE_SNAPSHOT_TIMEOUT_MS
           );
           if (
@@ -2096,30 +2078,23 @@ function renderDashboard(opts) {
             view !== currentPressureView ||
             chartData.view !== view
           ) return null;
-          replacePressureRawData(chartData);
+          replacePressureDisplayData(chartData);
           return view;
         }
 
-        async function refreshPressureRawData() {
-          if (pressureRawRefreshInFlight) return null;
-          pressureRawRefreshInFlight = true;
+        async function refreshPressureDisplayData() {
+          if (pressureDisplayRefreshInFlight) return null;
+          pressureDisplayRefreshInFlight = true;
           const requestedView = currentPressureView;
-          const requestedCursor = pressureRawCursor;
 
           try {
-            if (!Number.isInteger(requestedCursor)) {
-              return await loadPressureRawSnapshot(requestedView);
-            }
-
-            const url = '/chart-data?view=' + requestedView + '&raw=1&cursor=' + requestedCursor;
-            const chartData = await fetchJsonWithTimeout(url);
-            if (requestedView !== currentPressureView || requestedCursor !== pressureRawCursor) return null;
+            const chartData = await fetchJsonWithTimeout('/chart-data?view=' + requestedView);
+            if (requestedView !== currentPressureView) return null;
             if (chartData.view !== requestedView) return null;
-            if (chartData.resetRequired) return await loadPressureRawSnapshot(requestedView);
-            appendPressureRawData(chartData);
+            replacePressureDisplayData(chartData);
             return requestedView;
           } finally {
-            pressureRawRefreshInFlight = false;
+            pressureDisplayRefreshInFlight = false;
           }
         }
 
@@ -2191,8 +2166,7 @@ function renderDashboard(opts) {
             currentPressureView = nextPressureView;
             pressureCustomRange = null;
             pressureViewportKind = currentPressureView === 'short' ? 'preset' : 'all';
-            pressureRawCursor = null;
-            await loadPressureRawSnapshot(currentPressureView);
+            await loadPressureDisplaySnapshot(currentPressureView);
           } catch (e) {
             console.error('Failed to load chart data:', e);
           } finally {
@@ -2214,7 +2188,6 @@ function renderDashboard(opts) {
 
         setPressureInteractionMode('zoom');
         renderPressureViewport();
-        loadPressureRawSnapshot().catch((e) => console.error('Failed to load raw chart data:', e));
       </script>
 
       <div id="ccs-charts-section">
@@ -2732,7 +2705,7 @@ function renderDashboard(opts) {
 
           if (currentPressureView === 'short' || (currentPressureView === 'long' && shouldUpdateLongTerm)) {
             try {
-              const refreshedView = await refreshPressureRawData();
+              const refreshedView = await refreshPressureDisplayData();
               if (refreshedView === 'long') lastLongTermPollAt = Date.now();
             } catch (e) {
               console.error('Chart data update failed:', e);

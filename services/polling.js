@@ -190,14 +190,18 @@ function applyShortTermEntries(entries, options = {}) {
     ccsPointAdder(ccsB, ccsTimestampSec, entry.data?.cathode?.B?.clamp_temperature ?? null);
     ccsPointAdder(ccsC, ccsTimestampSec, entry.data?.cathode?.C?.clamp_temperature ?? null);
 
-    pressurePointAppender(
+    const pressurePointAppended = pressurePointAppender(
       graph,
       tSec,
       parsePressureForLogScale(entry.data?.pressure),
       parsePressureForLogScale(entry.data?.pressure_902b_mbar)
     );
 
-    summary.appendedCount++;
+    if (pressurePointAppended === false) {
+      summary.skippedCount++;
+    } else {
+      summary.appendedCount++;
+    }
     stateRef.lastShortTermCursor = entryCursor;
     previousTimestamp = entryTimestamp;
     previousMs = entryMs;
@@ -269,9 +273,12 @@ function applyLongTermEntries(entries, options = {}) {
     }
 
     const tSec = entryMs / 1000;
-    pressurePointAppender(graph, tSec, pressure);
-
-    summary.appendedCount++;
+    const pressurePointAppended = pressurePointAppender(graph, tSec, pressure);
+    if (pressurePointAppended === false) {
+      summary.skippedCount++;
+    } else {
+      summary.appendedCount++;
+    }
     stateRef.lastLongTermCursor = entryCursor;
     previousTimestamp = entryTimestamp;
     previousMs = entryMs;

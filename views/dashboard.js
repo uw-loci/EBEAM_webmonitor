@@ -55,6 +55,43 @@ function normalizePressureSeriesForLogScale(values) {
   ));
 }
 
+function normalizePressureChartData(
+  xVals,
+  pressure972bVals,
+  pressure902bVals = null,
+  minimumTimestamp = null
+) {
+  const sourceXVals = Array.isArray(xVals) ? xVals : [];
+  const sourcePressure972bVals = Array.isArray(pressure972bVals) ? pressure972bVals : [];
+  const sourcePressure902bVals = Array.isArray(pressure902bVals)
+    ? pressure902bVals
+    : new Array(sourceXVals.length).fill(null);
+  const alignedLength = Math.min(
+    sourceXVals.length,
+    sourcePressure972bVals.length,
+    sourcePressure902bVals.length
+  );
+  const normalized = {
+    xVals: [],
+    pressure972bVals: [],
+    pressure902bVals: [],
+  };
+  let previousTimestamp = Number.isFinite(minimumTimestamp) ? minimumTimestamp : null;
+
+  for (let index = 0; index < alignedLength; index++) {
+    const timestamp = Number(sourceXVals[index]);
+    if (!Number.isFinite(timestamp)) continue;
+    if (previousTimestamp !== null && timestamp <= previousTimestamp) continue;
+
+    normalized.xVals.push(timestamp);
+    normalized.pressure972bVals.push(sourcePressure972bVals[index] ?? null);
+    normalized.pressure902bVals.push(sourcePressure902bVals[index] ?? null);
+    previousTimestamp = timestamp;
+  }
+
+  return normalized;
+}
+
 function getPaddedPressureLogRange(rangeLog, dataMin, dataMax) {
   if (
     typeof rangeLog !== 'function' ||
@@ -341,8 +378,17 @@ function renderDashboard(opts) {
     allInterlocksColor, G9OutputColor, hvoltColor
   ] = sicColors;
 
-  const shortTermChartMeta = getGraphMetadata(shortTermPressureGraph);
+  const initialShortTermPressureData = normalizePressureChartData(
+    shortTermPressureGraph.displayXVals,
+    shortTermPressureGraph.displayYVals,
+    shortTermPressureGraph.displayPressure902bVals
+  );
+  const shortTermChartMeta = {
+    ...getGraphMetadata(shortTermPressureGraph),
+    displayPointCount: initialShortTermPressureData.xVals.length,
+  };
   const normalizePressureSeriesSource = normalizePressureSeriesForLogScale.toString();
+  const normalizePressureChartDataSource = normalizePressureChartData.toString();
   const paddedPressureLogRangeSource = getPaddedPressureLogRange.toString();
   const pressureLogGridFilterSource = filterPressureLogGridSplits.toString();
   const pressureTimeWindowBoundsSource = getPressureTimeWindowBounds.toString();
@@ -1483,6 +1529,7 @@ function renderDashboard(opts) {
 
       <script>
         ${normalizePressureSeriesSource}
+        ${normalizePressureChartDataSource}
         ${paddedPressureLogRangeSource}
         ${pressureLogGridFilterSource}
         ${pressureTimeWindowBoundsSource}
@@ -1497,9 +1544,9 @@ function renderDashboard(opts) {
         let selectedLiveHours = 24;
         let pressureViewportKind = 'preset';
         let pressureCustomRange = null;
-        let pressureRawDataX = ${JSON.stringify(shortTermPressureGraph.displayXVals)};
-        let pressureRawData972b = ${JSON.stringify(shortTermPressureGraph.displayYVals)};
-        let pressureRawData902b = ${JSON.stringify(shortTermPressureGraph.displayPressure902bVals)};
+        let pressureRawDataX = ${JSON.stringify(initialShortTermPressureData.xVals)};
+        let pressureRawData972b = ${JSON.stringify(initialShortTermPressureData.pressure972bVals)};
+        let pressureRawData902b = ${JSON.stringify(initialShortTermPressureData.pressure902bVals)};
         let pressureRawCursor = null;
         let pressureRawIndexOffset = 0;
         let pressureRawMaxPoints = ${shortTermPressureGraph.maxDataPoints};
@@ -1959,13 +2006,13 @@ function renderDashboard(opts) {
         pressureChart = createLiveUplotChart(pressureChartRoot, {
           title: 'Pressure Graph',
           data: [
-            ${JSON.stringify(shortTermPressureGraph.displayXVals)},
-            normalizePressureSeriesForLogScale(${JSON.stringify(shortTermPressureGraph.displayYVals)}),
-            normalizePressureSeriesForLogScale(${JSON.stringify(shortTermPressureGraph.displayPressure902bVals)}),
+            ${JSON.stringify(initialShortTermPressureData.xVals)},
+            normalizePressureSeriesForLogScale(${JSON.stringify(initialShortTermPressureData.pressure972bVals)}),
+            normalizePressureSeriesForLogScale(${JSON.stringify(initialShortTermPressureData.pressure902bVals)}),
           ],
           maxDataPoints: ${shortTermPressureGraph.maxDataPoints},
           maxDisplayPoints: ${shortTermPressureGraph.maxDisplayPoints},
-          displayXVals: ${JSON.stringify(shortTermPressureGraph.displayXVals)},
+          displayXVals: ${JSON.stringify(initialShortTermPressureData.xVals)},
           lastUsedFactor: ${shortTermPressureGraph.lastUsedFactor},
           chartDataIntervalDuration: ${shortTermPressureGraph.chartDataIntervalDuration},
         });
@@ -2036,14 +2083,14 @@ function renderDashboard(opts) {
         }
 
         function replacePressureRawData(chartData) {
-          pressureRawDataX = Array.isArray(chartData.xVals) ? chartData.xVals.slice() : [];
-          pressureRawData972b = Array.isArray(chartData.pressure972bVals)
-            ? chartData.pressure972bVals.slice()
-            : [];
-          pressureRawData902b =
-            chartData.view === 'short' && Array.isArray(chartData.pressure902bVals)
-              ? chartData.pressure902bVals.slice()
-              : [];
+          const normalized = normalizePressureChartData(
+            chartData.xVals,
+            chartData.pressure972bVals,
+            chartData.view === 'short' ? chartData.pressure902bVals : null
+          );
+          pressureRawDataX = normalized.xVals;
+          pressureRawData972b = normalized.pressure972bVals;
+          pressureRawData902b = normalized.pressure902bVals;
           pressureRawCursor = chartData.cursor;
           pressureRawIndexOffset = chartData.cacheStartIndex;
           pressureRawMaxPoints = Number(chartData.maxDataPoints) || pressureRawMaxPoints;
@@ -2069,11 +2116,15 @@ function renderDashboard(opts) {
             pressureRawData972b.splice(0, expiredPointCount);
             pressureRawData902b.splice(0, expiredPointCount);
           }
-          pressureRawDataX.push(...xVals);
-          pressureRawData972b.push(...pressure972bVals);
-          if (currentPressureView === 'short') {
-            pressureRawData902b.push(...pressure902bVals);
-          }
+          const normalized = normalizePressureChartData(
+            xVals,
+            pressure972bVals,
+            currentPressureView === 'short' ? pressure902bVals : null,
+            pressureRawDataX.at(-1)
+          );
+          pressureRawDataX.push(...normalized.xVals);
+          pressureRawData972b.push(...normalized.pressure972bVals);
+          pressureRawData902b.push(...normalized.pressure902bVals);
           const overflow = pressureRawDataX.length - pressureRawMaxPoints;
           if (overflow > 0) {
             pressureRawDataX.splice(0, overflow);
@@ -2873,6 +2924,7 @@ module.exports = {
   renderDashboard,
   getMachineStatusState,
   normalizePressureSeriesForLogScale,
+  normalizePressureChartData,
   getPaddedPressureLogRange,
   filterPressureLogGridSplits,
   getPressureTimeWindowBounds,

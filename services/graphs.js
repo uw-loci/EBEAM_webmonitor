@@ -147,7 +147,22 @@ function rebuildDisplayData(graph) {
 }
 
 function appendPressurePoint(graph, tSec, pressure972b, pressure902b = null) {
-  graph.fullXVals.push(tSec);
+  const timestamp = Number(tSec);
+  const previousTimestamp = graph.fullXVals.at(-1);
+
+  // uPlot's aligned time-series format requires finite, strictly increasing,
+  // unique X values. Supabase rows may legitimately share a database
+  // timestamp, but passing those duplicates through can make uPlot's time-axis
+  // allocation fail and take down the browser tab. Keep the first graph point
+  // for a timestamp; scalar dashboard state still advances to the latest row.
+  if (
+    !Number.isFinite(timestamp) ||
+    (Number.isFinite(previousTimestamp) && timestamp <= previousTimestamp)
+  ) {
+    return false;
+  }
+
+  graph.fullXVals.push(timestamp);
   graph.fullYVals.push(pressure972b ?? null);
   graph.fullPressure902bVals.push(pressure902b ?? null);
   graph.nextPointIndex++;
@@ -174,10 +189,11 @@ function appendPressurePoint(graph, tSec, pressure972b, pressure902b = null) {
     graph.fullYVals.splice(0, trimCount);
     graph.fullPressure902bVals.splice(0, trimCount);
     rebuildDisplayData(graph);
-    return;
+    return true;
   }
 
   updateDisplayData(graph);
+  return true;
 }
 
 function clearPressureGraph(graph) {

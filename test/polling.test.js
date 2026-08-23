@@ -247,9 +247,11 @@ const state = require('../services/state');
 const { INACTIVE_THRESHOLD } = require('../config');
 const registerRoutes = require('../routes');
 const {
+  renderDashboard,
   getMachineStatusState,
   fetchJsonWithTimeout,
   normalizePressureSeriesForLogScale,
+  normalizePressureChartData,
   getPaddedPressureLogRange,
   filterPressureLogGridSplits,
   getPressureTimeWindowBounds,
@@ -661,6 +663,37 @@ test('applyShortTermEntries catches up every unseen short-term row in order', ()
   assert.equal(ccsC.xVals.length, 10);
   assert.equal(warns.length, 0);
   assert.match(logs[0], /Short-term sync processed 10 rows/);
+});
+
+test('applyShortTermEntries advances the cursor but does not graph tied timestamps twice', () => {
+  const graph = createGraphObj({ maxDisplayPoints: 256 });
+  const stateRef = { lastShortTermCursor: null };
+  const entries = buildShortTermEntries(3);
+  entries[1].created_at = entries[0].created_at;
+  const { logger } = createLogger();
+
+  const summary = applyShortTermEntries(entries, {
+    stateRef,
+    graph,
+    ccsA: createCCSGraph(),
+    ccsB: createCCSGraph(),
+    ccsC: createCCSGraph(),
+    ccsPointAdder: addCCSPointForTest,
+    logger,
+  });
+
+  assert.equal(summary.batchSize, 3);
+  assert.equal(summary.appendedCount, 2);
+  assert.equal(summary.skippedCount, 1);
+  assert.deepEqual(graph.fullXVals, [
+    Date.parse(entries[0].created_at) / 1000,
+    Date.parse(entries[2].created_at) / 1000,
+  ]);
+  assert.deepEqual(stateRef.lastShortTermCursor, {
+    timestamp: entries[2].created_at,
+    id: entries[2].id,
+  });
+  assertPressureGraphDisplayIntegrity(graph);
 });
 
 test('applyShortTermEntries retains aligned null gaps for independently invalid readings', () => {
@@ -1340,6 +1373,22 @@ test('appendPressurePoint trims raw points outside the configured time window', 
   assertPressureGraphDisplayIntegrity(graph);
 });
 
+test('appendPressurePoint rejects timestamps that would violate uPlot ordering', () => {
+  const graph = createGraphObj({ maxDataPoints: 10, maxDisplayPoints: 10 });
+
+  assert.equal(appendPressurePoint(graph, 100, 1e-6, 2e-6), true);
+  assert.equal(appendPressurePoint(graph, 100, 3e-6, 4e-6), false);
+  assert.equal(appendPressurePoint(graph, 99, 5e-6, 6e-6), false);
+  assert.equal(appendPressurePoint(graph, Number.NaN, 7e-6, 8e-6), false);
+  assert.equal(appendPressurePoint(graph, 101, 9e-6, 1e-5), true);
+
+  assert.deepEqual(graph.fullXVals, [100, 101]);
+  assert.deepEqual(graph.fullYVals, [1e-6, 9e-6]);
+  assert.deepEqual(graph.fullPressure902bVals, [2e-6, 1e-5]);
+  assert.equal(graph.nextPointIndex, 2);
+  assertPressureGraphDisplayIntegrity(graph);
+});
+
 test('appendPressurePoint preserves graph array references and display invariants after repeated cap trims', () => {
   const graph = createGraphObj({
     maxDataPoints: 5,
@@ -1515,8 +1564,9 @@ test('chart-data returns density metadata for both short and long views', () => 
   );
 
   const lastTimestamp = shortTermPressureGraph.fullXVals.at(-1);
+  const nextTimestamp = lastTimestamp + 1;
   const snapshotCursor = snapshotResponse.payload.cursor;
-  appendPressurePoint(shortTermPressureGraph, lastTimestamp, 42, 84);
+  appendPressurePoint(shortTermPressureGraph, nextTimestamp, 42, 84);
 
   const deltaResponse = createResponseRecorder();
   chartRoute.handler({
@@ -1527,7 +1577,7 @@ test('chart-data returns density metadata for both short and long views', () => 
     },
   }, deltaResponse);
   assert.equal(deltaResponse.payload.resetRequired, false);
-  assert.deepEqual(deltaResponse.payload.xVals, [lastTimestamp]);
+  assert.deepEqual(deltaResponse.payload.xVals, [nextTimestamp]);
   assert.deepEqual(deltaResponse.payload.pressure972bVals, [42]);
   assert.deepEqual(deltaResponse.payload.pressure902bVals, [84]);
 
@@ -1958,6 +2008,55 @@ test('normalizePressureSeriesForLogScale keeps positive finite pressures and gap
     [1200, 1, 1e-3, 1e-6, null, null, null, null, null, null]
   );
   assert.deepEqual(normalizePressureSeriesForLogScale(null), []);
+});
+
+test('normalizePressureChartData aligns series and enforces unique increasing timestamps', () => {
+  const normalized = normalizePressureChartData(
+    [100, '101', 101, 99, Number.NaN, 102, 103],
+    [1, 2, 3, 4, 5, 6, 7],
+    [11, 12, 13, 14, 15, 16]
+  );
+
+  assert.deepEqual(normalized, {
+    xVals: [100, 101, 102],
+    pressure972bVals: [1, 2, 6],
+    pressure902bVals: [11, 12, 16],
+  });
+
+  assert.deepEqual(
+    normalizePressureChartData([100, 101, 102], [1, 2, 3], null, 100).xVals,
+    [101, 102]
+  );
+});
+
+test('renderDashboard sanitizes pressure data before constructing the initial uPlot chart', () => {
+  const shortGraph = createGraphObj({ maxDataPoints: 30_000, maxDisplayPoints: 1_024 });
+  shortGraph.fullXVals.push(100, 100, 99, 101);
+  shortGraph.fullYVals.push(1, 2, 3, 4);
+  shortGraph.fullPressure902bVals.push(11, 12, 13, 14);
+  shortGraph.displayXVals.push(100, 100, 99, 101);
+  shortGraph.displayYVals.push(1, 2, 3, 4);
+  shortGraph.displayPressure902bVals.push(11, 12, 13, 14);
+
+  const emptyGraph = createGraphObj({ maxDataPoints: 100_000, maxDisplayPoints: 256 });
+  const emptyCCS = { xVals: [], yVals: [], maxPoints: 1_200 };
+  const html = renderDashboard({
+    data: { temperatures: {} },
+    state: { experimentRunning: false, lastModifiedTime: null },
+    sicColors: new Array(11).fill('grey'),
+    vacColors: new Array(8).fill('grey'),
+    shortTermPressureGraph: shortGraph,
+    longTermPressureGraph: emptyGraph,
+    ccsGraphA: emptyCCS,
+    ccsGraphB: emptyCCS,
+    ccsGraphC: emptyCCS,
+    codeLastUpdated: 'test',
+  });
+
+  assert.match(html, /let pressureRawDataX = \[100,101\];/);
+  assert.match(html, /let pressureRawData972b = \[1,4\];/);
+  assert.match(html, /let pressureRawData902b = \[11,14\];/);
+  assert.doesNotMatch(html, /let pressureRawDataX = \[100,100,99,101\];/);
 });
 
 test('getPaddedPressureLogRange leaves at least half a decade below positive data', () => {

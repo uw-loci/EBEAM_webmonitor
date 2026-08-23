@@ -11,7 +11,6 @@ const PAGE_SIZE = 1000;
 function createBoundedPressureBuffer(maxDataPoints) {
   const chunks = [];
   let pointCount = 0;
-  let totalAppendedCount = 0;
 
   function discardOldestPoints(count) {
     let remaining = count;
@@ -41,7 +40,6 @@ function createBoundedPressureBuffer(maxDataPoints) {
 
       chunks.push({ xVals, yVals, pressure902bVals });
       pointCount += xVals.length;
-      totalAppendedCount += xVals.length;
 
       const overflowCount = pointCount - maxDataPoints;
       if (overflowCount > 0) {
@@ -52,12 +50,26 @@ function createBoundedPressureBuffer(maxDataPoints) {
       graph.fullXVals.length = 0;
       graph.fullYVals.length = 0;
       graph.fullPressure902bVals.length = 0;
+      let previousTimestamp = null;
       for (const chunk of chunks) {
-        graph.fullXVals.push(...chunk.xVals);
-        graph.fullYVals.push(...chunk.yVals);
-        graph.fullPressure902bVals.push(...chunk.pressure902bVals);
+        const alignedLength = Math.min(
+          chunk.xVals.length,
+          chunk.yVals.length,
+          chunk.pressure902bVals.length
+        );
+
+        for (let index = 0; index < alignedLength; index++) {
+          const timestamp = Number(chunk.xVals[index]);
+          if (!Number.isFinite(timestamp)) continue;
+          if (previousTimestamp !== null && timestamp <= previousTimestamp) continue;
+
+          graph.fullXVals.push(timestamp);
+          graph.fullYVals.push(chunk.yVals[index] ?? null);
+          graph.fullPressure902bVals.push(chunk.pressure902bVals[index] ?? null);
+          previousTimestamp = timestamp;
+        }
       }
-      graph.nextPointIndex = totalAppendedCount;
+      graph.nextPointIndex = graph.fullXVals.length;
       rebuildDisplayData(graph);
     },
   };

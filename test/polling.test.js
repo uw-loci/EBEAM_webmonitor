@@ -1706,30 +1706,27 @@ test('dashboard HTML uses the recent-log viewer, pressure readings, and source-p
   assert.match(response.payload, /chartData\.pressure972bVals/);
   assert.match(response.payload, /chartData\.pressure902bVals/);
   assert.match(response.payload, /requestAnimationFrame/);
-  assert.doesNotMatch(response.payload, /raw=1/);
-  assert.doesNotMatch(response.payload, /cacheStartIndex/);
-  assert.match(response.payload, /if \(pressureDisplayRefreshInFlight\) return null;/);
+  assert.match(response.payload, /&raw=1&cursor=/);
+  assert.match(response.payload, /nextCacheStartIndex - pressureRawIndexOffset/);
+  assert.match(response.payload, /if \(pressureRawRefreshInFlight\) return null;/);
   assert.match(response.payload, /const REQUEST_TIMEOUT_MS = 10000;/);
   assert.match(response.payload, /const PRESSURE_SNAPSHOT_TIMEOUT_MS = 30000;/);
+  assert.match(response.payload, /fetchJsonWithTimeout\(url\)/);
+  assert.match(response.payload, /const requestedView = currentPressureView;/);
+  assert.match(response.payload, /const requestedCursor = pressureRawCursor;/);
   assert.match(
     response.payload,
-    /fetchJsonWithTimeout\('\/chart-data\?view=' \+ requestedView\)/
+    /requestedView !== currentPressureView \|\| requestedCursor !== pressureRawCursor/
   );
-  assert.match(response.payload, /const requestedView = currentPressureView;/);
-  assert.doesNotMatch(response.payload, /requestedCursor/);
-  assert.match(response.payload, /if \(requestedView !== currentPressureView\) return null;/);
-  assert.match(response.payload, /finally \{\s*pressureDisplayRefreshInFlight = false;/);
+  assert.match(response.payload, /finally \{\s*pressureRawRefreshInFlight = false;/);
   assert.match(response.payload, /const generation = \+\+pressureSnapshotGeneration;/);
   assert.match(
     response.payload,
     /generation !== pressureSnapshotGeneration \|\|\s*view !== currentPressureView \|\|\s*chartData\.view !== view/
   );
-  assert.match(response.payload, /replacePressureDisplayData\(chartData\);\s*return view;/);
-  assert.doesNotMatch(response.payload, /appendPressureRawData/);
-  assert.match(response.payload, /const alignedLength = Math\.min\(/);
-  assert.match(response.payload, /if \(!Number\.isFinite\(timestamp\)\) continue;/);
-  assert.match(response.payload, /timestamp <= alignedXVals\.at\(-1\)/);
-  assert.match(response.payload, /const refreshedView = await refreshPressureDisplayData\(\);/);
+  assert.match(response.payload, /replacePressureRawData\(chartData\);\s*return view;/);
+  assert.match(response.payload, /appendPressureRawData\(chartData\);\s*return requestedView;/);
+  assert.match(response.payload, /const refreshedView = await refreshPressureRawData\(\);/);
   assert.match(
     response.payload,
     /if \(refreshedView === 'long'\) lastLongTermPollAt = Date\.now\(\);/
@@ -1766,7 +1763,7 @@ test('dashboard HTML uses the recent-log viewer, pressure readings, and source-p
   assert.match(response.payload, /pressureViewportNow = Number\.isFinite\(serverNowMs\)/);
   assert.match(
     response.payload,
-    /getPressureTimeWindowBounds\(\s*pressureDisplayDataX,\s*selectedLiveHours,\s*pressureViewportNow/
+    /getPressureTimeWindowBounds\(\s*pressureRawDataX,\s*selectedLiveHours,\s*pressureViewportNow/
   );
   assert.match(response.payload, /pressureViewportKind = 'custom'/);
   assert.match(response.payload, /pressureChart\.setScale\('y', \{ min: null, max: null \}\)/);

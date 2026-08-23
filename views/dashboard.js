@@ -1162,10 +1162,13 @@ function renderDashboard(opts) {
       <div class="container-fluid mt-4">
         <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 24px 10px; border-bottom:1px solid var(--border-subtle); margin-bottom:12px;">
           <h2 style="font-size:1.4rem; font-weight:700; color:#d6eaff; margin:0;">E-beam Web Monitor</h2>
-          <div style="display:flex; align-items:center; gap:10px;">
+          <div style="display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:10px;">
             <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'}" style="padding:4px 10px; font-size:0.7em; border-radius:8px; color:white; font-weight:bold;">
               Dashboard is ${!experimentRunning ? 'not ' : ''}running
             </div>
+            <a href="/system-health" aria-label="Open memory and system health dashboard" style="display:inline-flex; align-items:center; padding:4px 10px; font-size:0.7em; border-radius:8px; font-weight:bold; background:#0c4a6e; border:1px solid #38bdf8; color:#bae6fd; text-decoration:none; white-space:nowrap;">
+              Memory &amp; Health
+            </a>
             <button id="open-reset-modal" style="padding:4px 10px; font-size:0.7em; border-radius:8px; font-weight:bold; background:#7f1d1d; border:1px solid #ef4444; color:#fca5a5; cursor:pointer;">
               Experiment Reset
             </button>

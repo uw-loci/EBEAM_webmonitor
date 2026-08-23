@@ -1,4 +1,5 @@
 function createGraphObj(options = {}) {
+  const maxDataPoints = options.maxDataPoints ?? 1000;
   const fullXVals = options.fullXVals || [];
   const graph = {
     fullXVals,
@@ -7,8 +8,12 @@ function createGraphObj(options = {}) {
     displayXVals: options.displayXVals || [],
     displayYVals: options.displayYVals || [],
     displayPressure902bVals: options.displayPressure902bVals || [],
-    maxDataPoints: options.maxDataPoints ?? 1000,
+    maxDataPoints,
     maxTimeWindowSeconds: options.maxTimeWindowSeconds ?? null,
+    // Drop a small batch when the raw cache fills instead of shifting and
+    // rebuilding the arrays on every new point. Small test/custom graphs keep
+    // exact one-at-a-time trimming; production-sized graphs trim about 2%.
+    trimBatchSize: options.trimBatchSize ?? Math.max(1, Math.floor(maxDataPoints * 0.02)),
     maxDisplayPoints: options.maxDisplayPoints ?? 256,
     sourceResolutionLabel: options.sourceResolutionLabel || 'source data',
     lastUsedFactor: options.lastUsedFactor ?? 1,
@@ -150,17 +155,21 @@ function appendPressurePoint(graph, tSec, pressure972b, pressure902b = null) {
   const cutoffTimeSec = graph.maxTimeWindowSeconds
     ? tSec - graph.maxTimeWindowSeconds
     : null;
-  let trimCount = Math.max(0, graph.fullXVals.length - graph.maxDataPoints);
+  let requiredTrimCount = Math.max(0, graph.fullXVals.length - graph.maxDataPoints);
 
   while (
     cutoffTimeSec !== null &&
-    trimCount < graph.fullXVals.length &&
-    graph.fullXVals[trimCount] < cutoffTimeSec
+    requiredTrimCount < graph.fullXVals.length &&
+    graph.fullXVals[requiredTrimCount] < cutoffTimeSec
   ) {
-    trimCount++;
+    requiredTrimCount++;
   }
 
-  if (trimCount > 0) {
+  if (requiredTrimCount > 0) {
+    const trimCount = Math.min(
+      graph.fullXVals.length,
+      Math.max(requiredTrimCount, graph.trimBatchSize ?? 1)
+    );
     graph.fullXVals.splice(0, trimCount);
     graph.fullYVals.splice(0, trimCount);
     graph.fullPressure902bVals.splice(0, trimCount);
@@ -189,17 +198,28 @@ function getGraphMetadata(graph) {
 }
 
 const CCS_MAX_POINTS = 1200; // ~1 hour at 3s polling
+const CCS_TRIM_BATCH_SIZE = 60;
 
 function createCCSGraphObj() {
-  return { xVals: [], yVals: [], maxPoints: CCS_MAX_POINTS };
+  return {
+    xVals: [],
+    yVals: [],
+    maxPoints: CCS_MAX_POINTS,
+    trimBatchSize: CCS_TRIM_BATCH_SIZE,
+  };
 }
 
 function addCCSPoint(graph, tSec, temp) {
   graph.xVals.push(tSec);
   graph.yVals.push(temp ?? null);
   if (graph.xVals.length > graph.maxPoints) {
-    graph.xVals.shift();
-    graph.yVals.shift();
+    const overflowCount = graph.xVals.length - graph.maxPoints;
+    const trimCount = Math.min(
+      graph.xVals.length,
+      Math.max(overflowCount, graph.trimBatchSize ?? 1)
+    );
+    graph.xVals.splice(0, trimCount);
+    graph.yVals.splice(0, trimCount);
   }
 }
 

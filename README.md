@@ -107,7 +107,7 @@ Express routes:
 - `/data` serves current scalar values, Beam Energy power-supply readings, and computed colors
 - `/chart-data` serves the selected pressure graph plus density metadata
 - `/ccs-chart-data` serves the three CCS clamp-temperature series
-- `/health`, `/raw`, `/refresh-display`, and `/experiment-reset` expose operational controls
+- `/system-health`, `/health`, `/raw`, `/refresh-display`, and `/experiment-reset` expose operational controls
 ```
 
 The startup sequence in `index.js` warms the pressure caches, CCS caches, and display-log cache before calling `app.listen()`, so the first page load has data ready instead of starting cold.
@@ -156,7 +156,7 @@ The branch no longer treats polling as "grab the latest row and append it if the
 
 ### Deterministic pagination across tied timestamps
 
-`services/supabase.js` fetches rows in pages of 1000 and applies the cursor after querying. This preserves ordering even when a page boundary lands inside a block of rows that share the same timestamp, which is one of the main changes in this branch.
+`services/supabase.js` fetches rows in pages of 1000 and applies the cursor after querying. This preserves ordering even when a page boundary lands inside a block of rows that share the same timestamp. Catch-up polling consumes each page immediately instead of retaining the complete missed-data batch in memory, and startup pressure backfills keep only their configured graph capacity.
 
 ### Gap detection and overlap guards
 
@@ -194,7 +194,7 @@ Each interlock indicator (Door, Water, Vacuum, E-Stop, and others) is derived fr
 
 ### Display logs are a separate pipeline
 
-Google Drive log fetching is independent from the Supabase telemetry path. The app periodically downloads the most recent display log, reverses it, writes it to a local cache file, and serves that cached content through `/raw` so the log viewer does not depend on a live Drive request for every page refresh.
+Google Drive log fetching is independent from the Supabase telemetry path. The app periodically requests a bounded tail of the most recent display log, extracts a recent snippet, reverses it, writes it to a local cache file, and serves that cached content through `/raw`. The byte-range request keeps refresh memory and bandwidth independent of the total size of a multi-day log file.
 
 ### Reset is an explicit operational action
 
@@ -210,7 +210,8 @@ See [SUPABASE-README.md](./SUPABASE-README.md) for the database-side hot/cold ta
 | `/data` | GET | JSON with current scalar values, Beam Energy power-supply readings, computed colors, and last-modified timestamps |
 | `/chart-data?view=short\|long` | GET | Shared `xVals`, `pressure972bVals`, optional Live-only `pressure902bVals`, and graph-density metadata |
 | `/ccs-chart-data` | GET | JSON with the A/B/C CCS clamp-temperature chart series |
-| `/health` | GET | Supabase connection status and experiment state |
+| `/health` | GET | Supabase connection, experiment state, process memory, and cache sizes |
+| `/system-health` | GET | Live memory charts, cache utilization, and metric definitions |
 | `/raw` | GET | Plain text content of the cached reversed display log file |
 | `/refresh-display` | GET | Triggers a manual Google Drive display-log refresh |
 | `/experiment-reset` | POST | Clears both log tables and in-memory pressure caches when password auth is configured |

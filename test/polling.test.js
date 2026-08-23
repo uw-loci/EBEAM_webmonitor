@@ -261,6 +261,7 @@ const {
   createGraphObj,
   appendPressurePoint,
   clearPressureGraph,
+  addCCSPoint,
   shortTermPressureGraph,
   longTermPressureGraph,
   ccsGraphA,
@@ -274,6 +275,7 @@ const {
   backfillLongTermGraph,
   fetchShortTermEntriesSince,
   fetchLongTermEntriesSince,
+  drainShortTermEntriesSince,
 } = require('../services/supabase');
 const {
   applyShortTermEntries,
@@ -283,9 +285,11 @@ const {
 } = require('../services/polling');
 const {
   FALLBACK_SNIPPET_LINES,
+  MAX_DOWNLOAD_TAIL_BYTES,
   MAX_SNIPPET_BYTES,
   MAX_SNIPPET_LINES,
   RECENT_LOG_WINDOW_MS,
+  buildDriveDownloadRequest,
   collectRecentLogSnippet,
   fetchDisplayFileContents,
   getMostRecentFile,
@@ -982,10 +986,36 @@ test('listDriveTextFiles builds the expected Google Drive REST query', async () 
   assert.equal(url.searchParams.get('q'), "'folder-123' in parents and mimeType='text/plain'");
   assert.equal(url.searchParams.get('orderBy'), 'modifiedTime desc');
   assert.equal(url.searchParams.get('pageSize'), '5');
-  assert.equal(url.searchParams.get('fields'), 'files(id,name,modifiedTime)');
+  assert.equal(url.searchParams.get('fields'), 'files(id,name,modifiedTime,size)');
   assert.deepEqual(files, [
     { id: 'file-1', name: 'log_latest.txt', modifiedTime: '2026-03-26T08:30:00.000Z' },
   ]);
+});
+
+test('Drive download requests only the bounded tail of a growing log file', () => {
+  const fileSize = MAX_DOWNLOAD_TAIL_BYTES * 3;
+  const request = buildDriveDownloadRequest('file-1', {
+    apiKey: 'api-key-456',
+    fileSize,
+  });
+
+  assert.equal(request.rangeRequested, true);
+  assert.equal(
+    request.headers.Range,
+    `bytes=${fileSize - MAX_DOWNLOAD_TAIL_BYTES}-`
+  );
+  assert.equal(new URL(request.url).searchParams.get('alt'), 'media');
+  assert.equal(new URL(request.url).searchParams.get('key'), 'api-key-456');
+});
+
+test('Drive download requests the complete content when the log is already small', () => {
+  const request = buildDriveDownloadRequest('file-1', {
+    apiKey: 'api-key-456',
+    fileSize: MAX_DOWNLOAD_TAIL_BYTES,
+  });
+
+  assert.equal(request.rangeRequested, false);
+  assert.equal(request.headers.Range, undefined);
 });
 
 test('getMostRecentFile selects the newest log-prefixed text file', async () => {
@@ -1121,6 +1151,21 @@ test('fetchShortTermEntriesSince resumes within a tied timestamp using the id cu
     fetched.map((entry) => entry.id),
     entries.slice(999).map((entry) => entry.id)
   );
+});
+
+test('drainShortTermEntriesSince processes catch-up rows in bounded pages', async () => {
+  const entries = buildShortTermEntries(2_505);
+  const pageSizes = [];
+  const drainedIds = [];
+  setSupabaseTableRows('short_term_logs', entries);
+
+  await drainShortTermEntriesSince(null, async (page) => {
+    pageSizes.push(page.length);
+    drainedIds.push(...page.map((entry) => entry.id));
+  });
+
+  assert.deepEqual(pageSizes, [1_000, 1_000, 505]);
+  assert.deepEqual(drainedIds, entries.map((entry) => entry.id));
 });
 
 test('fetchLongTermEntriesSince paginates tied timestamps deterministically across pages', async () => {
@@ -1336,6 +1381,41 @@ test('clearPressureGraph clears both aligned pressure series', () => {
   assert.equal(graph.nextPointIndex, 0);
 });
 
+test('production-sized pressure graphs trim in batches to avoid per-point rebuild churn', () => {
+  const graph = createGraphObj({
+    maxDataPoints: 1_000,
+    maxDisplayPoints: 256,
+  });
+
+  for (let index = 0; index <= 1_000; index++) {
+    appendPressurePoint(graph, index, index);
+  }
+
+  assert.equal(graph.trimBatchSize, 20);
+  assert.equal(graph.fullXVals.length, 981);
+  assert.equal(graph.fullXVals[0], 20);
+  assert.equal(graph.fullXVals.at(-1), 1_000);
+  assertPressureGraphDisplayIntegrity(graph);
+});
+
+test('CCS graphs trim in batches after their one-hour cache fills', () => {
+  const graph = {
+    xVals: [],
+    yVals: [],
+    maxPoints: 1_200,
+    trimBatchSize: 60,
+  };
+
+  for (let index = 0; index <= 1_200; index++) {
+    addCCSPoint(graph, index, index);
+  }
+
+  assert.equal(graph.xVals.length, 1_141);
+  assert.equal(graph.yVals.length, 1_141);
+  assert.equal(graph.xVals[0], 60);
+  assert.equal(graph.xVals.at(-1), 1_200);
+});
+
 test('long-term data remains capped at the lower historical display density', () => {
   const graph = createGraphObj({
     maxDataPoints: 100_000,
@@ -1468,6 +1548,7 @@ test('chart-data returns density metadata for both short and long views', () => 
 
 test('/data exposes the latest 902B pressure', () => {
   state.data.pressure_902b_mbar = 5.678e-7;
+
   const app = createFakeApp();
   registerRoutes(app);
 
@@ -1476,6 +1557,67 @@ test('/data exposes the latest 902B pressure', () => {
   dataRoute.handler({}, response);
 
   assert.equal(response.payload.pressure_902b_mbar, 5.678e-7);
+});
+
+test('health reports process memory and bounded cache sizes', async () => {
+  const app = createFakeApp();
+  registerRoutes(app);
+
+  const healthRoute = app.routes.find((route) => route.method === 'GET' && route.path === '/health');
+  assert.ok(healthRoute, 'expected /health route to be registered');
+
+  const response = createResponseRecorder();
+  await healthRoute.handler({}, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(response.payload.memoryMb.rss > 0);
+  assert.ok(response.payload.memoryMb.heapUsed > 0);
+  assert.equal(response.payload.memoryLimitMb, 512);
+  assert.ok(Number.isFinite(Date.parse(response.payload.sampledAt)));
+  assert.ok(response.payload.uptimeSeconds >= 0);
+  assert.equal(
+    response.payload.cachePoints.shortTermPressure,
+    shortTermPressureGraph.fullXVals.length
+  );
+  assert.equal(
+    response.payload.cachePoints.longTermPressure,
+    longTermPressureGraph.fullXVals.length
+  );
+  assert.equal(response.payload.cachePoints.ccsPerChannel, ccsGraphA.xVals.length);
+  assert.equal(
+    response.payload.cacheLimits.shortTermPressure,
+    shortTermPressureGraph.maxDataPoints
+  );
+  assert.equal(
+    response.payload.cacheLimits.longTermPressure,
+    longTermPressureGraph.maxDataPoints
+  );
+  assert.equal(response.payload.cacheLimits.ccsPerChannel, ccsGraphA.maxPoints);
+});
+
+test('system-health renders an accessible live memory dashboard', () => {
+  const app = createFakeApp();
+  registerRoutes(app);
+
+  const healthPageRoute = app.routes.find(
+    (route) => route.method === 'GET' && route.path === '/system-health'
+  );
+  assert.ok(healthPageRoute, 'expected /system-health route to be registered');
+
+  const response = createResponseRecorder();
+  healthPageRoute.handler({}, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.match(response.payload, /Memory &amp; System Health/);
+  assert.match(response.payload, /heapUsed/);
+  assert.match(response.payload, /fetch\('\/health'/);
+  assert.match(response.payload, /id="memory-chart"[^>]+aria-label=/);
+  assert.match(response.payload, /id="cache-chart"[^>]+aria-label=/);
+  assert.match(response.payload, /href="\/"[^>]*>Back to dashboard/);
+
+  const scriptMatch = response.payload.match(/<script>([\s\S]*?)<\/script>/);
+  assert.ok(scriptMatch, 'expected the health page to include its live chart script');
+  assert.doesNotThrow(() => new Function(scriptMatch[1]));
 });
 
 test('dashboard HTML uses the recent-log viewer, pressure readings, and source-precision CCS temperatures', async () => {
@@ -1627,6 +1769,8 @@ test('dashboard HTML uses the recent-log viewer, pressure readings, and source-p
   assert.match(response.payload, /pressureChart\.setScale\('y', \{ min: null, max: null \}\)/);
   assert.match(response.payload, /overflow:\s*hidden;/);
   assert.match(response.payload, /fetch\('\/raw'\)/);
+  assert.match(response.payload, /href="\/system-health"/);
+  assert.match(response.payload, /Memory &amp; Health/);
   assert.doesNotMatch(response.payload, /fetch\('\/refresh-display'\)/);
   assert.doesNotMatch(response.payload, /margin-top:\s*-3\.5em/);
   assert.doesNotMatch(response.payload, /float:\s*right/);

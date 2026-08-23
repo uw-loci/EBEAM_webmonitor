@@ -1,12 +1,67 @@
 const { supabase } = require('../config');
 const state = require('./state');
 const {
-  appendPressurePoint,
   addCCSPoint,
   parsePressureForLogScale,
+  rebuildDisplayData,
 } = require('./graphs');
 
 const PAGE_SIZE = 1000;
+
+function createBoundedPressureBuffer(maxDataPoints) {
+  const chunks = [];
+  let pointCount = 0;
+  let totalAppendedCount = 0;
+
+  function discardOldestPoints(count) {
+    let remaining = count;
+
+    while (remaining > 0 && chunks.length > 0) {
+      const firstChunk = chunks[0];
+      if (remaining >= firstChunk.xVals.length) {
+        remaining -= firstChunk.xVals.length;
+        pointCount -= firstChunk.xVals.length;
+        chunks.shift();
+        continue;
+      }
+
+      firstChunk.xVals = firstChunk.xVals.slice(remaining);
+      firstChunk.yVals = firstChunk.yVals.slice(remaining);
+      firstChunk.pressure902bVals = firstChunk.pressure902bVals.slice(remaining);
+      pointCount -= remaining;
+      remaining = 0;
+    }
+  }
+
+  return {
+    appendChunk(xVals, yVals, pressure902bVals = new Array(xVals.length).fill(null)) {
+      if (xVals.length === 0) {
+        return;
+      }
+
+      chunks.push({ xVals, yVals, pressure902bVals });
+      pointCount += xVals.length;
+      totalAppendedCount += xVals.length;
+
+      const overflowCount = pointCount - maxDataPoints;
+      if (overflowCount > 0) {
+        discardOldestPoints(overflowCount);
+      }
+    },
+    applyToGraph(graph) {
+      graph.fullXVals.length = 0;
+      graph.fullYVals.length = 0;
+      graph.fullPressure902bVals.length = 0;
+      for (const chunk of chunks) {
+        graph.fullXVals.push(...chunk.xVals);
+        graph.fullYVals.push(...chunk.yVals);
+        graph.fullPressure902bVals.push(...chunk.pressure902bVals);
+      }
+      graph.nextPointIndex = totalAppendedCount;
+      rebuildDisplayData(graph);
+    },
+  };
+}
 
 function normalizeCursor(cursor) {
   if (!cursor?.timestamp) {
@@ -56,7 +111,7 @@ function isRowAfterCursor(row, timestampColumn, cursor) {
   return row?.id > cursor.id;
 }
 
-async function fetchEntriesSince(tableName, columns, timestampColumn, cursor) {
+async function fetchEntriesSince(tableName, columns, timestampColumn, cursor, onPage = null) {
   const rows = [];
   let from = 0;
   const normalizedCursor = normalizeCursor(cursor);
@@ -87,7 +142,13 @@ async function fetchEntriesSince(tableName, columns, timestampColumn, cursor) {
       ? data.filter((row) => isRowAfterCursor(row, timestampColumn, normalizedCursor))
       : data;
 
-    rows.push(...unseenRows);
+    if (onPage) {
+      if (unseenRows.length > 0) {
+        await onPage(unseenRows);
+      }
+    } else {
+      rows.push(...unseenRows);
+    }
 
     if (data.length < PAGE_SIZE) {
       break;
@@ -220,6 +281,7 @@ async function backfillShortTermGraph(graph) {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     let from = 0;
     let lastCursor = null;
+    const pressureBuffer = createBoundedPressureBuffer(graph.maxDataPoints);
 
     while (true) {
       const { data, error } = await supabase
@@ -236,22 +298,25 @@ async function backfillShortTermGraph(graph) {
       }
       if (!data || data.length === 0) break;
 
+      const pageXVals = [];
+      const pageYVals = [];
+      const pagePressure902bVals = [];
       for (const row of data) {
         const timestampMs = Date.parse(row.created_at);
         if (!Number.isFinite(timestampMs)) continue;
-        appendPressurePoint(
-          graph,
-          timestampMs / 1000,
-          parsePressureForLogScale(row.data?.pressure),
-          parsePressureForLogScale(row.data?.pressure_902b_mbar)
-        );
+        pageXVals.push(timestampMs / 1000);
+        pageYVals.push(parsePressureForLogScale(row.data?.pressure));
+        pagePressure902bVals.push(parsePressureForLogScale(row.data?.pressure_902b_mbar));
       }
+      pressureBuffer.appendChunk(pageXVals, pageYVals, pagePressure902bVals);
 
       lastCursor = buildCursorFromRow(data[data.length - 1], 'created_at');
 
       if (data.length < PAGE_SIZE) break;
       from += PAGE_SIZE;
     }
+
+    pressureBuffer.applyToGraph(graph);
 
     if (lastCursor === null) {
       console.log('No short-term data to backfill');
@@ -275,6 +340,7 @@ async function backfillLongTermGraph(graph) {
   try {
     let from = 0;
     let lastCursor = null;
+    const pressureBuffer = createBoundedPressureBuffer(graph.maxDataPoints);
 
     while (true) {
       const { data, error } = await supabase
@@ -290,18 +356,24 @@ async function backfillLongTermGraph(graph) {
       }
       if (!data || data.length === 0) break;
 
+      const pageXVals = [];
+      const pageYVals = [];
       for (const row of data) {
         if (row.avg_pressure == null) continue;
         const tSec = Date.parse(row.recorded_at) / 1000;
         if (!Number.isFinite(tSec)) continue;
-        appendPressurePoint(graph, tSec, row.avg_pressure);
+        pageXVals.push(tSec);
+        pageYVals.push(row.avg_pressure);
       }
+      pressureBuffer.appendChunk(pageXVals, pageYVals);
 
       lastCursor = buildCursorFromRow(data[data.length - 1], 'recorded_at');
 
       if (data.length < PAGE_SIZE) break;
       from += PAGE_SIZE;
     }
+
+    pressureBuffer.applyToGraph(graph);
 
     if (lastCursor === null) {
       console.log('No long-term data to backfill');
@@ -391,6 +463,36 @@ async function fetchLongTermEntriesSince(cursor) {
   }
 }
 
+async function drainShortTermEntriesSince(cursor, onPage) {
+  try {
+    return await fetchEntriesSince(
+      'short_term_logs',
+      'id, created_at, data',
+      'created_at',
+      cursor,
+      onPage
+    );
+  } catch (err) {
+    console.error('Error draining short-term entries since cursor:', err);
+    return [];
+  }
+}
+
+async function drainLongTermEntriesSince(cursor, onPage) {
+  try {
+    return await fetchEntriesSince(
+      'long_term_logs',
+      'id, recorded_at, avg_pressure',
+      'recorded_at',
+      cursor,
+      onPage
+    );
+  } catch (err) {
+    console.error('Error draining long-term entries since cursor:', err);
+    return [];
+  }
+}
+
 /**
  * Backfills the CCS clamp temperature graphs from the last hour of short_term_logs.
  * Time window: 1h (matches the CCS ring buffer capacity of 1200 points @ 3s ≈ 1h).
@@ -457,4 +559,6 @@ module.exports = {
   fetchLatestLongTermEntry,
   fetchShortTermEntriesSince,
   fetchLongTermEntriesSince,
+  drainShortTermEntriesSince,
+  drainLongTermEntriesSince,
 };

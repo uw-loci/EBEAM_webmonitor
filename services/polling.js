@@ -4,8 +4,8 @@ const {
   mapSupabaseDataToAppFormat,
   resetData,
   fetchLatestShortTermEntry,
-  fetchShortTermEntriesSince,
-  fetchLongTermEntriesSince,
+  drainShortTermEntriesSince,
+  drainLongTermEntriesSince,
 } = require('./supabase');
 const { fetchDisplayFileContents } = require('./gdrive');
 const {
@@ -115,6 +115,24 @@ function logBatchSummary(logger, label, summary) {
     `(${summary.appendedCount} plotted, ${summary.skippedCount} skipped) ` +
     `from ${summary.firstTimestamp} to ${summary.lastTimestamp}`
   );
+}
+
+function createCombinedSummary(lastTimestamp) {
+  return {
+    batchSize: 0,
+    appendedCount: 0,
+    skippedCount: 0,
+    firstTimestamp: null,
+    lastTimestamp,
+  };
+}
+
+function mergeSummary(combined, pageSummary) {
+  combined.batchSize += pageSummary.batchSize;
+  combined.appendedCount += pageSummary.appendedCount;
+  combined.skippedCount += pageSummary.skippedCount;
+  combined.firstTimestamp ??= pageSummary.firstTimestamp;
+  combined.lastTimestamp = pageSummary.lastTimestamp;
 }
 
 function applyShortTermEntries(entries, options = {}) {
@@ -269,8 +287,11 @@ function applyLongTermEntries(entries, options = {}) {
  */
 async function pollShortTerm() {
   try {
-    const entries = await fetchShortTermEntriesSince(state.lastShortTermCursor);
-    return applyShortTermEntries(entries);
+    const summary = createCombinedSummary(getCursorTimestamp(state.lastShortTermCursor));
+    await drainShortTermEntriesSince(state.lastShortTermCursor, async (entries) => {
+      mergeSummary(summary, applyShortTermEntries(entries));
+    });
+    return summary;
   } catch (err) {
     console.error('Error in pollShortTerm:', err);
     return null;
@@ -289,8 +310,11 @@ async function pollLongTerm() {
   longTermSyncInProgress = true;
 
   try {
-    const entries = await fetchLongTermEntriesSince(state.lastLongTermCursor);
-    return applyLongTermEntries(entries);
+    const summary = createCombinedSummary(getCursorTimestamp(state.lastLongTermCursor));
+    await drainLongTermEntriesSince(state.lastLongTermCursor, async (entries) => {
+      mergeSummary(summary, applyLongTermEntries(entries));
+    });
+    return summary;
   } catch (err) {
     console.error('Error in pollLongTerm:', err);
     return null;

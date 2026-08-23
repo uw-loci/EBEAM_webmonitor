@@ -13,10 +13,30 @@ const {
   getGraphMetadata,
 } = require('./services/graphs');
 const { renderDashboard } = require('./views/dashboard');
+const { renderSystemHealthPage } = require('./views/systemHealth');
 
 const codeLastUpdated = new Date().toLocaleString('en-US', {
   timeZone: 'America/Chicago'
 });
+
+function getMemoryUsageMb() {
+  const memory = process.memoryUsage();
+  const toMb = (bytes) => Math.round((bytes / (1024 * 1024)) * 10) / 10;
+
+  return {
+    rss: toMb(memory.rss),
+    heapUsed: toMb(memory.heapUsed),
+    heapTotal: toMb(memory.heapTotal),
+    external: toMb(memory.external),
+  };
+}
+
+function getMemoryLimitMb() {
+  const configuredLimit = Number(process.env.RENDER_MEMORY_LIMIT_MB);
+  return Number.isFinite(configuredLimit) && configuredLimit > 0
+    ? configuredLimit
+    : 512;
+}
 
 function registerRoutes(app) {
 
@@ -110,6 +130,10 @@ function registerRoutes(app) {
     res.status(200).send('Refreshed display logs');
   });
 
+  app.get('/system-health', (req, res) => {
+    res.send(renderSystemHealthPage({ memoryLimitMb: getMemoryLimitMb() }));
+  });
+
   // Health check endpoint
   app.get('/health', async (req, res) => {
     try {
@@ -122,7 +146,21 @@ function registerRoutes(app) {
         status: 'ok',
         supabase: error ? 'disconnected' : 'connected',
         experimentRunning: state.experimentRunning,
-        lastUpdate: state.webMonitorLastModified
+        lastUpdate: state.webMonitorLastModified,
+        sampledAt: new Date().toISOString(),
+        uptimeSeconds: Math.round(process.uptime()),
+        memoryLimitMb: getMemoryLimitMb(),
+        memoryMb: getMemoryUsageMb(),
+        cachePoints: {
+          shortTermPressure: shortTermPressureGraph.fullXVals.length,
+          longTermPressure: longTermPressureGraph.fullXVals.length,
+          ccsPerChannel: ccsGraphA.xVals.length,
+        },
+        cacheLimits: {
+          shortTermPressure: shortTermPressureGraph.maxDataPoints,
+          longTermPressure: longTermPressureGraph.maxDataPoints,
+          ccsPerChannel: ccsGraphA.maxPoints,
+        },
       });
     } catch (err) {
       res.status(500).json({

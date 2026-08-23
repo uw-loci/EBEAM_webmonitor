@@ -11,6 +11,7 @@ const {
   ccsGraphC,
   clearPressureGraph,
   getGraphMetadata,
+  getPressureGraphRangeSnapshot,
 } = require('./services/graphs');
 const { renderDashboard } = require('./views/dashboard');
 const { renderSystemHealthPage } = require('./views/systemHealth');
@@ -192,8 +193,36 @@ function registerRoutes(app) {
   app.get('/chart-data', (req, res) => {
     const view = req.query.view === 'long' ? 'long' : 'short';
     const graph = view === 'long' ? longTermPressureGraph : shortTermPressureGraph;
+    const rangeSnapshot = getPressureGraphRangeSnapshot(
+      graph,
+      req.query.from,
+      req.query.to,
+      req.query.maxPoints
+    );
 
-    res.json({
+    if (rangeSnapshot) {
+      return res.json({
+        view,
+        xVals: rangeSnapshot.xVals,
+        pressure972bVals: rangeSnapshot.pressure972bVals,
+        ...(view === 'short' && {
+          pressure902bVals: rangeSnapshot.pressure902bVals,
+        }),
+        rawPointCount: rangeSnapshot.rawPointCount,
+        totalRawPointCount: rangeSnapshot.totalRawPointCount,
+        displayPointCount: rangeSnapshot.displayPointCount,
+        downsampleFactor: rangeSnapshot.downsampleFactor,
+        sourceResolutionLabel: rangeSnapshot.sourceResolutionLabel,
+        sourceIntervalSeconds: rangeSnapshot.sourceIntervalSeconds,
+        cacheStartTime: rangeSnapshot.cacheStartTime,
+        cacheEndTime: rangeSnapshot.cacheEndTime,
+        rangeStartTime: rangeSnapshot.rangeStartTime,
+        rangeEndTime: rangeSnapshot.rangeEndTime,
+        rangeRequested: true,
+      });
+    }
+
+    return res.json({
       view,
       xVals: graph.displayXVals,
       pressure972bVals: graph.displayYVals,

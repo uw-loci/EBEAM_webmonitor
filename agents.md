@@ -25,7 +25,7 @@
 ## Routes (`routes.js`)
 - `GET /` — SSR HTML; chart data inlined as JSON literals at page load
 - `GET /data` — JSON scalars + backend `experimentRunning` + 902B pressure + beam-energy output booleans + `sicColors[11]` + `vacuumColors[8]`; client polls 3s after prior poll completion
-- `GET /chart-data?view=short|long` — bounded display arrays only; max 1024 short / 256 long; short view also `pressure902bVals`; graph metadata; legacy raw/cursor params ignored
+- `GET /chart-data?view=short|long` — bounded overview arrays (max 1024 per view); optional finite `from`/`to` returns a range snapshot capped at 2048 points; short view also `pressure902bVals`; legacy raw/cursor params ignored
 - `GET /ccs-chart-data` — CCS ring buffer arrays A/B/C
 - `GET /health` — live Supabase ping + `experimentRunning`
 - `GET /raw` — serves `reversed.txt` as `text/plain`
@@ -67,9 +67,10 @@
 - interaction: Zoom selection; Pan drag; wheel/pinch zoom; minimum X window 10s; Reset/double-click restore
 - live windows: `1h`, `3h`, `6h`, `12h`, `24h`; presets end at current server time; manual range fixed as Custom
 - historical: all-time default ends at current server time; manual Custom range
+- historical detail: zoom/pan requests a debounced viewport snapshot from the full in-memory 1-min cache; up to 2048 points, so windows of about 34 hours or less render at full source resolution
 - viewport-now: X-range only; no synthetic points; absolute-index downsampling unchanged
 - dashboard polling: self-scheduled after completion; 10s request timeout
-- pressure display polling: bounded snapshot; one request in flight; initial/poll/toggle shared; max 2048 client points
+- pressure display polling: bounded overview or viewport snapshot; one request in flight; initial/poll/toggle/detail shared; max 2048 client points
 - empty pressure state: no uPlot construction/update; finite fallback exponent range; pressure-only placeholder
 - chart failure: pressure-only fuse; dashboard + CCS polling continue
 

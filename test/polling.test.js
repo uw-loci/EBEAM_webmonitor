@@ -266,6 +266,7 @@ const {
   parsePressureForLogScale,
   appendPressurePoint,
   clearPressureGraph,
+  getPressureGraphRangeSnapshot,
   addCCSPoint,
   shortTermPressureGraph,
   longTermPressureGraph,
@@ -1514,10 +1515,42 @@ test('applyLongTermEntries caps raw points at maxDataPoints and keeps the newest
   assertPressureGraphDisplayIntegrity(graph);
 });
 
+test('pressure range snapshots restore full source resolution when the zoomed window fits', () => {
+  const graph = createGraphObj({
+    maxDataPoints: 10_000,
+    maxDisplayPoints: 1_024,
+    sourceResolutionLabel: '1-min averaged source data',
+    sourceIntervalSeconds: 60,
+  });
+  const pointCount = 5_000;
+  graph.fullXVals.push(...Array.from({ length: pointCount }, (_value, index) => index * 60));
+  graph.fullYVals.push(...Array.from(
+    { length: pointCount },
+    (_value, index) => index === 1_500 ? 1e-3 : 1e-7
+  ));
+  graph.fullPressure902bVals.push(...new Array(pointCount).fill(null));
+
+  const detail = getPressureGraphRangeSnapshot(graph, 1_200 * 60, 2_200 * 60, 2_048);
+  assert.equal(detail.downsampleFactor, 1);
+  assert.equal(detail.displayPointCount, detail.rawPointCount);
+  assert.equal(detail.sourceIntervalSeconds, 60);
+  assert.equal(detail.totalRawPointCount, pointCount);
+  assert.ok(detail.pressure972bVals.includes(1e-3));
+  assert.equal(detail.xVals[0], 1_199 * 60);
+  assert.equal(detail.xVals.at(-1), 2_201 * 60);
+
+  const bounded = getPressureGraphRangeSnapshot(graph, 0, (pointCount - 1) * 60, 100_000);
+  assert.ok(bounded.displayPointCount <= 2_048);
+  assert.ok(bounded.downsampleFactor > 1);
+  assert.equal(bounded.xVals[0], 0);
+  assert.equal(bounded.xVals.at(-1), (pointCount - 1) * 60);
+  assert.equal(getPressureGraphRangeSnapshot(graph, null, null, 2_048), null);
+});
+
 test('chart-data returns only bounded display data and density metadata', () => {
   const { logger } = createLogger();
   const shortEntries = buildShortTermEntries(2050);
-  const longEntries = buildLongTermEntries(6);
+  const longEntries = buildLongTermEntries(3000);
   applyShortTermEntries(shortEntries, { logger });
   applyLongTermEntries(longEntries, { logger });
 
@@ -1603,6 +1636,42 @@ test('chart-data returns only bounded display data and density metadata', () => 
   assert.deepEqual(longResponse.payload.pressure972bVals, longTermPressureGraph.displayYVals);
   assert.equal('pressure902bVals' in longResponse.payload, false);
   assert.equal('yVals' in longResponse.payload, false);
+
+  const detailResponse = createResponseRecorder();
+  chartRoute.handler({
+    query: {
+      view: 'long',
+      from: String(Date.parse(longEntries[500].recorded_at) / 1000),
+      to: String(Date.parse(longEntries[2000].recorded_at) / 1000),
+      maxPoints: '2048',
+    },
+  }, detailResponse);
+
+  assert.equal(detailResponse.payload.view, 'long');
+  assert.equal(detailResponse.payload.rangeRequested, true);
+  assert.equal(detailResponse.payload.downsampleFactor, 1);
+  assert.equal(detailResponse.payload.displayPointCount, 1503);
+  assert.equal(detailResponse.payload.rawPointCount, 1503);
+  assert.equal(detailResponse.payload.totalRawPointCount, 3000);
+  assert.equal(detailResponse.payload.sourceIntervalSeconds, 60);
+  assert.ok(detailResponse.payload.xVals.length > longResponse.payload.xVals.length);
+  assert.equal(
+    detailResponse.payload.xVals[1] - detailResponse.payload.xVals[0],
+    60
+  );
+  assert.equal('pressure902bVals' in detailResponse.payload, false);
+
+  const cappedDetailResponse = createResponseRecorder();
+  chartRoute.handler({
+    query: {
+      view: 'long',
+      from: String(Date.parse(longEntries[0].recorded_at) / 1000),
+      to: String(Date.parse(longEntries.at(-1).recorded_at) / 1000),
+      maxPoints: '100000',
+    },
+  }, cappedDetailResponse);
+  assert.ok(cappedDetailResponse.payload.xVals.length <= 2048);
+  assert.ok(cappedDetailResponse.payload.downsampleFactor > 1);
 });
 
 test('/data exposes the latest 902B pressure', () => {
@@ -1770,19 +1839,29 @@ test('dashboard HTML uses the recent-log viewer, pressure readings, and source-p
   assert.match(response.payload, /const MAX_BROWSER_PRESSURE_POINTS = 2048;/);
   assert.match(
     response.payload,
-    /if \(pressureChartRefreshInFlight\) return pressureChartRefreshInFlight;/
+    /if \(pressureChartRefreshInFlight\) \{\s*if \(pressureChartRefreshKey === requestKey\)/
   );
   assert.match(response.payload, /const REQUEST_TIMEOUT_MS = 10000;/);
   assert.match(
     response.payload,
-    /fetchJsonWithTimeout\('\/chart-data\?view=' \+ view\)/
+    /fetchJsonWithTimeout\(buildPressureChartUrl\(view, range\)\)/
   );
+  assert.match(response.payload, /const query = new URLSearchParams\(\{ view \}\);/);
+  assert.match(response.payload, /query\.set\('from', String\(range\[0\]\)\);/);
+  assert.match(response.payload, /query\.set\('maxPoints', String\(MAX_BROWSER_PRESSURE_POINTS\)\);/);
   assert.match(response.payload, /const generation = \+\+pressureSnapshotGeneration;/);
   assert.match(
     response.payload,
     /generation !== pressureSnapshotGeneration \|\|\s*view !== currentPressureView \|\|\s*chartData\.view !== view/
   );
   assert.match(response.payload, /replacePressureChartData\(chartData\);\s*return view;/);
+  assert.match(response.payload, /const PRESSURE_DETAIL_DEBOUNCE_MS = 200;/);
+  assert.match(response.payload, /schedulePressureDetailRefresh\(\);/);
+  assert.match(
+    response.payload,
+    /await refreshPressureChartData\(requestedView, requestedRange\);/
+  );
+  assert.match(response.payload, /pressureChartRefreshKey === requestKey/);
   assert.doesNotMatch(response.payload, /appendPressureRawData/);
   assert.match(response.payload, /const refreshedView = await refreshPressureChartData\(\);/);
   assert.match(response.payload, /hasRenderablePressureChartData\(\.\.\.rawPressureData\)/);

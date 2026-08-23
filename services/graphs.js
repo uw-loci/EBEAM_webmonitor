@@ -4,6 +4,7 @@
 // and trigger an unbounded allocation inside uPlot.
 const MIN_PLOTTABLE_PRESSURE_MBAR = 1e-15;
 const MAX_PLOTTABLE_PRESSURE_MBAR = 1e6;
+const MAX_PRESSURE_SNAPSHOT_POINTS = 2048;
 
 function createGraphObj(options = {}) {
   const maxDataPoints = options.maxDataPoints ?? 1000;
@@ -23,6 +24,7 @@ function createGraphObj(options = {}) {
     trimBatchSize: options.trimBatchSize ?? Math.max(1, Math.floor(maxDataPoints * 0.02)),
     maxDisplayPoints: options.maxDisplayPoints ?? 256,
     sourceResolutionLabel: options.sourceResolutionLabel || 'source data',
+    sourceIntervalSeconds: options.sourceIntervalSeconds ?? null,
     lastUsedFactor: options.lastUsedFactor ?? 1,
     lastPermanentIndex: options.lastPermanentIndex ?? -1,
     chartDataIntervalCount: options.chartDataIntervalCount ?? 0,
@@ -63,11 +65,13 @@ const shortTermPressureGraph = createGraphObj({
   maxTimeWindowSeconds: 24 * 60 * 60,
   maxDisplayPoints: 1024,
   sourceResolutionLabel: '~3s source data',
+  sourceIntervalSeconds: 3,
 });
 const longTermPressureGraph = createGraphObj({
   maxDataPoints: 100000,
-  maxDisplayPoints: 256,
+  maxDisplayPoints: 1024,
   sourceResolutionLabel: '1-min averaged source data',
+  sourceIntervalSeconds: 60,
 });
 
 function updateDisplayData(graph) {
@@ -218,9 +222,111 @@ function clearPressureGraph(graph) {
 function getGraphMetadata(graph) {
   return {
     rawPointCount: graph.fullXVals.length,
+    totalRawPointCount: graph.fullXVals.length,
     displayPointCount: graph.displayXVals.length,
     downsampleFactor: Math.max(1, graph.lastUsedFactor ?? 1),
     sourceResolutionLabel: graph.sourceResolutionLabel || 'source data',
+    sourceIntervalSeconds: Number(graph.sourceIntervalSeconds) || null,
+    cacheStartTime: graph.fullXVals[0] ?? null,
+    cacheEndTime: graph.fullXVals.at(-1) ?? null,
+  };
+}
+
+function findPressureTimestampIndex(xVals, target, findAfter = false, length = xVals.length) {
+  let low = 0;
+  let high = Math.min(xVals.length, length);
+
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (xVals[middle] < target || (findAfter && xVals[middle] === target)) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+
+  return low;
+}
+
+function getPressureGraphRangeSnapshot(graph, minimumTime, maximumTime, maximumPoints) {
+  const alignedLength = Math.min(
+    graph.fullXVals.length,
+    graph.fullYVals.length,
+    graph.fullPressure902bVals.length
+  );
+  const rangeMin = Number(minimumTime);
+  const rangeMax = Number(maximumTime);
+  const pointLimit = Math.min(
+    MAX_PRESSURE_SNAPSHOT_POINTS,
+    Math.max(2, Math.floor(Number(maximumPoints) || MAX_PRESSURE_SNAPSHOT_POINTS))
+  );
+
+  if (
+    alignedLength === 0 ||
+    !Number.isFinite(rangeMin) ||
+    !Number.isFinite(rangeMax) ||
+    rangeMax <= rangeMin
+  ) {
+    return null;
+  }
+
+  const firstVisibleIndex = findPressureTimestampIndex(
+    graph.fullXVals,
+    rangeMin,
+    false,
+    alignedLength
+  );
+  const afterVisibleIndex = findPressureTimestampIndex(
+    graph.fullXVals,
+    rangeMax,
+    true,
+    alignedLength
+  );
+  const startIndex = Math.max(0, firstVisibleIndex - 1);
+  const endIndex = Math.min(alignedLength, afterVisibleIndex + 1);
+  const rawPointCount = Math.max(0, endIndex - startIndex);
+
+  if (rawPointCount === 0) {
+    return {
+      xVals: [],
+      pressure972bVals: [],
+      pressure902bVals: [],
+      rawPointCount: 0,
+      totalRawPointCount: alignedLength,
+      displayPointCount: 0,
+      downsampleFactor: 1,
+      sourceResolutionLabel: graph.sourceResolutionLabel || 'source data',
+      sourceIntervalSeconds: Number(graph.sourceIntervalSeconds) || null,
+      cacheStartTime: graph.fullXVals[0] ?? null,
+      cacheEndTime: graph.fullXVals[alignedLength - 1] ?? null,
+      rangeStartTime: rangeMin,
+      rangeEndTime: rangeMax,
+      rangeRequested: true,
+    };
+  }
+
+  const indexes = rawPointCount <= pointLimit
+    ? Array.from({ length: rawPointCount }, (_value, index) => startIndex + index)
+    : Array.from({ length: pointLimit }, (_value, index) => (
+        startIndex + Math.round(index * (rawPointCount - 1) / (pointLimit - 1))
+      ));
+  const downsampleFactor = Math.max(1, Math.ceil(rawPointCount / indexes.length));
+
+  return {
+    xVals: indexes.map((index) => graph.fullXVals[index]),
+    pressure972bVals: indexes.map((index) => graph.fullYVals[index]),
+    pressure902bVals: indexes.map((index) => graph.fullPressure902bVals[index]),
+    rawPointCount,
+    totalRawPointCount: alignedLength,
+    displayPointCount: indexes.length,
+    downsampleFactor,
+    sourceResolutionLabel: graph.sourceResolutionLabel || 'source data',
+    sourceIntervalSeconds: Number(graph.sourceIntervalSeconds) || null,
+    cacheStartTime: graph.fullXVals[0] ?? null,
+    cacheEndTime: graph.fullXVals[alignedLength - 1] ?? null,
+    rangeStartTime: rangeMin,
+    rangeEndTime: rangeMax,
+    rangeRequested: true,
   };
 }
 
@@ -257,6 +363,7 @@ const ccsGraphC = createCCSGraphObj();
 module.exports = {
   MIN_PLOTTABLE_PRESSURE_MBAR,
   MAX_PLOTTABLE_PRESSURE_MBAR,
+  MAX_PRESSURE_SNAPSHOT_POINTS,
   createGraphObj,
   parsePressureForLogScale,
   resetPressureGraphDisplayState,
@@ -265,6 +372,7 @@ module.exports = {
   appendPressurePoint,
   clearPressureGraph,
   getGraphMetadata,
+  getPressureGraphRangeSnapshot,
   shortTermPressureGraph,
   longTermPressureGraph,
   addCCSPoint,

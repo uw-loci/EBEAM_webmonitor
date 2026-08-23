@@ -1546,10 +1546,20 @@ function renderDashboard(opts) {
         let pressureDisplayData972b = ${JSON.stringify(initialShortTermPressureData.pressure972bVals)};
         let pressureDisplayData902b = ${JSON.stringify(initialShortTermPressureData.pressure902bVals)};
         let pressureChartMeta = ${JSON.stringify(shortTermChartMeta)};
+        let pressureAvailableExtent = [
+          Number.isFinite(pressureChartMeta.cacheStartTime)
+            ? pressureChartMeta.cacheStartTime
+            : null,
+          Number.isFinite(pressureChartMeta.cacheEndTime)
+            ? pressureChartMeta.cacheEndTime
+            : null,
+        ];
         let pressureViewportNow = Date.now() / 1000;
         let pressureMinimumXSpan = getMinimumPressureXSpan(pressureDisplayDataX);
         let pressureViewportRenderFrame = null;
         let pressureChartRefreshInFlight = null;
+        let pressureChartRefreshKey = null;
+        let pressureDetailRefreshTimer = null;
         let pressureSnapshotGeneration = 0;
         let pressureChart = null;
         let pressureChartInitialized = false;
@@ -1559,6 +1569,7 @@ function renderDashboard(opts) {
         let applyingPressureViewport = false;
         let lastLongTermPollAt = Date.now();
         const LONG_TERM_POLL_INTERVAL_MS = 60_000;
+        const PRESSURE_DETAIL_DEBOUNCE_MS = 200;
 
         const pressureChartRoot = document.getElementById('chart-root-3');
         const pressureViewToggle = document.getElementById('pressure-view-toggle');
@@ -1571,6 +1582,15 @@ function renderDashboard(opts) {
         const pressureResetView = document.getElementById('pressure-reset-view');
 
         function getPressureDataExtent() {
+          const [availableMin, availableMax] = pressureAvailableExtent;
+          if (Number.isFinite(availableMin) && Number.isFinite(availableMax)) {
+            return [
+              availableMin,
+              Number.isFinite(pressureViewportNow)
+                ? Math.max(availableMax, pressureViewportNow)
+                : availableMax,
+            ];
+          }
           return getPressureTimeWindowBounds(pressureDisplayDataX, null, pressureViewportNow);
         }
 
@@ -1624,6 +1644,7 @@ function renderDashboard(opts) {
           pressureCustomRange = [min, max];
           updatePressureChartViewText();
           schedulePressureViewportRender();
+          schedulePressureDetailRefresh();
         }
 
         function getMinimumPressureXSpan(xVals) {
@@ -2174,19 +2195,66 @@ function renderDashboard(opts) {
           pressureDisplayDataX = normalized.xVals;
           pressureDisplayData972b = normalized.pressure972bVals;
           pressureDisplayData902b = normalized.pressure902bVals;
+          const cacheStartTime = chartData.cacheStartTime === null
+            ? null
+            : Number(chartData.cacheStartTime);
+          const cacheEndTime = chartData.cacheEndTime === null
+            ? null
+            : Number(chartData.cacheEndTime);
+          if (
+            Number.isFinite(cacheStartTime) &&
+            Number.isFinite(cacheEndTime) &&
+            cacheEndTime >= cacheStartTime
+          ) {
+            pressureAvailableExtent = [cacheStartTime, cacheEndTime];
+          } else if (normalized.xVals.length > 0 && !chartData.rangeRequested) {
+            pressureAvailableExtent = [normalized.xVals[0], normalized.xVals.at(-1)];
+          }
           pressureChartMeta = {
             rawPointCount: Number(chartData.rawPointCount) || normalized.xVals.length,
+            totalRawPointCount: Number(chartData.totalRawPointCount) ||
+              Number(chartData.rawPointCount) || normalized.xVals.length,
             displayPointCount: normalized.xVals.length,
             downsampleFactor: Math.max(1, Number(chartData.downsampleFactor) || 1),
             sourceResolutionLabel: chartData.sourceResolutionLabel || 'source data',
+            sourceIntervalSeconds: Number(chartData.sourceIntervalSeconds) || null,
+            rangeRequested: chartData.rangeRequested === true,
           };
-          pressureMinimumXSpan = getMinimumPressureXSpan(pressureDisplayDataX);
+          pressureMinimumXSpan = Number(chartData.sourceIntervalSeconds) > 0
+            ? Number(chartData.sourceIntervalSeconds)
+            : getMinimumPressureXSpan(pressureDisplayDataX);
           renderPressureViewport();
         }
 
-        async function loadPressureChartSnapshot(view = currentPressureView) {
+        function getPressureRequestRange(view) {
+          if (view !== currentPressureView) return null;
+          if (pressureViewportKind === 'custom' && Array.isArray(pressureCustomRange)) {
+            return [...pressureCustomRange];
+          }
+          if (view === 'short') {
+            return resolvePressureViewport();
+          }
+          return null;
+        }
+
+        function buildPressureChartUrl(view, range) {
+          const query = new URLSearchParams({ view });
+          if (
+            Array.isArray(range) &&
+            Number.isFinite(range[0]) &&
+            Number.isFinite(range[1]) &&
+            range[1] > range[0]
+          ) {
+            query.set('from', String(range[0]));
+            query.set('to', String(range[1]));
+            query.set('maxPoints', String(MAX_BROWSER_PRESSURE_POINTS));
+          }
+          return '/chart-data?' + query.toString();
+        }
+
+        async function loadPressureChartSnapshot(view = currentPressureView, range = null) {
           const generation = ++pressureSnapshotGeneration;
-          const chartData = await fetchJsonWithTimeout('/chart-data?view=' + view);
+          const chartData = await fetchJsonWithTimeout(buildPressureChartUrl(view, range));
           if (
             generation !== pressureSnapshotGeneration ||
             view !== currentPressureView ||
@@ -2196,17 +2264,59 @@ function renderDashboard(opts) {
           return view;
         }
 
-        async function refreshPressureChartData(view = currentPressureView) {
-          if (pressureChartRefreshInFlight) return pressureChartRefreshInFlight;
-          const request = loadPressureChartSnapshot(view);
+        async function refreshPressureChartData(view = currentPressureView, range = undefined) {
+          const requestedRange = range === undefined
+            ? getPressureRequestRange(view)
+            : range;
+          const requestKey = buildPressureChartUrl(view, requestedRange);
+          if (pressureChartRefreshInFlight) {
+            if (pressureChartRefreshKey === requestKey) {
+              return pressureChartRefreshInFlight;
+            }
+            await pressureChartRefreshInFlight.catch(() => null);
+            return refreshPressureChartData(view, requestedRange);
+          }
+          const request = loadPressureChartSnapshot(view, requestedRange);
           pressureChartRefreshInFlight = request;
+          pressureChartRefreshKey = requestKey;
           try {
             return await request;
           } finally {
             if (pressureChartRefreshInFlight === request) {
               pressureChartRefreshInFlight = null;
+              pressureChartRefreshKey = null;
             }
           }
+        }
+
+        function schedulePressureDetailRefresh() {
+          if (pressureDetailRefreshTimer !== null) {
+            clearTimeout(pressureDetailRefreshTimer);
+          }
+          if (pressureViewportKind !== 'custom' || !Array.isArray(pressureCustomRange)) {
+            pressureDetailRefreshTimer = null;
+            return;
+          }
+
+          const requestedView = currentPressureView;
+          const requestedRange = [...pressureCustomRange];
+          pressureDetailRefreshTimer = setTimeout(async () => {
+            pressureDetailRefreshTimer = null;
+            if (
+              requestedView !== currentPressureView ||
+              pressureViewportKind !== 'custom' ||
+              !Array.isArray(pressureCustomRange) ||
+              pressureCustomRange[0] !== requestedRange[0] ||
+              pressureCustomRange[1] !== requestedRange[1]
+            ) {
+              return;
+            }
+            try {
+              await refreshPressureChartData(requestedView, requestedRange);
+            } catch (error) {
+              console.error('Failed to load detailed pressure data:', error);
+            }
+          }, PRESSURE_DETAIL_DEBOUNCE_MS);
         }
 
         function updatePressureChartViewText() {
@@ -2264,9 +2374,16 @@ function renderDashboard(opts) {
         }
 
         function resetPressureViewport() {
+          if (pressureDetailRefreshTimer !== null) {
+            clearTimeout(pressureDetailRefreshTimer);
+            pressureDetailRefreshTimer = null;
+          }
           pressureCustomRange = null;
           pressureViewportKind = currentPressureView === 'short' ? 'preset' : 'all';
-          renderPressureViewport();
+          refreshPressureChartData().catch((error) => {
+            console.error('Failed to reset pressure view:', error);
+            renderPressureViewport();
+          });
         }
 
         pressureViewToggle.addEventListener('click', async () => {
@@ -2277,6 +2394,10 @@ function renderDashboard(opts) {
           pressureViewToggle.disabled = true;
 
           try {
+            if (pressureDetailRefreshTimer !== null) {
+              clearTimeout(pressureDetailRefreshTimer);
+              pressureDetailRefreshTimer = null;
+            }
             currentPressureView = nextPressureView;
             pressureCustomRange = null;
             pressureViewportKind = currentPressureView === 'short' ? 'preset' : 'all';
@@ -2303,7 +2424,10 @@ function renderDashboard(opts) {
           selectedLiveHours = Number(pressureTimeRange.value);
           pressureCustomRange = null;
           pressureViewportKind = 'preset';
-          renderPressureViewport();
+          refreshPressureChartData().catch((error) => {
+            console.error('Failed to change pressure time range:', error);
+            renderPressureViewport();
+          });
         });
 
         pressureZoomMode.addEventListener('click', () => setPressureInteractionMode('zoom'));

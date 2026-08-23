@@ -18,6 +18,7 @@ const { renderSystemHealthPage } = require('./views/systemHealth');
 const codeLastUpdated = new Date().toLocaleString('en-US', {
   timeZone: 'America/Chicago'
 });
+const HEALTH_DB_TIMEOUT_MS = 2_500;
 
 function getMemoryUsageMb() {
   const memory = process.memoryUsage();
@@ -36,6 +37,25 @@ function getMemoryLimitMb() {
   return Number.isFinite(configuredLimit) && configuredLimit > 0
     ? configuredLimit
     : 512;
+}
+
+async function getSupabaseStatus(timeoutMs = HEALTH_DB_TIMEOUT_MS) {
+  let timeoutId;
+  const timeout = new Promise((resolve) => {
+    timeoutId = setTimeout(() => resolve('timeout'), timeoutMs);
+  });
+  const query = Promise.resolve(
+    supabase.from('short_term_logs').select('count').limit(1)
+  ).then(
+    ({ error }) => error ? 'disconnected' : 'connected',
+    () => 'disconnected'
+  );
+
+  try {
+    return await Promise.race([query, timeout]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function registerRoutes(app) {
@@ -137,14 +157,12 @@ function registerRoutes(app) {
   // Health check endpoint
   app.get('/health', async (req, res) => {
     try {
-      const { data, error } = await supabase
-        .from('short_term_logs')
-        .select('count')
-        .limit(1);
+      const supabaseStatus = await getSupabaseStatus();
 
       res.json({
         status: 'ok',
-        supabase: error ? 'disconnected' : 'connected',
+        supabase: supabaseStatus,
+        startup: { ...state.startup },
         experimentRunning: state.experimentRunning,
         lastUpdate: state.webMonitorLastModified,
         sampledAt: new Date().toISOString(),

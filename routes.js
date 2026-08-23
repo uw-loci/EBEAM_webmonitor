@@ -193,31 +193,6 @@ function registerRoutes(app) {
     const view = req.query.view === 'long' ? 'long' : 'short';
     const graph = view === 'long' ? longTermPressureGraph : shortTermPressureGraph;
 
-    if (req.query.raw === '1') {
-      const cursor = Number(req.query.cursor);
-      const cacheStartIndex = graph.nextPointIndex - graph.fullXVals.length;
-      const isDeltaRequest = Number.isInteger(cursor);
-      if (isDeltaRequest && (cursor < cacheStartIndex || cursor > graph.nextPointIndex)) {
-        return res.json({ view, resetRequired: true });
-      }
-
-      const sliceIndex = isDeltaRequest ? cursor - cacheStartIndex : 0;
-
-      return res.json({
-        view,
-        resetRequired: false,
-        xVals: graph.fullXVals.slice(sliceIndex),
-        pressure972bVals: graph.fullYVals.slice(sliceIndex),
-        ...(view === 'short' && {
-          pressure902bVals: graph.fullPressure902bVals.slice(sliceIndex),
-        }),
-        cursor: graph.nextPointIndex,
-        cacheStartIndex,
-        maxDataPoints: graph.maxDataPoints,
-        sourceResolutionLabel: graph.sourceResolutionLabel,
-      });
-    }
-
     res.json({
       view,
       xVals: graph.displayXVals,

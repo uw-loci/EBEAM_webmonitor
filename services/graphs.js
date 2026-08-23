@@ -1,3 +1,10 @@
+// Values outside this deliberately broad physical range are not meaningful
+// pressure readings for this monitor. In particular, JavaScript subnormal
+// values such as 5e-324 can make a logarithmic chart axis underflow to zero
+// and trigger an unbounded allocation inside uPlot.
+const MIN_PLOTTABLE_PRESSURE_MBAR = 1e-15;
+const MAX_PLOTTABLE_PRESSURE_MBAR = 1e6;
+
 function createGraphObj(options = {}) {
   const maxDataPoints = options.maxDataPoints ?? 1000;
   const fullXVals = options.fullXVals || [];
@@ -34,7 +41,11 @@ function parsePressureForLogScale(value) {
     return null;
   }
   const pressure = Number(value);
-  return Number.isFinite(pressure) && pressure > 0 ? pressure : null;
+  return (
+    Number.isFinite(pressure) &&
+    pressure >= MIN_PLOTTABLE_PRESSURE_MBAR &&
+    pressure <= MAX_PLOTTABLE_PRESSURE_MBAR
+  ) ? pressure : null;
 }
 
 function resetPressureGraphDisplayState(graph) {
@@ -244,6 +255,8 @@ const ccsGraphB = createCCSGraphObj();
 const ccsGraphC = createCCSGraphObj();
 
 module.exports = {
+  MIN_PLOTTABLE_PRESSURE_MBAR,
+  MAX_PLOTTABLE_PRESSURE_MBAR,
   createGraphObj,
   parsePressureForLogScale,
   resetPressureGraphDisplayState,

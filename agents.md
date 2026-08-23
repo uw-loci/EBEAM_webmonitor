@@ -13,19 +13,19 @@
 - `PORT` — default 3000
 - `EXPERIMENT_RESET_PASSWORD` — optional; POST /experiment-reset returns 503 if absent
 
-## Startup sequence (`index.js`) — port opens only after all caches warm
-1. backfill short-term pressure cache — last 24h from `short_term_logs`
-2. backfill long-term pressure cache — from `long_term_logs`, capped at `longTermPressureGraph.maxDataPoints` (100000 rows)
-3. backfill CCS ring buffers — last 1h from `short_term_logs`
-4. `fetchAndUpdateFile()` — scalar state + short-term sync
-5. `refreshDisplayLogs()` — Google Drive fetch → `reversed.txt`
-6. polling intervals: `fetchAndUpdateFile` every 3s, `pollLongTerm` every 60s, `refreshDisplayLogs` every 60s
-7. `app.listen(PORT)`
+## Startup sequence (`index.js`) — port opens before remote cache warmup
+1. `app.listen(PORT)` — Render health + dashboard reachable during warmup
+2. backfill short-term pressure cache — last 24h from `short_term_logs`
+3. backfill long-term pressure cache — from `long_term_logs`, capped at `longTermPressureGraph.maxDataPoints` (100000 rows)
+4. backfill CCS ring buffers — last 1h from `short_term_logs`
+5. `fetchAndUpdateFile()` — scalar state + short-term sync
+6. `refreshDisplayLogs()` — Google Drive fetch → `reversed.txt`
+7. polling intervals: `fetchAndUpdateFile` every 3s, `pollLongTerm` every 60s, `refreshDisplayLogs` every 60s
 
 ## Routes (`routes.js`)
 - `GET /` — SSR HTML; chart data inlined as JSON literals at page load
 - `GET /data` — JSON scalars + backend `experimentRunning` + 902B pressure + beam-energy output booleans + `sicColors[11]` + `vacuumColors[8]`; client polls 3s after prior poll completion
-- `GET /chart-data?view=short|long` — `xVals` + `pressure972bVals`; short view also `pressure902bVals`; graph metadata
+- `GET /chart-data?view=short|long` — bounded display arrays only; max 1024 short / 256 long; short view also `pressure902bVals`; graph metadata; legacy raw/cursor params ignored
 - `GET /ccs-chart-data` — CCS ring buffer arrays A/B/C
 - `GET /health` — live Supabase ping + `experimentRunning`
 - `GET /raw` — serves `reversed.txt` as `text/plain`
@@ -57,10 +57,10 @@
 - Display: `America/Chicago` timezone
 
 ## Pressure chart
-- Y-axis: base-10 logarithmic (`distr: 3`, `log: 10`) — short + historical views
+- Y-axis: sanitized pressures are transformed to base-10 exponents and plotted on a bounded linear uPlot scale; labels convert back to mbar. This preserves logarithmic spacing without invoking uPlot's native logarithmic tick allocator.
 - Live series: 972B cyan `#38bdf8`; 902B indigo `#818cf8`; solid, independently toggleable
 - Historical series: 972B only
-- values: finite `> 0`; missing/nonpositive/invalid → aligned `null` gaps; no carry-forward
+- values: finite `1e-15..1e6`; missing/out-of-range/invalid → aligned `null` gaps; no carry-forward
 - labels: scientific notation; axis identifies `log10`
 - range: visible positive minimum lower padding >= 0.5 decade; Y auto-range per X viewport
 - grid: max 10 exact log mantissas; decades (`1`) first, then `2`, `3`, `5`, `7`, `9`
@@ -69,7 +69,9 @@
 - historical: all-time default ends at current server time; manual Custom range
 - viewport-now: X-range only; no synthetic points; absolute-index downsampling unchanged
 - dashboard polling: self-scheduled after completion; 10s request timeout
-- pressure raw polling: one delta request in flight; 30s snapshots; latest snapshot generation wins
+- pressure display polling: bounded snapshot; one request in flight; initial/poll/toggle shared; max 2048 client points
+- empty pressure state: no uPlot construction/update; finite fallback exponent range; pressure-only placeholder
+- chart failure: pressure-only fuse; dashboard + CCS polling continue
 
 ## CCS charts
 - X window: moving 1h ending at current server time; independent of temperature-point availability

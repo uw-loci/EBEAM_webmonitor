@@ -11,12 +11,53 @@ const {
   ccsGraphC,
   clearPressureGraph,
   getGraphMetadata,
+  getPressureGraphRangeSnapshot,
 } = require('./services/graphs');
 const { renderDashboard } = require('./views/dashboard');
+const { renderSystemHealthPage } = require('./views/systemHealth');
 
 const codeLastUpdated = new Date().toLocaleString('en-US', {
   timeZone: 'America/Chicago'
 });
+const HEALTH_DB_TIMEOUT_MS = 2_500;
+
+function getMemoryUsageMb() {
+  const memory = process.memoryUsage();
+  const toMb = (bytes) => Math.round((bytes / (1024 * 1024)) * 10) / 10;
+
+  return {
+    rss: toMb(memory.rss),
+    heapUsed: toMb(memory.heapUsed),
+    heapTotal: toMb(memory.heapTotal),
+    external: toMb(memory.external),
+  };
+}
+
+function getMemoryLimitMb() {
+  const configuredLimit = Number(process.env.RENDER_MEMORY_LIMIT_MB);
+  return Number.isFinite(configuredLimit) && configuredLimit > 0
+    ? configuredLimit
+    : 512;
+}
+
+async function getSupabaseStatus(timeoutMs = HEALTH_DB_TIMEOUT_MS) {
+  let timeoutId;
+  const timeout = new Promise((resolve) => {
+    timeoutId = setTimeout(() => resolve('timeout'), timeoutMs);
+  });
+  const query = Promise.resolve(
+    supabase.from('short_term_logs').select('count').limit(1)
+  ).then(
+    ({ error }) => error ? 'disconnected' : 'connected',
+    () => 'disconnected'
+  );
+
+  try {
+    return await Promise.race([query, timeout]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 function registerRoutes(app) {
 
@@ -110,19 +151,35 @@ function registerRoutes(app) {
     res.status(200).send('Refreshed display logs');
   });
 
+  app.get('/system-health', (req, res) => {
+    res.send(renderSystemHealthPage({ memoryLimitMb: getMemoryLimitMb() }));
+  });
+
   // Health check endpoint
   app.get('/health', async (req, res) => {
     try {
-      const { data, error } = await supabase
-        .from('short_term_logs')
-        .select('count')
-        .limit(1);
+      const supabaseStatus = await getSupabaseStatus();
 
       res.json({
         status: 'ok',
-        supabase: error ? 'disconnected' : 'connected',
+        supabase: supabaseStatus,
+        startup: { ...state.startup },
         experimentRunning: state.experimentRunning,
-        lastUpdate: state.webMonitorLastModified
+        lastUpdate: state.webMonitorLastModified,
+        sampledAt: new Date().toISOString(),
+        uptimeSeconds: Math.round(process.uptime()),
+        memoryLimitMb: getMemoryLimitMb(),
+        memoryMb: getMemoryUsageMb(),
+        cachePoints: {
+          shortTermPressure: shortTermPressureGraph.fullXVals.length,
+          longTermPressure: longTermPressureGraph.fullXVals.length,
+          ccsPerChannel: ccsGraphA.xVals.length,
+        },
+        cacheLimits: {
+          shortTermPressure: shortTermPressureGraph.maxDataPoints,
+          longTermPressure: longTermPressureGraph.maxDataPoints,
+          ccsPerChannel: ccsGraphA.maxPoints,
+        },
       });
     } catch (err) {
       res.status(500).json({
@@ -136,33 +193,36 @@ function registerRoutes(app) {
   app.get('/chart-data', (req, res) => {
     const view = req.query.view === 'long' ? 'long' : 'short';
     const graph = view === 'long' ? longTermPressureGraph : shortTermPressureGraph;
+    const rangeSnapshot = getPressureGraphRangeSnapshot(
+      graph,
+      req.query.from,
+      req.query.to,
+      req.query.maxPoints
+    );
 
-    if (req.query.raw === '1') {
-      const cursor = Number(req.query.cursor);
-      const cacheStartIndex = graph.nextPointIndex - graph.fullXVals.length;
-      const isDeltaRequest = Number.isInteger(cursor);
-      if (isDeltaRequest && (cursor < cacheStartIndex || cursor > graph.nextPointIndex)) {
-        return res.json({ view, resetRequired: true });
-      }
-
-      const sliceIndex = isDeltaRequest ? cursor - cacheStartIndex : 0;
-
+    if (rangeSnapshot) {
       return res.json({
         view,
-        resetRequired: false,
-        xVals: graph.fullXVals.slice(sliceIndex),
-        pressure972bVals: graph.fullYVals.slice(sliceIndex),
+        xVals: rangeSnapshot.xVals,
+        pressure972bVals: rangeSnapshot.pressure972bVals,
         ...(view === 'short' && {
-          pressure902bVals: graph.fullPressure902bVals.slice(sliceIndex),
+          pressure902bVals: rangeSnapshot.pressure902bVals,
         }),
-        cursor: graph.nextPointIndex,
-        cacheStartIndex,
-        maxDataPoints: graph.maxDataPoints,
-        sourceResolutionLabel: graph.sourceResolutionLabel,
+        rawPointCount: rangeSnapshot.rawPointCount,
+        totalRawPointCount: rangeSnapshot.totalRawPointCount,
+        displayPointCount: rangeSnapshot.displayPointCount,
+        downsampleFactor: rangeSnapshot.downsampleFactor,
+        sourceResolutionLabel: rangeSnapshot.sourceResolutionLabel,
+        sourceIntervalSeconds: rangeSnapshot.sourceIntervalSeconds,
+        cacheStartTime: rangeSnapshot.cacheStartTime,
+        cacheEndTime: rangeSnapshot.cacheEndTime,
+        rangeStartTime: rangeSnapshot.rangeStartTime,
+        rangeEndTime: rangeSnapshot.rangeEndTime,
+        rangeRequested: true,
       });
     }
 
-    res.json({
+    return res.json({
       view,
       xVals: graph.displayXVals,
       pressure972bVals: graph.displayYVals,

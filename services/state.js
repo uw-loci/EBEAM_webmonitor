@@ -13,6 +13,12 @@ const state = {
   sampleDataLines: [],
   timestamps: [],
   extractLines: [],
+  startup: {
+    status: 'starting',
+    startedAt: new Date().toISOString(),
+    completedAt: null,
+    error: null,
+  },
 
   // Base status used for sample data generation
   baseStatus: {

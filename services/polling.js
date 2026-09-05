@@ -4,8 +4,8 @@ const {
   mapSupabaseDataToAppFormat,
   resetData,
   fetchLatestShortTermEntry,
-  fetchShortTermEntriesSince,
-  fetchLongTermEntriesSince,
+  drainShortTermEntriesSince,
+  drainLongTermEntriesSince,
 } = require('./supabase');
 const { fetchDisplayFileContents } = require('./gdrive');
 const {
@@ -117,6 +117,24 @@ function logBatchSummary(logger, label, summary) {
   );
 }
 
+function createCombinedSummary(lastTimestamp) {
+  return {
+    batchSize: 0,
+    appendedCount: 0,
+    skippedCount: 0,
+    firstTimestamp: null,
+    lastTimestamp,
+  };
+}
+
+function mergeSummary(combined, pageSummary) {
+  combined.batchSize += pageSummary.batchSize;
+  combined.appendedCount += pageSummary.appendedCount;
+  combined.skippedCount += pageSummary.skippedCount;
+  combined.firstTimestamp ??= pageSummary.firstTimestamp;
+  combined.lastTimestamp = pageSummary.lastTimestamp;
+}
+
 function applyShortTermEntries(entries, options = {}) {
   const {
     stateRef = state,
@@ -172,14 +190,18 @@ function applyShortTermEntries(entries, options = {}) {
     ccsPointAdder(ccsB, ccsTimestampSec, entry.data?.cathode?.B?.clamp_temperature ?? null);
     ccsPointAdder(ccsC, ccsTimestampSec, entry.data?.cathode?.C?.clamp_temperature ?? null);
 
-    pressurePointAppender(
+    const pressurePointAppended = pressurePointAppender(
       graph,
       tSec,
       parsePressureForLogScale(entry.data?.pressure),
       parsePressureForLogScale(entry.data?.pressure_902b_mbar)
     );
 
-    summary.appendedCount++;
+    if (pressurePointAppended === false) {
+      summary.skippedCount++;
+    } else {
+      summary.appendedCount++;
+    }
     stateRef.lastShortTermCursor = entryCursor;
     previousTimestamp = entryTimestamp;
     previousMs = entryMs;
@@ -251,9 +273,12 @@ function applyLongTermEntries(entries, options = {}) {
     }
 
     const tSec = entryMs / 1000;
-    pressurePointAppender(graph, tSec, pressure);
-
-    summary.appendedCount++;
+    const pressurePointAppended = pressurePointAppender(graph, tSec, pressure);
+    if (pressurePointAppended === false) {
+      summary.skippedCount++;
+    } else {
+      summary.appendedCount++;
+    }
     stateRef.lastLongTermCursor = entryCursor;
     previousTimestamp = entryTimestamp;
     previousMs = entryMs;
@@ -269,8 +294,11 @@ function applyLongTermEntries(entries, options = {}) {
  */
 async function pollShortTerm() {
   try {
-    const entries = await fetchShortTermEntriesSince(state.lastShortTermCursor);
-    return applyShortTermEntries(entries);
+    const summary = createCombinedSummary(getCursorTimestamp(state.lastShortTermCursor));
+    await drainShortTermEntriesSince(state.lastShortTermCursor, async (entries) => {
+      mergeSummary(summary, applyShortTermEntries(entries));
+    });
+    return summary;
   } catch (err) {
     console.error('Error in pollShortTerm:', err);
     return null;
@@ -289,8 +317,11 @@ async function pollLongTerm() {
   longTermSyncInProgress = true;
 
   try {
-    const entries = await fetchLongTermEntriesSince(state.lastLongTermCursor);
-    return applyLongTermEntries(entries);
+    const summary = createCombinedSummary(getCursorTimestamp(state.lastLongTermCursor));
+    await drainLongTermEntriesSince(state.lastLongTermCursor, async (entries) => {
+      mergeSummary(summary, applyLongTermEntries(entries));
+    });
+    return summary;
   } catch (err) {
     console.error('Error in pollLongTerm:', err);
     return null;

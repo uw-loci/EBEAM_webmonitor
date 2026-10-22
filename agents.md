@@ -3,6 +3,7 @@
 > RULE: When making changes, update the corresponding agents.md files using the same style (fragments, key-value, no sentences).
 
 ## Commands
+- runtime: Node.js `24.22.1` (`.node-version`, `package.json`, root `package-lock.json` engines)
 - run: `npm start` (`node index.js`)
 - test: `npm test` (`node --test`)
 - no build step
@@ -102,6 +103,10 @@
 
 ## Deploy
 - Render.com, `render.yaml`, auto-deploy from `main`
+- Release path: runtime-update PR -> `develop` -> separate `develop`-to-`main` PR
+- Node.js: `NODE_VERSION=24.22.1` in `render.yaml`; dashboard override takes precedence over repo version files
+- Runtime updates: rebuild deploy, verify `24.22.1` in build log; restart alone reuses existing build
+- Defer deployment: no merge to Render's deployed branch until ready; environment edits via Save only
 - `reversed.txt` written to project root at runtime — ephemeral on Render (re-fetched on restart)
 - Live: ebeam-webmonitor.onrender.com
 

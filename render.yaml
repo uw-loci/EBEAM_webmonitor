@@ -8,7 +8,9 @@ services:
     buildCommand: "npm install"
     startCommand: "npm start"
     plan: free
-    # Optionally, you can set environment variables for your app here:
-    # envVars:
+    envVars:
+      - key: NODE_VERSION
+        value: "24.22.1"
+    # Optionally, add app environment variables to envVars above:
     #   - key: FILE_URL
     #     value: "https://drive.google.com/uc?export=download&id=YOUR_FILE_ID_HERE"

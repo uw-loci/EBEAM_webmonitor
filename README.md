@@ -15,7 +15,7 @@ If you need to change the web monitor branch that Render deploys:
 ## Setup
 
 ### Prerequisites
-- Node.js (v20+)
+- Node.js 24.22.1 (pinned in `.node-version` and `package.json`)
 - A Supabase project with the `short_term_logs` and `long_term_logs` tables
 - A Google Cloud API key with Drive API enabled
 - A Google Drive folder containing the system log files
@@ -107,15 +107,15 @@ Express routes:
 - `/data` serves current scalar values, Beam Energy power-supply readings, and computed colors
 - `/chart-data` serves the selected pressure graph plus density metadata
 - `/ccs-chart-data` serves the three CCS clamp-temperature series
-- `/health`, `/raw`, `/refresh-display`, and `/experiment-reset` expose operational controls
+- `/system-health`, `/health`, `/raw`, `/refresh-display`, and `/experiment-reset` expose operational controls
 ```
 
 The startup sequence in `index.js` warms the pressure caches, CCS caches, and display-log cache before calling `app.listen()`, so the first page load has data ready instead of starting cold.
 
 The browser then:
-- polls `/data` every 3 seconds for scalar values, status badges, and Beam Energy power-supply cards
-- polls `/chart-data` for the active pressure view
-- polls `/ccs-chart-data` for the three clamp-temperature charts
+- starts each dashboard poll 3 seconds after the previous poll finishes, preventing overlapping requests
+- applies a 10-second timeout to `/data`, pressure deltas, and `/ccs-chart-data`
+- applies a 30-second timeout and latest-generation check to full pressure snapshots
 - fetches `/raw` only when the full log viewer is expanded
 
 ## Project Structure
@@ -156,7 +156,7 @@ The branch no longer treats polling as "grab the latest row and append it if the
 
 ### Deterministic pagination across tied timestamps
 
-`services/supabase.js` fetches rows in pages of 1000 and applies the cursor after querying. This preserves ordering even when a page boundary lands inside a block of rows that share the same timestamp, which is one of the main changes in this branch.
+`services/supabase.js` fetches rows in pages of 1000 and applies the cursor after querying. This preserves ordering even when a page boundary lands inside a block of rows that share the same timestamp. Catch-up polling consumes each page immediately instead of retaining the complete missed-data batch in memory, and startup pressure backfills keep only their configured graph capacity.
 
 ### Gap detection and overlap guards
 
@@ -168,15 +168,19 @@ The dashboard treats the experiment as inactive when the newest short-term row i
 
 ### Pressure graph density
 
-The server keeps the full in-memory pressure arrays separately from the display arrays sent to the browser. Short-term pressure data keeps a denser live view (`maxDisplayPoints: 1024`) because it represents recent ~3 second data over the last 24 hours, while the long-term historical view stays capped at a lower display density (`maxDisplayPoints: 256`) because it already uses 1-minute averaged source data.
+The server keeps full in-memory pressure arrays separately from the display arrays sent to the browser. Live data uses one fractional-Unix-second X array with independently nullable, index-aligned 972B and 902B arrays. Rows remain present when either or both readings are invalid so sensor outages render as gaps. Short-term pressure keeps a denser view (`maxDisplayPoints: 1024`) because it represents recent ~3 second data over the last 24 hours, while Historical stays 972B-only and capped at a lower display density (`maxDisplayPoints: 256`) because it already uses 1-minute averaged source data.
 
 When a pressure graph would exceed its display cap, the server re-samples older points using a larger power-of-two stride while still keeping the newest point visible. That lets the UI stay responsive without hiding the latest reading, and it applies to both pressure views even though they use different source resolutions and display limits.
 
-`/chart-data` now returns both the plotted points and graph metadata such as `rawPointCount`, `displayPointCount`, `downsampleFactor`, and `sourceResolutionLabel`, allowing the UI to explain what the chart is showing.
+Both pressure views use a shared base-10 logarithmic Y axis so atmospheric pressure and turbo-pump readings near `1e-6` mbar remain visible in the same chart. Live View shows solid, independently toggleable 972B and 902B series; Historical shows 972B only. Tick and hover values stay in scientific notation, while missing, zero, negative, or otherwise invalid values render as gaps. The visible Y range automatically follows the current X viewport and leaves at least half a decade below its lowest valid reading. The axis shows no more than ten exact ticks, prioritizing decade values (`1.00e±n`) before the `2`, `3`, `5`, `7`, and `9` mantissas.
+
+The pressure toolbar defaults to **Zoom** mode, where dragging selects an X range. **Pan** mode moves the visible range, wheel/trackpad input zooms around the pointer, touch supports pinch zoom, and **Reset** or a double-click restores the applicable default. Drag, wheel, and pinch zooming enforce a minimum 10-second X-axis window. Live View includes `1h`, `3h`, `6h`, `12h`, and `24h` presets whose right edge advances to the current server time after each dashboard poll. Historical View’s default all-time range also ends at the current time, while any manual navigation becomes a fixed **Custom** range. Advancing this empty X-axis tail does not add synthetic points or alter the absolute-index downsampling selection. Switching back to Live View restores the last selected live preset.
+
+`/chart-data` returns shared `xVals`, explicit `pressure972bVals`, and graph metadata such as `rawPointCount`, `displayPointCount`, `downsampleFactor`, and `sourceResolutionLabel`. Short-term responses also include aligned `pressure902bVals`; Historical remains 972B-only.
 
 ### CCS clamp-temperature charts
 
-In addition to the pressure graphs, startup backfills three CCS clamp-temperature series from the last hour of short-term telemetry. These are stored in fixed-size ring buffers (`ccsGraphA`, `ccsGraphB`, and `ccsGraphC`) and served through `/ccs-chart-data` for the three cathode charts on the dashboard.
+In addition to the pressure graphs, startup backfills three CCS clamp-temperature series from the last hour of short-term telemetry. These are stored in fixed-size ring buffers (`ccsGraphA`, `ccsGraphB`, and `ccsGraphC`) and served through `/ccs-chart-data` for the three cathode charts on the dashboard. Each chart keeps an explicit moving X-axis window from one hour ago through the current server time, so time ticks remain visible even when every temperature value is missing.
 
 ### Beam Energy power-supply telemetry
 
@@ -190,7 +194,7 @@ Each interlock indicator (Door, Water, Vacuum, E-Stop, and others) is derived fr
 
 ### Display logs are a separate pipeline
 
-Google Drive log fetching is independent from the Supabase telemetry path. The app periodically downloads the most recent display log, reverses it, writes it to a local cache file, and serves that cached content through `/raw` so the log viewer does not depend on a live Drive request for every page refresh.
+Google Drive log fetching is independent from the Supabase telemetry path. The app periodically requests a bounded tail of the most recent display log, extracts a recent snippet, reverses it, writes it to a local cache file, and serves that cached content through `/raw`. The byte-range request keeps refresh memory and bandwidth independent of the total size of a multi-day log file.
 
 ### Reset is an explicit operational action
 
@@ -204,9 +208,10 @@ See [SUPABASE-README.md](./SUPABASE-README.md) for the database-side hot/cold ta
 |---|---|---|
 | `/` | GET | Server-rendered HTML dashboard |
 | `/data` | GET | JSON with current scalar values, Beam Energy power-supply readings, computed colors, and last-modified timestamps |
-| `/chart-data?view=short\|long` | GET | JSON for the selected pressure graph plus `rawPointCount`, `displayPointCount`, `downsampleFactor`, and `sourceResolutionLabel` |
+| `/chart-data?view=short\|long` | GET | Shared `xVals`, `pressure972bVals`, optional Live-only `pressure902bVals`, and graph-density metadata |
 | `/ccs-chart-data` | GET | JSON with the A/B/C CCS clamp-temperature chart series |
-| `/health` | GET | Supabase connection status and experiment state |
+| `/health` | GET | Supabase connection, experiment state, process memory, and cache sizes |
+| `/system-health` | GET | Live memory charts, cache utilization, and metric definitions |
 | `/raw` | GET | Plain text content of the cached reversed display log file |
 | `/refresh-display` | GET | Triggers a manual Google Drive display-log refresh |
 | `/experiment-reset` | POST | Clears both log tables and in-memory pressure caches when password auth is configured |
@@ -214,6 +219,22 @@ See [SUPABASE-README.md](./SUPABASE-README.md) for the database-side hot/cold ta
 ## Deployment
 
 Hosted on [Render](https://render.com/). Render auto-deploys on pushes to whichever Git branch the service is configured to track.
+
+### Node.js runtime and redeployment
+
+Node.js is pinned to **24.22.1**, the [October 21, 2026 security release](https://nodejs.org/en/blog/release/v24.22.1), in `.node-version`, `package.json`, and the `NODE_VERSION` environment variable in `render.yaml`. The root package metadata in `package-lock.json` matches this pin.
+
+Render's [version selection order](https://render.com/docs/node-version) is `NODE_VERSION`, `.node-version`, `.nvmrc`, then `package.json` engines. An existing dashboard `NODE_VERSION` therefore overrides the repository files. A service created manually does not automatically apply `render.yaml` changes.
+
+When ready to deploy the runtime update:
+
+1. In the [Render Dashboard](https://dashboard.render.com/), open the EBEAM web monitor service, then **Settings > Build & Deploy**. Confirm **Branch** is `main` and note whether auto-deploy is enabled. If it tracks `develop` instead, merging into `develop` can deploy immediately; turn off auto-deploy first if deployment must wait.
+2. Open the service's **Environment** page and look for `NODE_VERSION`. If absent, no environment change is needed: Render will read `.node-version`. If it has another value, change it to `24.22.1` and choose **Save only** to avoid deploying yet. For a Blueprint-managed service, apply the matching `render.yaml` update when ready to deploy.
+3. Merge the runtime-update PR into `develop`. Then open and review a separate PR from `develop` into `main`; that release also includes any other changes already on `develop`. Leave the `main` PR unmerged until deployment is approved.
+4. When ready, merge the release PR into `main`. If auto-deploy is enabled and the service tracks `main`, Render will rebuild automatically. Otherwise choose **Manual Deploy > Deploy latest commit**. A service restart alone does not apply the runtime update.
+5. Open the new deployment's build log and confirm it reports Node.js `24.22.1`, then check `/health` and the dashboard's telemetry and charts after startup completes.
+
+See [Render's deployment documentation](https://render.com/docs/deploys) for deployment and auto-deploy controls.
 
 Required Render environment variables:
 - `SUPABASE_API_URL`

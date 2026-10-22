@@ -1,5 +1,315 @@
 const { getGraphMetadata } = require('../services/graphs');
 
+const MACHINE_STATUS_MILESTONES = Object.freeze([
+  { key: 'machine_status_temps', lines: ['PMON', 'Temperatures OK'] },
+  { key: 'machine_status_pressure_1e_4', lines: ['Pressure Below', '1e\u20114\u00A0mbar'] },
+  { key: 'machine_status_interlocks', lines: ['All Safety', 'Interlocks Pass'] },
+  { key: 'machine_status_hv_panel', lines: ['High Voltage', 'Subpanel On'] },
+  { key: 'machine_status_pressure_1e_6', lines: ['Pressure Below', '1e\u20116\u00A0mbar'] },
+  { key: 'machine_status_hvps_nominal', lines: ['HVolt Power', 'Supplies Nominal'] },
+  { key: 'machine_status_bcon', lines: ['Beam Controller', 'Nominal'] },
+  { key: 'machine_status_cathodes', lines: ['Cathode Heating'] },
+  { key: 'machine_status_beams_ready', lines: ['Beams Ready'] },
+  { key: 'machine_status_beams_on', lines: ['Beams On'] },
+]);
+const VALID_MACHINE_STATUS_STATES = new Set(['gray', 'green', 'red']);
+
+function getMachineStatusState(state, experimentRunning) {
+  if (!experimentRunning) {
+    return 'gray';
+  }
+
+  return VALID_MACHINE_STATUS_STATES.has(state) ? state : 'gray';
+}
+
+const REQUEST_TIMEOUT_MS = 10_000;
+
+async function fetchJsonWithTimeout(
+  url,
+  timeoutMs = REQUEST_TIMEOUT_MS,
+  fetchImpl = fetch
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetchImpl(url, { signal: controller.signal });
+    if (!response.ok) throw new Error('Request failed: ' + response.status);
+    return await response.json();
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('Request timed out');
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function normalizePressureValueForLogScale(
+  value,
+  minimumPressure = 1e-15,
+  maximumPressure = 1e6
+) {
+  return (
+    Number.isFinite(value) &&
+    value >= minimumPressure &&
+    value <= maximumPressure
+  ) ? value : null;
+}
+
+function normalizePressureSeriesForLogScale(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values.map((value) => normalizePressureValueForLogScale(value));
+}
+
+function normalizePressureChartData(
+  xVals,
+  pressure972bVals,
+  pressure902bVals = null,
+  minimumTimestamp = null,
+  maximumPoints = Infinity
+) {
+  const sourceXVals = Array.isArray(xVals) ? xVals : [];
+  const sourcePressure972bVals = Array.isArray(pressure972bVals) ? pressure972bVals : [];
+  const sourcePressure902bVals = Array.isArray(pressure902bVals)
+    ? pressure902bVals
+    : null;
+  const alignedLength = Math.min(
+    sourceXVals.length,
+    sourcePressure972bVals.length,
+    sourcePressure902bVals ? sourcePressure902bVals.length : Infinity
+  );
+  const boundedMaximumPoints = Number.isFinite(maximumPoints)
+    ? Math.max(0, Math.floor(maximumPoints))
+    : alignedLength;
+  const startIndex = Math.max(0, alignedLength - boundedMaximumPoints);
+  const normalized = {
+    xVals: [],
+    pressure972bVals: [],
+    pressure902bVals: [],
+  };
+  let previousTimestamp = Number.isFinite(minimumTimestamp) ? minimumTimestamp : null;
+
+  for (let index = startIndex; index < alignedLength; index++) {
+    const timestamp = Number(sourceXVals[index]);
+    if (!Number.isFinite(timestamp)) continue;
+    if (previousTimestamp !== null && timestamp <= previousTimestamp) continue;
+
+    normalized.xVals.push(timestamp);
+    normalized.pressure972bVals.push(
+      normalizePressureValueForLogScale(sourcePressure972bVals[index])
+    );
+    normalized.pressure902bVals.push(
+      normalizePressureValueForLogScale(sourcePressure902bVals?.[index])
+    );
+    previousTimestamp = timestamp;
+  }
+
+  return normalized;
+}
+
+function hasRenderablePressureChartData(xVals, pressure972bVals, pressure902bVals = null) {
+  if (!Array.isArray(xVals) || !Array.isArray(pressure972bVals)) return false;
+  const hasSecondarySeries = Array.isArray(pressure902bVals);
+  const alignedLength = Math.min(
+    xVals.length,
+    pressure972bVals.length,
+    hasSecondarySeries ? pressure902bVals.length : Infinity
+  );
+  if (alignedLength < 2) return false;
+
+  let previousTimestamp = null;
+  let hasPositivePressure = false;
+  for (let index = 0; index < alignedLength; index++) {
+    const timestamp = Number(xVals[index]);
+    if (
+      !Number.isFinite(timestamp) ||
+      (previousTimestamp !== null && timestamp <= previousTimestamp)
+    ) {
+      return false;
+    }
+    previousTimestamp = timestamp;
+    hasPositivePressure ||= (
+      normalizePressureValueForLogScale(pressure972bVals[index]) !== null ||
+      (hasSecondarySeries &&
+        normalizePressureValueForLogScale(pressure902bVals[index]) !== null)
+    );
+  }
+
+  return hasPositivePressure;
+}
+
+function transformPressureSeriesToLog10(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values.map((value) => {
+    const pressure = normalizePressureValueForLogScale(value);
+    return pressure === null ? null : Math.log10(pressure);
+  });
+}
+
+function getPaddedPressureExponentRange(_uplot, dataMin, dataMax) {
+  const fallbackRange = [-9, -4];
+  if (
+    !Number.isFinite(dataMin) ||
+    !Number.isFinite(dataMax) ||
+    dataMax < dataMin
+  ) {
+    return fallbackRange;
+  }
+
+  if (dataMax === dataMin) {
+    return [dataMin - 0.5, dataMax + 0.5];
+  }
+
+  const padding = Math.max(0.25, (dataMax - dataMin) * 0.08);
+  const range = [dataMin - padding, dataMax + padding];
+  return range.every(Number.isFinite) && range[1] > range[0]
+    ? range
+    : fallbackRange;
+}
+
+function getPressureTimeWindowBounds(xVals, hours, nowSec = null) {
+  const currentTime = Number.isFinite(nowSec) ? nowSec : null;
+  if (!Array.isArray(xVals) || xVals.length === 0) {
+    return Number.isFinite(hours) && hours > 0 && currentTime !== null
+      ? [currentTime - hours * 60 * 60, currentTime]
+      : [null, null];
+  }
+
+  const firstValue = xVals.find(Number.isFinite);
+  const lastValue = xVals.findLast(Number.isFinite);
+  if (!Number.isFinite(firstValue) || !Number.isFinite(lastValue)) {
+    return [null, null];
+  }
+
+  const rightEdge = currentTime === null ? lastValue : Math.max(lastValue, currentTime);
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return [firstValue, rightEdge];
+  }
+
+  return [Math.max(firstValue, rightEdge - hours * 60 * 60), rightEdge];
+}
+
+function clampPressureViewportRange(
+  dataMin,
+  dataMax,
+  requestedMin,
+  requestedMax,
+  sourceMinimumSpan = 1
+) {
+  if (
+    !Number.isFinite(dataMin) ||
+    !Number.isFinite(dataMax) ||
+    dataMax <= dataMin ||
+    !Number.isFinite(requestedMin) ||
+    !Number.isFinite(requestedMax) ||
+    requestedMax <= requestedMin
+  ) {
+    return null;
+  }
+
+  const minimumSpan = Math.max(
+    10,
+    Number.isFinite(sourceMinimumSpan) && sourceMinimumSpan > 0
+      ? sourceMinimumSpan
+      : 1
+  );
+  const boundedMin = Math.min(dataMin, dataMax - minimumSpan);
+  const boundedMax = dataMax;
+  const fullSpan = boundedMax - boundedMin;
+  const requestedSpan = requestedMax - requestedMin;
+  const span = Math.max(minimumSpan, Math.min(fullSpan, requestedSpan));
+
+  if (span >= fullSpan) return [boundedMin, boundedMax];
+
+  const center = requestedMin + requestedSpan / 2;
+  let min = center - span / 2;
+  let max = center + span / 2;
+  if (min < boundedMin) {
+    min = boundedMin;
+    max = boundedMin + span;
+  }
+  if (max > boundedMax) {
+    max = boundedMax;
+    min = boundedMax - span;
+  }
+  return [min, max];
+}
+
+function getCCSTimeWindowBounds(nowSec) {
+  const rightEdge = Number.isFinite(nowSec) ? nowSec : Date.now() / 1000;
+  return [rightEdge - 60 * 60, rightEdge];
+}
+
+function buildPressureViewportSample(
+  xVals,
+  pressure972bVals,
+  pressure902bVals,
+  min,
+  max,
+  maxDisplayPoints = 1000,
+  indexOffset = 0
+) {
+  const empty = {
+    xVals: [],
+    pressure972bVals: [],
+    pressure902bVals: [],
+    rawPointCount: 0,
+    displayPointCount: 0,
+    downsampleFactor: 1,
+  };
+  if (!xVals.length || !Number.isFinite(min) || !Number.isFinite(max)) return empty;
+
+  const findBound = (target, upper) => {
+    let low = 0;
+    let high = xVals.length;
+    while (low < high) {
+      const middle = (low + high) >>> 1;
+      if (xVals[middle] < target || (upper && xVals[middle] === target)) low = middle + 1;
+      else high = middle;
+    }
+    return low;
+  };
+
+  const start = findBound(min, false);
+  const end = findBound(max, true);
+  const rawPointCount = end - start;
+  if (rawPointCount <= 0) return empty;
+
+  let downsampleFactor = 1;
+  while (Math.ceil((rawPointCount - 1) / downsampleFactor) + 1 > maxDisplayPoints) {
+    downsampleFactor *= 2;
+  }
+
+  const remainder = (indexOffset + start) % downsampleFactor;
+  const firstSampleIndex = start + ((downsampleFactor - remainder) % downsampleFactor);
+  const sampledXVals = [];
+  const sampledPressure972bVals = [];
+  const sampledPressure902bVals = [];
+  for (let index = firstSampleIndex; index < end - 1; index += downsampleFactor) {
+    sampledXVals.push(xVals[index]);
+    sampledPressure972bVals.push(pressure972bVals[index]);
+    sampledPressure902bVals.push(pressure902bVals[index]);
+  }
+  sampledXVals.push(xVals[end - 1]);
+  sampledPressure972bVals.push(pressure972bVals[end - 1]);
+  sampledPressure902bVals.push(pressure902bVals[end - 1]);
+
+  return {
+    xVals: sampledXVals,
+    pressure972bVals: sampledPressure972bVals,
+    pressure902bVals: sampledPressure902bVals,
+    rawPointCount,
+    displayPointCount: sampledXVals.length,
+    downsampleFactor,
+  };
+}
+
 /**
  * Renders the full HTML dashboard page.
  *
@@ -37,10 +347,14 @@ function renderDashboard(opts) {
     : "N/A";
   const currentTime = new Date().toLocaleString("en-US", {timeZone: "America/Chicago"});
 
-  let pressure = data.pressure;
-  if (pressure !== null){
-    pressure = Number(data.pressure).toExponential(3);
-  }
+  const numericPressure = Number(data.pressure);
+  const pressure = Number.isFinite(numericPressure) && numericPressure > 0
+    ? numericPressure.toExponential(2)
+    : null;
+  const numericPressure902b = Number(data.pressure_902b_mbar);
+  const pressure902b = Number.isFinite(numericPressure902b) && numericPressure902b > 0
+    ? numericPressure902b.toExponential(2)
+    : null;
 
   const temperatures = (data && data.temperatures) || {
     "1": "DISCONNECTED",
@@ -58,7 +372,26 @@ function renderDashboard(opts) {
     allInterlocksColor, G9OutputColor, hvoltColor
   ] = sicColors;
 
-  const shortTermChartMeta = getGraphMetadata(shortTermPressureGraph);
+  const initialShortTermPressureData = normalizePressureChartData(
+    shortTermPressureGraph.displayXVals,
+    shortTermPressureGraph.displayYVals,
+    shortTermPressureGraph.displayPressure902bVals
+  );
+  const shortTermChartMeta = {
+    ...getGraphMetadata(shortTermPressureGraph),
+    displayPointCount: initialShortTermPressureData.xVals.length,
+  };
+  const normalizePressureValueSource = normalizePressureValueForLogScale.toString();
+  const normalizePressureSeriesSource = normalizePressureSeriesForLogScale.toString();
+  const transformPressureSeriesSource = transformPressureSeriesToLog10.toString();
+  const normalizePressureChartDataSource = normalizePressureChartData.toString();
+  const hasRenderablePressureChartDataSource = hasRenderablePressureChartData.toString();
+  const paddedPressureExponentRangeSource = getPaddedPressureExponentRange.toString();
+  const pressureTimeWindowBoundsSource = getPressureTimeWindowBounds.toString();
+  const pressureViewportClampSource = clampPressureViewportRange.toString();
+  const pressureViewportSampleSource = buildPressureViewportSample.toString();
+  const ccsTimeWindowBoundsSource = getCCSTimeWindowBounds.toString();
+  const jsonFetchSource = fetchJsonWithTimeout.toString();
 
   function formatPressureChartStatus(meta) {
     const rawPointCount = Number(meta.rawPointCount ?? 0);
@@ -132,13 +465,12 @@ function renderDashboard(opts) {
       <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
       <style>
         /* =========================
-           FUTURISTIC BACKGROUND
+           PAGE THEME
         ========================== */
 
         :root {
           --bg-base:        #0a0e1a;
           --bg-surface:     rgba(255,255,255,0.05);
-          --bg-surface-alt: rgba(255,255,255,0.08);
           --border-subtle:  rgba(255,255,255,0.10);
           --accent:         #38bdf8;
           --success:        #22c55e;
@@ -151,29 +483,15 @@ function renderDashboard(opts) {
           font-family: Arial, sans-serif;
           text-align: center;
           background: var(--bg-base);
-          background-size: 400% 400%;
           color: var(--text-primary);
           margin: 0;
         }
 
-        @keyframes gradientMove {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-
         /* =========================
-           GLASSMORPHISM CONTAINERS
+           SECTION CONTAINERS
         ========================== */
 
-        .glass-container {
-          background: rgba(30, 30, 30, 0.9);
-          border-radius: 8px;
-          padding: 30px;
-          width: 100%;
-          margin: 0 auto;
-        }
-
+        .experiment-progress-section,
         .interlocks-section,
         .env-section,
         .vacuum-indicators {
@@ -216,6 +534,141 @@ function renderDashboard(opts) {
           margin: 0 0 8px 0;
           padding-bottom: 6px;
           border-bottom: 1px solid var(--border-subtle);
+        }
+        /* =========================
+           EXPERIMENT PROGRESS
+        ========================== */
+        .experiment-progress-viewport {
+          --progress-highlight-x: 0px;
+          --progress-highlight-y: 0px;
+          --progress-highlight-alpha: 0;
+          position: relative;
+          overflow: hidden;
+          padding: 8px;
+          background: rgba(2, 6, 23, 0.42);
+          border: 1px solid rgba(148, 163, 184, 0.14);
+          border-radius: 8px;
+          box-shadow: inset 0 1px 12px rgba(0, 0, 0, 0.28);
+        }
+        .experiment-progress-viewport::before {
+          content: '';
+          position: absolute;
+          z-index: 0;
+          left: var(--progress-highlight-x);
+          top: var(--progress-highlight-y);
+          width: 260px;
+          height: 260px;
+          border-radius: 50%;
+          pointer-events: none;
+          opacity: var(--progress-highlight-alpha);
+          transform: translate(-50%, -50%);
+          background: radial-gradient(
+            circle,
+            rgba(56, 189, 248, 0.04) 0%,
+            rgba(56, 189, 248, 0.02) 42%,
+            transparent 72%
+          );
+        }
+        .experiment-progress-track {
+          display: flex;
+          position: relative;
+          z-index: 1;
+          flex-direction: column;
+          width: 100%;
+          min-width: 0;
+          row-gap: 8px;
+          box-sizing: border-box;
+        }
+        .experiment-progress-row {
+          display: flex;
+          justify-content: center;
+          width: 100%;
+        }
+        .experiment-progress-milestone-shell {
+          flex: 0 0 var(--progress-chevron-width, 100px);
+          position: relative;
+          min-width: 100px;
+          min-height: 38px;
+          color: var(--text-secondary);
+          transition: transform 0.25s ease;
+        }
+        .experiment-progress-milestone-shell + .experiment-progress-milestone-shell {
+          margin-left: -8px;
+        }
+        .experiment-progress-chevron {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          width: 100%;
+          height: 100%;
+          overflow: visible;
+          pointer-events: none;
+        }
+        .experiment-progress-chevron polygon {
+          fill: var(--milestone-fill);
+          stroke: var(--milestone-border);
+          stroke-width: 2px;
+          stroke-linejoin: miter;
+          vector-effect: non-scaling-stroke;
+          filter: drop-shadow(0 0 6px var(--milestone-glow));
+          transition: fill 0.25s ease, stroke 0.25s ease, filter 0.25s ease;
+        }
+        .experiment-progress-milestone {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 7px 14px 7px 20px;
+          box-sizing: border-box;
+          font-size: 0.62rem;
+          font-weight: 500;
+          letter-spacing: 0.015em;
+          line-height: 1.15;
+          text-align: center;
+          text-shadow: 0 0 3px var(--milestone-text-glow);
+          transition: color 0.25s ease;
+        }
+        .experiment-progress-label {
+          display: flex;
+          position: relative;
+          z-index: 1;
+          flex-direction: column;
+          align-items: center;
+        }
+        .experiment-progress-label-line {
+          display: block;
+          white-space: nowrap;
+        }
+        .experiment-progress-milestone-shell:hover {
+          z-index: 1;
+          transform: translateY(-1px);
+        }
+        .experiment-progress-milestone-shell[data-machine-status-key="machine_status_temps"]
+          .experiment-progress-milestone {
+          padding-left: 12px;
+        }
+        .machine-status-gray {
+          --milestone-border: rgba(148, 163, 184, 0.22);
+          --milestone-glow: transparent;
+          --milestone-fill: rgba(148, 163, 184, 0.08);
+          --milestone-text-glow: transparent;
+          color: var(--text-secondary);
+        }
+        .machine-status-green {
+          --milestone-border: var(--success);
+          --milestone-glow: rgba(34, 197, 94, 0.65);
+          --milestone-fill: rgba(34, 197, 94, 0.15);
+          --milestone-text-glow: rgba(34, 197, 94, 0.35);
+          color: white;
+        }
+        .machine-status-red {
+          --milestone-border: var(--danger);
+          --milestone-glow: rgba(239, 68, 68, 0.65);
+          --milestone-fill: rgba(239, 68, 68, 0.15);
+          --milestone-text-glow: rgba(239, 68, 68, 0.35);
+          color: white;
         }
         /* =========================
            INTERLOCKS SECTION
@@ -263,6 +716,31 @@ function renderDashboard(opts) {
           font-weight: bold;
           transition: text-shadow 0.3s ease;
           font-size: 0.9em;
+        }
+        .vacuum-indicators-header {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
+          margin-bottom: 8px;
+          padding-bottom: 6px;
+          border-bottom: 1px solid var(--border-subtle);
+        }
+        .vacuum-indicators-heading {
+          border-bottom: none;
+          margin: 0;
+          text-align: center;
+        }
+        .vacuum-pressure-readings {
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.75rem;
+          justify-self: end;
+          color: #7dd3fc;
+          font-size: 1.05rem;
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+          text-align: right;
+          white-space: nowrap;
         }
         .vacuum-indicators-container {
           display: flex;
@@ -320,7 +798,7 @@ function renderDashboard(opts) {
         }
         .beam-energy-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 0.5rem;
           align-items: stretch;
           margin-top: 1rem;
@@ -345,6 +823,8 @@ function renderDashboard(opts) {
         }
         .power-supply-box {
           flex: 1;
+          min-width: 0;
+          box-sizing: border-box;
           border: 1px solid var(--border-subtle);
           background: var(--bg-surface);
           margin-top: 5px;
@@ -371,7 +851,10 @@ function renderDashboard(opts) {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-width: 116px;
+          width: 100%;
+          max-width: 116px;
+          min-width: 0;
+          box-sizing: border-box;
           margin: 0 auto 10px;
           padding: 4px 10px;
           border-radius: 999px;
@@ -468,8 +951,64 @@ function renderDashboard(opts) {
           gap: 12px;
           flex-wrap: wrap;
           padding: 0 10px 8px;
-          width: 98%;
+          width: 90%;
           margin: 0 auto;
+        }
+        .pressure-chart-label {
+          color: #94a3b8;
+          font-size: 14px;
+          flex: 1 1 300px;
+        }
+        .pressure-chart-controls {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .pressure-chart-control-group {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .pressure-time-range-label {
+          color: var(--text-secondary);
+          font-size: 0.75em;
+          white-space: nowrap;
+        }
+        .pressure-time-range-select,
+        .pressure-chart-control {
+          min-height: 28px;
+          border: 1px solid rgba(148, 163, 184, 0.45);
+          border-radius: 5px;
+          background: #111827;
+          color: #cbd5e1;
+          font-size: 0.75em;
+        }
+        .pressure-time-range-select {
+          padding: 3px 7px;
+        }
+        .pressure-chart-control {
+          padding: 4px 9px;
+          cursor: pointer;
+          transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        }
+        .pressure-chart-control:hover {
+          border-color: var(--accent);
+          color: #e0f2fe;
+        }
+        .pressure-chart-control.is-active {
+          background: var(--accent);
+          border-color: var(--accent);
+          color: #0a0e1a;
+          font-weight: 600;
+        }
+        .pressure-chart-help {
+          width: 90%;
+          margin: 0 auto 6px;
+          color: #64748b;
+          font-size: 0.72rem;
+          text-align: left;
         }
         .pressure-toggle-button {
           flex-shrink: 0;
@@ -504,10 +1043,47 @@ function renderDashboard(opts) {
           .card-container {
             grid-template-columns: repeat(2, 1fr);
           }
+          .beam-energy-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          .vacuum-indicators-header {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto;
+            row-gap: 6px;
+            padding-bottom: 0;
+            border-bottom: none;
+          }
+          .vacuum-indicators-header-spacer {
+            display: none;
+          }
+          .vacuum-indicators-heading {
+            width: 100%;
+            justify-self: stretch;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-subtle);
+          }
+          .vacuum-pressure-readings {
+            justify-self: center;
+            text-align: center;
+          }
         }
         @media (max-width: 600px) {
           .card-container {
             grid-template-columns: repeat(1, 1fr);
+          }
+          .pressure-chart-toolbar,
+          .pressure-chart-help {
+            width: 100%;
+          }
+          .pressure-chart-controls {
+            width: 100%;
+            justify-content: flex-start;
+          }
+          .vacuum-pressure-readings {
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            white-space: normal;
           }
         }
         /* =========================
@@ -598,16 +1174,43 @@ function renderDashboard(opts) {
           font-size: 0.9em;
           color: #ccc;
         }
+
+        #chart-root-3 .u-over {
+          cursor: crosshair;
+          touch-action: none;
+        }
+
+        #chart-root-3.is-pan-mode .u-over {
+          cursor: grab;
+        }
+
+        #chart-root-3.is-pan-mode.is-panning .u-over {
+          cursor: grabbing;
+        }
+
+        #chart-root-3 .u-select {
+          display: none;
+          background: rgba(56, 189, 248, 0.18);
+          border: 1px solid rgba(56, 189, 248, 0.9);
+          box-sizing: border-box;
+        }
+
+        #chart-root-3.is-zoom-selecting .u-select {
+          display: block;
+        }
       </style>
     </head>
     <body>
       <div class="container-fluid mt-4">
         <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 24px 10px; border-bottom:1px solid var(--border-subtle); margin-bottom:12px;">
           <h2 style="font-size:1.4rem; font-weight:700; color:#d6eaff; margin:0;">E-beam Web Monitor</h2>
-          <div style="display:flex; align-items:center; gap:10px;">
+          <div style="display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:10px;">
             <div id="experiment-status" class="${!experimentRunning ? 'neon-warning' : 'neon-success'}" style="padding:4px 10px; font-size:0.7em; border-radius:8px; color:white; font-weight:bold;">
               Dashboard is ${!experimentRunning ? 'not ' : ''}running
             </div>
+            <a href="/system-health" aria-label="Open memory and system health dashboard" style="display:inline-flex; align-items:center; padding:4px 10px; font-size:0.7em; border-radius:8px; font-weight:bold; background:#0c4a6e; border:1px solid #38bdf8; color:#bae6fd; text-decoration:none; white-space:nowrap;">
+              Memory &amp; Health
+            </a>
             <button id="open-reset-modal" style="padding:4px 10px; font-size:0.7em; border-radius:8px; font-weight:bold; background:#7f1d1d; border:1px solid #ef4444; color:#fca5a5; cursor:pointer;">
               Experiment Reset
             </button>
@@ -616,6 +1219,51 @@ function renderDashboard(opts) {
         <p style="text-align:center; font-size:0.75rem; color:var(--text-secondary); margin:0 0 12px 0;">
           Log Modified: <span id="log-last-modified">${fileModified}</span> &nbsp;·&nbsp; Updated: <span id="site-last-updated">${currentTime}</span>
         </p>
+        <!-- Experiment Progress Section -->
+        <div class="experiment-progress-section">
+          <h3 class="section-header">Experiment Progress</h3>
+          <div class="experiment-progress-viewport">
+            <div class="experiment-progress-track" role="list" aria-label="Experiment progress milestones">
+              <div class="experiment-progress-row">
+                ${MACHINE_STATUS_MILESTONES.map(({ key, lines }, milestoneIndex) => {
+                  const label = lines.join(' ');
+                  const milestoneState = getMachineStatusState(
+                    data[key],
+                    experimentRunning
+                  );
+                  return `
+                    <div
+                      class="experiment-progress-milestone-shell machine-status-${milestoneState}"
+                      data-machine-status-key="${key}"
+                      data-machine-status-label="${label}"
+                      role="listitem"
+                      aria-label="${label}: ${milestoneState}"
+                      title="${label}: ${milestoneState}"
+                    >
+                      <svg
+                        class="experiment-progress-chevron"
+                        viewBox="0 0 124 48"
+                        preserveAspectRatio="none"
+                        aria-hidden="true"
+                      >
+                        <polygon points="${milestoneIndex === 0
+                          ? '1,1 109.5,1 123,24 109.5,47 1,47'
+                          : '1,1 109.5,1 123,24 109.5,47 1,47 15,24'}"></polygon>
+                      </svg>
+                      <div class="experiment-progress-milestone">
+                        <span class="experiment-progress-label">
+                          ${lines.map((line) => (
+                            `<span class="experiment-progress-label-line">${line}</span>`
+                          )).join('')}
+                        </span>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
         <!-- Interlocks Section -->
         <div class="interlocks-section">
           <h3 class="section-header">Interlocks</h3>
@@ -668,11 +1316,12 @@ function renderDashboard(opts) {
         </div>
         <!-- Vacuum Indicators Section -->
         <div class="vacuum-indicators">
-          <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border-subtle);">
-            <span></span>
-            <h3 class="section-header" style="border-bottom:none; margin:0; text-align:center;">Vacuum Indicators</h3>
-            <span id="pressureReadings" style="font-size:1.05rem; font-weight:700; color:#7dd3fc; font-variant-numeric:tabular-nums; text-align:right;">
-              ${pressure !== null ? pressure + ' mbar' : '--'}
+          <div class="vacuum-indicators-header">
+            <span class="vacuum-indicators-header-spacer"></span>
+            <h3 class="section-header vacuum-indicators-heading">Vacuum Indicators</h3>
+            <span id="pressureReadings" class="vacuum-pressure-readings">
+              <span id="pressure972b">972B: ${pressure !== null ? pressure + ' mbar' : '-- mbar'}</span>
+              <span id="pressure902b" style="color:#818cf8;">902B: ${pressure902b !== null ? pressure902b + ' mbar' : '-- mbar'}</span>
             </span>
           </div>
           <div class="vacuum-indicators-container">
@@ -724,15 +1373,15 @@ function renderDashboard(opts) {
             </div>
             <div class="gauge" id="sensor-3">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["3"] === "DISCONNECTED" || temperatures["3"] === "None" ? '--' : temperatures["3"] + '°C'}</div></div>
-              <div class="sensor-label">Chmbr Bot</div>
+              <div class="sensor-label">Chamber Top</div>
             </div>
             <div class="gauge" id="sensor-4">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["4"] === "DISCONNECTED" || temperatures["4"] === "None" ? '--' : temperatures["4"] + '°C'}</div></div>
-              <div class="sensor-label">Chmbr Top</div>
+              <div class="sensor-label">Chamber Bot</div>
             </div>
             <div class="gauge" id="sensor-5">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["5"] === "DISCONNECTED" || temperatures["5"] === "None" ? '--' : temperatures["5"] + '°C'}</div></div>
-              <div class="sensor-label">Air temp</div>
+              <div class="sensor-label">Air Temp</div>
             </div>
             <div class="gauge" id="sensor-6">
               <div class="gauge-circle"><div class="gauge-cover">${temperatures["6"] === "DISCONNECTED" || temperatures["6"] === "None" ? '--' : temperatures["6"] + '°C'}</div></div>
@@ -755,7 +1404,7 @@ function renderDashboard(opts) {
                 : '--'}
               </div>
                 <div id="heaterTemperatureA" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_A != null && experimentRunning
-                ? data.clamp_temperature_A.toFixed(2) + ' C'
+                ? Number(data.clamp_temperature_A).toFixed(1) + ' C'
                 : '--'}
               </div>
             </div>
@@ -770,7 +1419,7 @@ function renderDashboard(opts) {
                 : '--'}
               </div>
               <div id="heaterTemperatureB" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_B != null && experimentRunning
-              ? data.clamp_temperature_B.toFixed(2) + ' C'
+              ? Number(data.clamp_temperature_B).toFixed(1) + ' C'
               : '--'}
               </div>
             </div>
@@ -785,7 +1434,7 @@ function renderDashboard(opts) {
                 : '--'}
               </div>
               <div id="heaterTemperatureC" class="ccs-reading">Clamp Temperature: ${data.clamp_temperature_C != null && experimentRunning
-                ? data.clamp_temperature_C.toFixed(2) + ' C'
+                ? Number(data.clamp_temperature_C).toFixed(1) + ' C'
                 : '--'}
               </div>
             </div>
@@ -841,14 +1490,33 @@ function renderDashboard(opts) {
 
       <div id="chart-root-2"></div>
       <div id="pressure-chart-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 8px; width: 90%; margin: 0 auto 0 auto;">
-          <span id="pressure-chart-label" style="color:#94a3b8; font-size:14px;">
+        <div class="pressure-chart-toolbar">
+          <span id="pressure-chart-label" class="pressure-chart-label">
             Short-Term (Last 24h, ~3s source data, downsampled for display)
           </span>
-          <button id="pressure-view-toggle" class="btn-toggle pressure-toggle-button">
-            Switch to Historical View
-          </button>
+          <div class="pressure-chart-controls">
+            <label id="pressure-time-range-group" class="pressure-chart-control-group" for="pressure-time-range">
+              <span class="pressure-time-range-label">Show</span>
+              <select id="pressure-time-range" class="pressure-time-range-select" aria-label="Pressure chart time range">
+                <option value="1">Last 1h</option>
+                <option value="3">Last 3h</option>
+                <option value="6">Last 6h</option>
+                <option value="12">Last 12h</option>
+                <option value="24" selected>Last 24h</option>
+                <option value="custom" disabled>Custom</option>
+              </select>
+            </label>
+            <div class="pressure-chart-control-group" role="group" aria-label="Pressure chart interaction mode">
+              <button id="pressure-zoom-mode" type="button" class="pressure-chart-control is-active" aria-pressed="true">Zoom</button>
+              <button id="pressure-pan-mode" type="button" class="pressure-chart-control" aria-pressed="false">Pan</button>
+            </div>
+            <button id="pressure-reset-view" type="button" class="pressure-chart-control">Reset</button>
+            <button id="pressure-view-toggle" type="button" class="btn-toggle pressure-toggle-button">
+              Switch to Historical View
+            </button>
+          </div>
         </div>
+        <div class="pressure-chart-help">Drag to select in Zoom mode; switch to Pan to move through time. Wheel or pinch to zoom. Double-click or Reset restores the selected window.</div>
         <div id="pressure-chart-status" class="chart-info-text" style="width:90%; margin:0 auto 6px auto; text-align:left; color:#94a3b8;">
           ${formatPressureChartStatus(shortTermChartMeta)}
         </div>
@@ -856,13 +1524,373 @@ function renderDashboard(opts) {
       </div>
 
       <script>
+        ${normalizePressureValueSource}
+        ${normalizePressureSeriesSource}
+        ${transformPressureSeriesSource}
+        ${normalizePressureChartDataSource}
+        ${hasRenderablePressureChartDataSource}
+        ${paddedPressureExponentRangeSource}
+        ${pressureTimeWindowBoundsSource}
+        ${pressureViewportClampSource}
+        ${pressureViewportSampleSource}
+        const REQUEST_TIMEOUT_MS = ${REQUEST_TIMEOUT_MS};
+        const MAX_BROWSER_PRESSURE_POINTS = 2048;
+        ${jsonFetchSource}
+
+        let currentPressureView = 'short';
+        let pressureInteractionMode = 'zoom';
+        let selectedLiveHours = 24;
+        let pressureViewportKind = 'preset';
+        let pressureCustomRange = null;
+        let pressureDisplayDataX = ${JSON.stringify(initialShortTermPressureData.xVals)};
+        let pressureDisplayData972b = ${JSON.stringify(initialShortTermPressureData.pressure972bVals)};
+        let pressureDisplayData902b = ${JSON.stringify(initialShortTermPressureData.pressure902bVals)};
+        let pressureChartMeta = ${JSON.stringify(shortTermChartMeta)};
+        let pressureAvailableExtent = [
+          Number.isFinite(pressureChartMeta.cacheStartTime)
+            ? pressureChartMeta.cacheStartTime
+            : null,
+          Number.isFinite(pressureChartMeta.cacheEndTime)
+            ? pressureChartMeta.cacheEndTime
+            : null,
+        ];
+        let pressureViewportNow = Date.now() / 1000;
+        let pressureMinimumXSpan = getMinimumPressureXSpan(pressureDisplayDataX);
+        let pressureViewportRenderFrame = null;
+        let pressureChartRefreshInFlight = null;
+        let pressureChartRefreshKey = null;
+        let pressureDetailRefreshTimer = null;
+        let pressureSnapshotGeneration = 0;
+        let pressureChart = null;
+        let pressureChartInitialized = false;
+        let pressureChartDisabled = false;
+        let pressure902bLiveVisible = true;
+        let pressure902bSuppressedForHistorical = false;
+        let applyingPressureViewport = false;
+        let lastLongTermPollAt = Date.now();
+        const LONG_TERM_POLL_INTERVAL_MS = 60_000;
+        const PRESSURE_DETAIL_DEBOUNCE_MS = 200;
+
+        const pressureChartRoot = document.getElementById('chart-root-3');
+        const pressureViewToggle = document.getElementById('pressure-view-toggle');
+        const pressureChartLabel = document.getElementById('pressure-chart-label');
+        const pressureChartStatus = document.getElementById('pressure-chart-status');
+        const pressureTimeRangeGroup = document.getElementById('pressure-time-range-group');
+        const pressureTimeRange = document.getElementById('pressure-time-range');
+        const pressureZoomMode = document.getElementById('pressure-zoom-mode');
+        const pressurePanMode = document.getElementById('pressure-pan-mode');
+        const pressureResetView = document.getElementById('pressure-reset-view');
+
+        function getPressureDataExtent() {
+          const [availableMin, availableMax] = pressureAvailableExtent;
+          if (Number.isFinite(availableMin) && Number.isFinite(availableMax)) {
+            return [
+              availableMin,
+              Number.isFinite(pressureViewportNow)
+                ? Math.max(availableMax, pressureViewportNow)
+                : availableMax,
+            ];
+          }
+          return getPressureTimeWindowBounds(pressureDisplayDataX, null, pressureViewportNow);
+        }
+
+        function resolvePressureViewport() {
+          if (pressureViewportKind === 'custom') {
+            const [dataMin, dataMax] = getPressureDataExtent();
+            const [rangeMin, rangeMax] = Array.isArray(pressureCustomRange)
+              ? pressureCustomRange
+              : [null, null];
+            const customRangeStillVisible = (
+              Number.isFinite(dataMin) &&
+              Number.isFinite(dataMax) &&
+              Number.isFinite(rangeMin) &&
+              Number.isFinite(rangeMax) &&
+              rangeMax > rangeMin &&
+              rangeMax >= dataMin &&
+              rangeMin <= dataMax
+            );
+
+            if (customRangeStillVisible) {
+              return pressureCustomRange;
+            }
+
+            pressureCustomRange = null;
+            pressureViewportKind = currentPressureView === 'short' ? 'preset' : 'all';
+          }
+
+          if (currentPressureView === 'short') {
+            return getPressureTimeWindowBounds(
+              pressureDisplayDataX,
+              selectedLiveHours,
+              pressureViewportNow
+            );
+          }
+
+          return getPressureDataExtent();
+        }
+
+        function markPressureViewportCustom(min, max) {
+          if (
+            !pressureChartInitialized ||
+            applyingPressureViewport ||
+            !Number.isFinite(min) ||
+            !Number.isFinite(max) ||
+            max <= min
+          ) {
+            return;
+          }
+
+          pressureViewportKind = 'custom';
+          pressureCustomRange = [min, max];
+          updatePressureChartViewText();
+          schedulePressureViewportRender();
+          schedulePressureDetailRefresh();
+        }
+
+        function getMinimumPressureXSpan(xVals) {
+          let minimumSpan = Infinity;
+          for (let index = 1; index < xVals.length; index++) {
+            const span = xVals[index] - xVals[index - 1];
+            if (Number.isFinite(span) && span > 0) minimumSpan = Math.min(minimumSpan, span);
+          }
+          return Number.isFinite(minimumSpan) ? Math.max(1, minimumSpan) : 1;
+        }
+
+        function createPressureInteractionPlugin(options) {
+          let uplotRef = null;
+          let zoomStart = null;
+          let panStart = null;
+          let pinchStart = null;
+          const activePointers = new Map();
+          const cleanupCallbacks = [];
+
+          const addListener = (target, eventName, handler, listenerOptions) => {
+            target.addEventListener(eventName, handler, listenerOptions);
+            cleanupCallbacks.push(() => target.removeEventListener(eventName, handler, listenerOptions));
+          };
+
+          const clampScaleRange = (min, max) => {
+            const [dataMin, dataMax] = options.getDataExtent();
+            return clampPressureViewportRange(
+              dataMin,
+              dataMax,
+              min,
+              max,
+              options.getMinimumSpan()
+            );
+          };
+
+          const setUserXScale = (min, max) => {
+            const clamped = clampScaleRange(min, max);
+            if (clamped && uplotRef) {
+              uplotRef.setScale('x', { min: clamped[0], max: clamped[1] });
+            }
+          };
+
+          const pointerPair = () => Array.from(activePointers.values()).slice(0, 2);
+          const getPlotX = (clientX) => {
+            const rect = uplotRef.over.getBoundingClientRect();
+            return Math.max(0, Math.min(rect.width, clientX - rect.left));
+          };
+
+          const clearZoomSelection = () => {
+            pressureChartRoot.classList.remove('is-zoom-selecting');
+            if (uplotRef) {
+              uplotRef.setSelect({ left: 0, top: 0, width: 0, height: 0 }, false);
+            }
+          };
+
+          const beginZoom = (pointer) => {
+            if (!uplotRef) return;
+            const plotX = getPlotX(pointer.clientX);
+            zoomStart = {
+              pointerId: pointer.pointerId,
+              plotX,
+            };
+            clearZoomSelection();
+          };
+
+          const updateZoomSelection = (pointer) => {
+            if (!uplotRef || !zoomStart || zoomStart.pointerId !== pointer.pointerId) return;
+            const plotX = getPlotX(pointer.clientX);
+            const left = Math.min(zoomStart.plotX, plotX);
+            const width = Math.abs(plotX - zoomStart.plotX);
+            const rect = uplotRef.over.getBoundingClientRect();
+            pressureChartRoot.classList.toggle('is-zoom-selecting', width > 0);
+            uplotRef.setSelect({ left, top: 0, width, height: rect.height }, false);
+          };
+
+          const finishZoom = (pointer, cancelled = false) => {
+            if (!uplotRef || !zoomStart || zoomStart.pointerId !== pointer.pointerId) return;
+            const plotX = getPlotX(pointer.clientX);
+            const left = Math.min(zoomStart.plotX, plotX);
+            const right = Math.max(zoomStart.plotX, plotX);
+            zoomStart = null;
+            clearZoomSelection();
+
+            if (!cancelled && right - left >= 8) {
+              setUserXScale(uplotRef.posToVal(left, 'x'), uplotRef.posToVal(right, 'x'));
+            }
+          };
+
+          const beginPinch = () => {
+            if (!uplotRef || activePointers.size < 2) return;
+            const [first, second] = pointerPair();
+            const distance = Math.abs(second.clientX - first.clientX);
+            if (distance <= 0) return;
+            pinchStart = {
+              distance,
+              centerX: (first.clientX + second.clientX) / 2,
+              min: uplotRef.scales.x.min,
+              max: uplotRef.scales.x.max,
+            };
+            zoomStart = null;
+            clearZoomSelection();
+            panStart = null;
+          };
+
+          const beginPan = (pointer) => {
+            if (!uplotRef || !Number.isFinite(uplotRef.scales.x.min) || !Number.isFinite(uplotRef.scales.x.max)) return;
+            panStart = {
+              pointerId: pointer.pointerId,
+              clientX: pointer.clientX,
+              min: uplotRef.scales.x.min,
+              max: uplotRef.scales.x.max,
+            };
+            pressureChartRoot.classList.add('is-panning');
+          };
+
+          const handlePointerDown = (event) => {
+            const isTouch = event.pointerType === 'touch';
+            const isPrimaryButton = isTouch || event.button === 0;
+            if (!isPrimaryButton) return;
+
+            event.preventDefault();
+            activePointers.set(event.pointerId, {
+              pointerId: event.pointerId,
+              clientX: event.clientX,
+              clientY: event.clientY,
+            });
+            if (typeof uplotRef.over.setPointerCapture === 'function') {
+              uplotRef.over.setPointerCapture(event.pointerId);
+            }
+
+            if (activePointers.size >= 2) beginPinch();
+            else if (options.getMode() === 'pan') beginPan(activePointers.get(event.pointerId));
+            else beginZoom(activePointers.get(event.pointerId));
+          };
+
+          const handlePointerMove = (event) => {
+            if (!activePointers.has(event.pointerId) || !uplotRef) return;
+            event.preventDefault();
+            activePointers.set(event.pointerId, {
+              pointerId: event.pointerId,
+              clientX: event.clientX,
+              clientY: event.clientY,
+            });
+
+            if (activePointers.size >= 2) {
+              if (!pinchStart) beginPinch();
+              if (!pinchStart) return;
+
+              const [first, second] = pointerPair();
+              const currentDistance = Math.abs(second.clientX - first.clientX);
+              if (currentDistance <= 0) return;
+
+              const rect = uplotRef.over.getBoundingClientRect();
+              const startSpan = pinchStart.max - pinchStart.min;
+              const nextSpan = startSpan * pinchStart.distance / currentDistance;
+              const currentCenterX = (first.clientX + second.clientX) / 2;
+              const startCenterPct = Math.max(0, Math.min(1, (pinchStart.centerX - rect.left) / rect.width));
+              const centerShift = (currentCenterX - pinchStart.centerX) / rect.width * startSpan;
+              const anchorValue = pinchStart.min + startCenterPct * startSpan - centerShift;
+              setUserXScale(anchorValue - startCenterPct * nextSpan, anchorValue + (1 - startCenterPct) * nextSpan);
+              return;
+            }
+
+            if (panStart && panStart.pointerId === event.pointerId && options.getMode() === 'pan') {
+              const rect = uplotRef.over.getBoundingClientRect();
+              const span = panStart.max - panStart.min;
+              const shift = (event.clientX - panStart.clientX) / rect.width * span;
+              setUserXScale(panStart.min - shift, panStart.max - shift);
+            } else if (zoomStart && options.getMode() === 'zoom') {
+              updateZoomSelection(activePointers.get(event.pointerId));
+            }
+          };
+
+          const handlePointerEnd = (event, cancelled = false) => {
+            const pointer = activePointers.get(event.pointerId) || {
+              pointerId: event.pointerId,
+              clientX: event.clientX,
+              clientY: event.clientY,
+            };
+            finishZoom(pointer, cancelled);
+            activePointers.delete(event.pointerId);
+            if (activePointers.size < 2) pinchStart = null;
+            if (panStart && panStart.pointerId === event.pointerId) panStart = null;
+            pressureChartRoot.classList.remove('is-panning');
+
+            if (activePointers.size === 1 && options.getMode() === 'pan') {
+              beginPan(activePointers.values().next().value);
+            }
+          };
+
+          const handlePointerCancel = (event) => handlePointerEnd(event);
+
+          const handleWheel = (event) => {
+            if (!uplotRef || !Number.isFinite(uplotRef.scales.x.min) || !Number.isFinite(uplotRef.scales.x.max)) return;
+            event.preventDefault();
+
+            const rect = uplotRef.over.getBoundingClientRect();
+            const pointerPct = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+            const currentMin = uplotRef.scales.x.min;
+            const currentMax = uplotRef.scales.x.max;
+            const currentSpan = currentMax - currentMin;
+            const delta = Math.max(-100, Math.min(100, event.deltaY));
+            const nextSpan = currentSpan * Math.exp(delta * 0.002);
+            const anchorValue = currentMin + pointerPct * currentSpan;
+            setUserXScale(anchorValue - pointerPct * nextSpan, anchorValue + (1 - pointerPct) * nextSpan);
+          };
+
+          const handleDoubleClick = (event) => {
+            event.preventDefault();
+            options.onReset();
+          };
+
+          return {
+            hooks: {
+              ready: (uplot) => {
+                uplotRef = uplot;
+                addListener(uplot.over, 'wheel', handleWheel, { passive: false });
+                addListener(uplot.over, 'pointerdown', handlePointerDown);
+                addListener(uplot.over, 'pointermove', handlePointerMove);
+                addListener(uplot.over, 'lostpointercapture', handlePointerEnd);
+                addListener(window, 'pointerup', handlePointerEnd);
+                addListener(window, 'pointercancel', handlePointerCancel);
+                addListener(uplot.over, 'dblclick', handleDoubleClick);
+                options.onReady();
+              },
+              setScale: (uplot, scaleKey) => {
+                if (scaleKey === 'x') {
+                  options.onXScaleChange(uplot.scales.x.min, uplot.scales.x.max);
+                }
+              },
+              destroy: () => {
+                cleanupCallbacks.forEach((cleanup) => cleanup());
+                activePointers.clear();
+                zoomStart = null;
+                pressureChartRoot.classList.remove('is-panning');
+              },
+            },
+          };
+        }
+
         function createLiveUplotChart(container, config) {
           if (typeof container === 'string') container = document.querySelector(container);
 
           const {
             title = "Live Updating Chart",
-            data = [[], []],
-            seriesLabel = "Series",
+            data = [[], [], []],
             maxDataPoints = 1000,
             maxDisplayPoints = 100,
             displayXVals = [],
@@ -892,6 +1920,24 @@ function renderDashboard(opts) {
 
             return Math.max(1, Math.floor(wrapper.clientWidth - horizontalPadding));
           };
+          let resizeChart = null;
+          const resizeHandler = () => {
+            if (resizeChart) {
+              resizeChart.setSize({ width: getChartWidth(), height: 300 });
+            }
+          };
+          const resizeCleanupPlugin = {
+            hooks: {
+              ready: (uplot) => {
+                resizeChart = uplot;
+                window.addEventListener('resize', resizeHandler);
+              },
+              destroy: () => {
+                window.removeEventListener('resize', resizeHandler);
+                resizeChart = null;
+              },
+            },
+          };
 
           const uplot = new uPlot({
             width: getChartWidth(),
@@ -899,16 +1945,32 @@ function renderDashboard(opts) {
             series: [
               {},
               {
-                label: seriesLabel,
+                label: '972B pressure (mbar)',
                 value: (u, v) => {
                   if (v == null) return "";
-                  return v.toExponential(4);
+                  const pressure = 10 ** v;
+                  return Number.isFinite(pressure) ? pressure.toExponential(2) : "";
                 },
                 stroke: '#38bdf8',
                 points: { show: true, size: 2, fill: '#38bdf8', stroke: '#38bdf8' }
+              },
+              {
+                label: '902B pressure (mbar)',
+                value: (u, v) => {
+                  if (v == null) return "";
+                  const pressure = 10 ** v;
+                  return Number.isFinite(pressure) ? pressure.toExponential(2) : "";
+                },
+                stroke: '#818cf8',
+                points: { show: true, size: 2, fill: '#818cf8', stroke: '#818cf8' }
               }
             ],
-            scales: { x: { time: true } },
+            scales: {
+              x: { time: true },
+              y: {
+                range: getPaddedPressureExponentRange,
+              },
+            },
             axes: [
               {
                 stroke: '#94a3b8',
@@ -917,68 +1979,59 @@ function renderDashboard(opts) {
                 grid:  { stroke: 'rgba(255,255,255,0.06)', width: 1 },
               },
               {
-                label: 'Pressure (mbar)',
+                label: 'Pressure (mbar, log10)',
                 labelSize: 20,
                 labelFont: '10px Arial',
                 stroke: '#94a3b8',
                 font: '10px Arial',
                 size: 80,
-                values: (u, vals) => vals.map(v => v.toExponential(2)),
-                ticks: { stroke: 'rgba(255,255,255,0.15)', width: 1 },
-                grid:  { stroke: 'rgba(255,255,255,0.06)', width: 1 },
+                values: (u, vals) => vals.map(v => (
+                  Number.isFinite(v) && Number.isFinite(10 ** v)
+                    ? (10 ** v).toExponential(2)
+                    : ''
+                )),
+                ticks: {
+                  stroke: 'rgba(255,255,255,0.15)',
+                  width: 1,
+                },
+                grid:  {
+                  stroke: 'rgba(255,255,255,0.06)',
+                  width: 1,
+                },
               },
             ],
             cursor: {
-              focus: { prox: 16 },
+              focus: { prox: -1 },
+              points: {
+                size: 8,
+                width: 1,
+                fill: '#38bdf8',
+                stroke: '#e0f2fe',
+              },
               drag: {
-                x: true,
+                x: false,
                 y: false,
-                setScale: true
+                setScale: false,
+                dist: 8,
               },
             },
+            plugins: [
+              createPressureInteractionPlugin({
+                getMode: () => pressureInteractionMode,
+                getDataExtent: () => getPressureDataExtent(),
+                getMinimumSpan: () => pressureMinimumXSpan,
+                onReady: () => {
+                  pressureChartInitialized = true;
+                },
+                onReset: () => resetPressureViewport(),
+                onXScaleChange: (min, max) => markPressureViewportCustom(min, max),
+              }),
+              resizeCleanupPlugin,
+            ],
           }, data, chartEl);
-
-          window.addEventListener('resize', () => {
-            uplot.setSize({ width: getChartWidth(), height: 300 });
-          });
-
-          chartEl.ondblclick = () => {
-            uplot.setScale('x', { min: null, max: null });
-          };
 
           return uplot;
         }
-
-        // Create the pressure chart and keep a reference for live updates
-        let pressureChart = createLiveUplotChart(document.getElementById('chart-root-3'), {
-          title: 'Pressure Graph',
-          data: [${JSON.stringify(shortTermPressureGraph.displayXVals)}, ${JSON.stringify(shortTermPressureGraph.displayYVals)}],
-          seriesLabel: "pressure (mbar)",
-          maxDataPoints: ${shortTermPressureGraph.maxDataPoints},
-          maxDisplayPoints: ${shortTermPressureGraph.maxDisplayPoints},
-          displayXVals: ${JSON.stringify(shortTermPressureGraph.displayXVals)},
-          lastUsedFactor: ${shortTermPressureGraph.lastUsedFactor},
-          chartDataIntervalDuration: ${shortTermPressureGraph.chartDataIntervalDuration},
-        });
-
-        // Toggle state for pressure chart view
-        let currentPressureView = 'short';
-        let longTermPollCounter = 0;
-        const LONG_TERM_POLL_EVERY = 20; // 20 * 3s = 60s
-
-        const pressureViewToggle = document.getElementById('pressure-view-toggle');
-        const pressureChartLabel = document.getElementById('pressure-chart-label');
-        const pressureChartStatus = document.getElementById('pressure-chart-status');
-        const pressureViewConfig = {
-          short: {
-            label: 'Short-Term (Last 24h, ~3s source data, downsampled for display)',
-            buttonText: 'Switch to Historical View',
-          },
-          long: {
-            label: 'Historical (All-time, 1-min averaged source data)',
-            buttonText: 'Switch to Live View',
-          },
-        };
 
         function formatPressureChartStatus(meta) {
           const rawPointCount = Number(meta.rawPointCount ?? 0);
@@ -998,29 +2051,392 @@ function renderDashboard(opts) {
             ' raw points (downsample x' + downsampleFactor + ', ' + sourceResolutionLabel + ')';
         }
 
-        function applyPressureChartData(chartData) {
-          pressureChart.setData([chartData.xVals, chartData.yVals]);
-          pressureChartStatus.textContent = formatPressureChartStatus(chartData);
+        function showPressureChartPlaceholder(message) {
+          if (pressureChart) return;
+          pressureChartRoot.replaceChildren();
+          const wrapper = document.createElement('div');
+          wrapper.className = 'chart-container pressure-chart-placeholder';
+          wrapper.innerHTML =
+            '<div class="chart-title">Pressure Graph</div>' +
+            '<div style="height:300px;display:flex;align-items:center;justify-content:center;' +
+            'padding:20px;color:#94a3b8;text-align:center;box-sizing:border-box;">' +
+            message + '</div>';
+          pressureChartRoot.appendChild(wrapper);
+        }
+
+        function destroyPressureChart() {
+          pressureChartInitialized = false;
+          if (pressureChart) {
+            try {
+              pressureChart.destroy();
+            } catch (destroyError) {
+              console.error('Failed to clean up pressure chart:', destroyError);
+            }
+          }
+          pressureChart = null;
+          pressure902bSuppressedForHistorical = false;
+        }
+
+        function disablePressureChart(error) {
+          console.error('Pressure chart disabled after a rendering error:', error);
+          const errorMessage = error instanceof Error
+            ? error.message
+            : String(error || 'Unknown rendering error');
+          pressureChartDisabled = true;
+          destroyPressureChart();
+          showPressureChartPlaceholder(
+            'Pressure graph could not be rendered. The rest of the dashboard will keep updating.'
+          );
+          pressureChartStatus.textContent =
+            'Pressure graph unavailable; dashboard polling is still active. Error: ' + errorMessage;
+          pressureChartStatus.dataset.renderError = errorMessage;
+        }
+
+        function ensurePressureChart(chartData, rawPressureData) {
+          if (pressureChart) return true;
+          if (pressureChartDisabled) return false;
+          if (!hasRenderablePressureChartData(...rawPressureData)) {
+            showPressureChartPlaceholder('Pressure data is not available yet.');
+            pressureChartStatus.textContent = 'Pressure data is not available yet.';
+            return false;
+          }
+
+          pressureChartRoot.replaceChildren();
+          try {
+            pressureChart = createLiveUplotChart(pressureChartRoot, {
+              title: 'Pressure Graph',
+              data: chartData,
+            });
+            return true;
+          } catch (error) {
+            disablePressureChart(error);
+            return false;
+          }
+        }
+
+        function renderPressureViewport() {
+          const [min, max] = resolvePressureViewport();
+          const sample = buildPressureViewportSample(
+            pressureDisplayDataX,
+            pressureDisplayData972b,
+            pressureDisplayData902b,
+            min,
+            max,
+            MAX_BROWSER_PRESSURE_POINTS,
+            0
+          );
+          const normalizedPressure972bVals =
+            normalizePressureSeriesForLogScale(sample.pressure972bVals);
+          const normalizedPressure902bVals = currentPressureView === 'short'
+            ? normalizePressureSeriesForLogScale(sample.pressure902bVals)
+            : new Array(sample.xVals.length).fill(null);
+          const rawPressureData = [
+            sample.xVals,
+            normalizedPressure972bVals,
+            normalizedPressure902bVals,
+          ];
+
+          if (!hasRenderablePressureChartData(...rawPressureData)) {
+            destroyPressureChart();
+            showPressureChartPlaceholder('Pressure data is not available for this time range yet.');
+            pressureChartStatus.textContent =
+              'No valid pressure samples are available for the selected time range.';
+            updatePressureChartViewText();
+            return;
+          }
+          // Keep uPlot on its bounded linear scale. Its native logarithmic
+          // tick generator can throw "Invalid array length" for live pressure
+          // ranges, so convert exponents here and format labels back to mbar.
+          const chartData = [
+            sample.xVals,
+            transformPressureSeriesToLog10(normalizedPressure972bVals),
+            transformPressureSeriesToLog10(normalizedPressure902bVals),
+          ];
+          if (!ensurePressureChart(chartData, rawPressureData)) return;
+
+          applyingPressureViewport = true;
+          try {
+            pressureChart.batch(() => {
+              pressureChart.setData(chartData, false);
+              if (Number.isFinite(min) && Number.isFinite(max) && max > min) {
+                pressureChart.setScale('x', { min, max });
+              } else {
+                pressureChart.setScale('x', { min: null, max: null });
+              }
+              pressureChart.setScale('y', { min: null, max: null });
+            });
+          } catch (error) {
+            disablePressureChart(error);
+            return;
+          } finally {
+            applyingPressureViewport = false;
+          }
+          pressureChartStatus.textContent = formatPressureChartStatus(pressureChartMeta);
+          updatePressureChartViewText();
+          updatePressureSeriesVisibility();
+        }
+
+        function schedulePressureViewportRender() {
+          if (pressureViewportRenderFrame !== null) return;
+          pressureViewportRenderFrame = window.requestAnimationFrame(() => {
+            pressureViewportRenderFrame = null;
+            renderPressureViewport();
+          });
+        }
+
+        function replacePressureChartData(chartData) {
+          const normalized = normalizePressureChartData(
+            chartData.xVals,
+            chartData.pressure972bVals,
+            chartData.view === 'short' ? chartData.pressure902bVals : null,
+            null,
+            MAX_BROWSER_PRESSURE_POINTS
+          );
+          pressureDisplayDataX = normalized.xVals;
+          pressureDisplayData972b = normalized.pressure972bVals;
+          pressureDisplayData902b = normalized.pressure902bVals;
+          const cacheStartTime = chartData.cacheStartTime === null
+            ? null
+            : Number(chartData.cacheStartTime);
+          const cacheEndTime = chartData.cacheEndTime === null
+            ? null
+            : Number(chartData.cacheEndTime);
+          if (
+            Number.isFinite(cacheStartTime) &&
+            Number.isFinite(cacheEndTime) &&
+            cacheEndTime >= cacheStartTime
+          ) {
+            pressureAvailableExtent = [cacheStartTime, cacheEndTime];
+          } else if (normalized.xVals.length > 0 && !chartData.rangeRequested) {
+            pressureAvailableExtent = [normalized.xVals[0], normalized.xVals.at(-1)];
+          }
+          pressureChartMeta = {
+            rawPointCount: Number(chartData.rawPointCount) || normalized.xVals.length,
+            totalRawPointCount: Number(chartData.totalRawPointCount) ||
+              Number(chartData.rawPointCount) || normalized.xVals.length,
+            displayPointCount: normalized.xVals.length,
+            downsampleFactor: Math.max(1, Number(chartData.downsampleFactor) || 1),
+            sourceResolutionLabel: chartData.sourceResolutionLabel || 'source data',
+            sourceIntervalSeconds: Number(chartData.sourceIntervalSeconds) || null,
+            rangeRequested: chartData.rangeRequested === true,
+          };
+          pressureMinimumXSpan = Number(chartData.sourceIntervalSeconds) > 0
+            ? Number(chartData.sourceIntervalSeconds)
+            : getMinimumPressureXSpan(pressureDisplayDataX);
+          renderPressureViewport();
+        }
+
+        function getPressureRequestRange(view) {
+          if (view !== currentPressureView) return null;
+          if (pressureViewportKind === 'custom' && Array.isArray(pressureCustomRange)) {
+            return [...pressureCustomRange];
+          }
+          if (view === 'short') {
+            return resolvePressureViewport();
+          }
+          return null;
+        }
+
+        function buildPressureChartUrl(view, range) {
+          const query = new URLSearchParams({ view });
+          if (
+            Array.isArray(range) &&
+            Number.isFinite(range[0]) &&
+            Number.isFinite(range[1]) &&
+            range[1] > range[0]
+          ) {
+            query.set('from', String(range[0]));
+            query.set('to', String(range[1]));
+            query.set('maxPoints', String(MAX_BROWSER_PRESSURE_POINTS));
+          }
+          return '/chart-data?' + query.toString();
+        }
+
+        async function loadPressureChartSnapshot(view = currentPressureView, range = null) {
+          const generation = ++pressureSnapshotGeneration;
+          const chartData = await fetchJsonWithTimeout(buildPressureChartUrl(view, range));
+          if (
+            generation !== pressureSnapshotGeneration ||
+            view !== currentPressureView ||
+            chartData.view !== view
+          ) return null;
+          replacePressureChartData(chartData);
+          return view;
+        }
+
+        async function refreshPressureChartData(view = currentPressureView, range = undefined) {
+          const requestedRange = range === undefined
+            ? getPressureRequestRange(view)
+            : range;
+          const requestKey = buildPressureChartUrl(view, requestedRange);
+          if (pressureChartRefreshInFlight) {
+            if (pressureChartRefreshKey === requestKey) {
+              return pressureChartRefreshInFlight;
+            }
+            await pressureChartRefreshInFlight.catch(() => null);
+            return refreshPressureChartData(view, requestedRange);
+          }
+          const request = loadPressureChartSnapshot(view, requestedRange);
+          pressureChartRefreshInFlight = request;
+          pressureChartRefreshKey = requestKey;
+          try {
+            return await request;
+          } finally {
+            if (pressureChartRefreshInFlight === request) {
+              pressureChartRefreshInFlight = null;
+              pressureChartRefreshKey = null;
+            }
+          }
+        }
+
+        function schedulePressureDetailRefresh() {
+          if (pressureDetailRefreshTimer !== null) {
+            clearTimeout(pressureDetailRefreshTimer);
+          }
+          if (pressureViewportKind !== 'custom' || !Array.isArray(pressureCustomRange)) {
+            pressureDetailRefreshTimer = null;
+            return;
+          }
+
+          const requestedView = currentPressureView;
+          const requestedRange = [...pressureCustomRange];
+          pressureDetailRefreshTimer = setTimeout(async () => {
+            pressureDetailRefreshTimer = null;
+            if (
+              requestedView !== currentPressureView ||
+              pressureViewportKind !== 'custom' ||
+              !Array.isArray(pressureCustomRange) ||
+              pressureCustomRange[0] !== requestedRange[0] ||
+              pressureCustomRange[1] !== requestedRange[1]
+            ) {
+              return;
+            }
+            try {
+              await refreshPressureChartData(requestedView, requestedRange);
+            } catch (error) {
+              console.error('Failed to load detailed pressure data:', error);
+            }
+          }, PRESSURE_DETAIL_DEBOUNCE_MS);
         }
 
         function updatePressureChartViewText() {
-          const config = pressureViewConfig[currentPressureView];
-          pressureViewToggle.textContent = config.buttonText;
-          pressureChartLabel.textContent = config.label;
+          if (currentPressureView === 'short') {
+            const rangeLabel = pressureViewportKind === 'custom'
+              ? 'Custom range'
+              : 'Last ' + selectedLiveHours + 'h';
+            pressureChartLabel.textContent = 'Short-Term (' + rangeLabel + ', ~3s source data, downsampled for display)';
+            pressureViewToggle.textContent = 'Switch to Historical View';
+            pressureTimeRangeGroup.hidden = false;
+            pressureTimeRange.value = pressureViewportKind === 'custom'
+              ? 'custom'
+              : String(selectedLiveHours);
+          } else {
+            const rangeLabel = pressureViewportKind === 'custom' ? 'Custom range' : 'All-time';
+            pressureChartLabel.textContent = 'Historical (' + rangeLabel + ', 1-min averaged source data)';
+            pressureViewToggle.textContent = 'Switch to Live View';
+            pressureTimeRangeGroup.hidden = true;
+          }
+        }
+
+        function updatePressureSeriesVisibility() {
+          if (!pressureChart) return;
+
+          const isLiveView = currentPressureView === 'short';
+          const legendRows = pressureChart.root.querySelectorAll('.u-legend .u-series');
+          const pressure902bLegendRow = legendRows[2];
+
+          if (!isLiveView && !pressure902bSuppressedForHistorical) {
+            pressure902bLiveVisible = pressureChart.series[2].show !== false;
+            pressureChart.setSeries(2, { show: false });
+            pressure902bSuppressedForHistorical = true;
+          } else if (isLiveView && pressure902bSuppressedForHistorical) {
+            pressureChart.setSeries(2, { show: pressure902bLiveVisible });
+            pressure902bSuppressedForHistorical = false;
+          }
+
+          if (pressure902bLegendRow) {
+            pressure902bLegendRow.style.display = isLiveView ? '' : 'none';
+          }
+        }
+
+        function setPressureInteractionMode(mode) {
+          pressureInteractionMode = mode === 'pan' ? 'pan' : 'zoom';
+          const isPanMode = pressureInteractionMode === 'pan';
+          pressureChartRoot.classList.toggle('is-pan-mode', isPanMode);
+          pressureZoomMode.classList.toggle('is-active', !isPanMode);
+          pressurePanMode.classList.toggle('is-active', isPanMode);
+          pressureZoomMode.setAttribute('aria-pressed', String(!isPanMode));
+          pressurePanMode.setAttribute('aria-pressed', String(isPanMode));
+
+          if (pressureChart) {
+            pressureChart.setSelect({ left: 0, top: 0, width: 0, height: 0 }, false);
+          }
+        }
+
+        function resetPressureViewport() {
+          if (pressureDetailRefreshTimer !== null) {
+            clearTimeout(pressureDetailRefreshTimer);
+            pressureDetailRefreshTimer = null;
+          }
+          pressureCustomRange = null;
+          pressureViewportKind = currentPressureView === 'short' ? 'preset' : 'all';
+          refreshPressureChartData().catch((error) => {
+            console.error('Failed to reset pressure view:', error);
+            renderPressureViewport();
+          });
         }
 
         pressureViewToggle.addEventListener('click', async () => {
-          currentPressureView = currentPressureView === 'short' ? 'long' : 'short';
-          updatePressureChartViewText();
+          const previousPressureView = currentPressureView;
+          const previousViewportKind = pressureViewportKind;
+          const previousCustomRange = pressureCustomRange;
+          const nextPressureView = previousPressureView === 'short' ? 'long' : 'short';
+          pressureViewToggle.disabled = true;
 
           try {
-            const res = await fetch('/chart-data?view=' + currentPressureView);
-            const chartData = await res.json();
-            applyPressureChartData(chartData);
+            if (pressureDetailRefreshTimer !== null) {
+              clearTimeout(pressureDetailRefreshTimer);
+              pressureDetailRefreshTimer = null;
+            }
+            currentPressureView = nextPressureView;
+            pressureCustomRange = null;
+            pressureViewportKind = currentPressureView === 'short' ? 'preset' : 'all';
+            if (pressureChartRefreshInFlight) {
+              await pressureChartRefreshInFlight.catch(() => null);
+            }
+            const refreshedView = await refreshPressureChartData(currentPressureView);
+            if (refreshedView !== currentPressureView) {
+              throw new Error('Received stale pressure chart data');
+            }
           } catch (e) {
+            currentPressureView = previousPressureView;
+            pressureViewportKind = previousViewportKind;
+            pressureCustomRange = previousCustomRange;
+            renderPressureViewport();
             console.error('Failed to load chart data:', e);
+          } finally {
+            pressureViewToggle.disabled = false;
           }
         });
+
+        pressureTimeRange.addEventListener('change', () => {
+          if (pressureTimeRange.value === 'custom') return;
+          selectedLiveHours = Number(pressureTimeRange.value);
+          pressureCustomRange = null;
+          pressureViewportKind = 'preset';
+          refreshPressureChartData().catch((error) => {
+            console.error('Failed to change pressure time range:', error);
+            renderPressureViewport();
+          });
+        });
+
+        pressureZoomMode.addEventListener('click', () => setPressureInteractionMode('zoom'));
+        pressurePanMode.addEventListener('click', () => setPressureInteractionMode('pan'));
+        pressureResetView.addEventListener('click', resetPressureViewport);
+
+        setPressureInteractionMode('zoom');
+        renderPressureViewport();
+        refreshPressureChartData().catch((e) => console.error('Failed to refresh chart data:', e));
       </script>
 
       <div id="ccs-charts-section">
@@ -1030,6 +2446,22 @@ function renderDashboard(opts) {
       </div>
 
       <script>
+        ${ccsTimeWindowBoundsSource}
+
+        let ccsViewportNow = ${Date.now() / 1000};
+
+        function setCCSChartTimeWindow(chart, nowSec = ccsViewportNow) {
+          const [min, max] = getCCSTimeWindowBounds(nowSec);
+          chart.setScale('x', { min, max });
+        }
+
+        function updateCCSChartTimeWindows(nowSec = ccsViewportNow) {
+          ccsViewportNow = Number.isFinite(nowSec) ? nowSec : Date.now() / 1000;
+          setCCSChartTimeWindow(ccsChartA, ccsViewportNow);
+          setCCSChartTimeWindow(ccsChartB, ccsViewportNow);
+          setCCSChartTimeWindow(ccsChartC, ccsViewportNow);
+        }
+
         function createCCSUplotChart(container, config) {
           if (typeof container === 'string') container = document.querySelector(container);
 
@@ -1057,7 +2489,7 @@ function renderDashboard(opts) {
               {},
               {
                 label: seriesLabel,
-                value: (u, v) => v == null ? "" : v.toFixed(1) + " °C",
+                value: (u, v) => v == null ? "" : Number(v).toFixed(1) + " °C",
                 stroke,
                 points: { show: false },
               }
@@ -1093,7 +2525,7 @@ function renderDashboard(opts) {
           });
 
           chartEl.ondblclick = () => {
-            uplot.setScale('x', { min: null, max: null });
+            setCCSChartTimeWindow(uplot);
           };
 
           return uplot;
@@ -1115,8 +2547,9 @@ function renderDashboard(opts) {
           title: 'Cathode C \u2014 Clamp Temperature',
           data: [${JSON.stringify(ccsGraphC.xVals)}, ${JSON.stringify(ccsGraphC.yVals)}],
           seriesLabel: 'Temp C (°C)',
-          stroke: '#818cf8',
+          stroke: '#fca5a5',
         });
+        updateCCSChartTimeWindows();
       </script>
 
       <!-- Log Viewer -->
@@ -1191,6 +2624,17 @@ function renderDashboard(opts) {
           return Number(value).toFixed(2) + ' mA';
         }
 
+        function formatPressureValue(value, isRunning) {
+          if (!isRunning || value === null || typeof value === 'undefined') {
+            return '-- mbar';
+          }
+
+          const numericValue = Number(value);
+          return Number.isFinite(numericValue) && numericValue > 0
+            ? numericValue.toExponential(2) + ' mbar'
+            : '-- mbar';
+        }
+
         function updatePowerSupplyOutput(id, outputEnabled, isRunning) {
           const elem = document.getElementById(id);
           if (!elem) return;
@@ -1215,11 +2659,145 @@ function renderDashboard(opts) {
           elem.textContent = 'Output: ' + (enabled ? 'Enabled' : 'Disabled');
         }
 
-        setInterval(async() => {
+        const validMachineStatusStates = new Set(['gray', 'green', 'red']);
+        const progressViewport = document.querySelector('.experiment-progress-viewport');
+        const progressTrack = document.querySelector('.experiment-progress-track');
+        const progressMilestones = progressTrack
+          ? Array.from(progressTrack.querySelectorAll('.experiment-progress-milestone-shell'))
+          : [];
+        const minimumProgressChevronWidth = 100;
+        const progressChevronOverlap = 8;
+        const firstChevronPoints = '1,1 109.5,1 123,24 109.5,47 1,47';
+        const joinedChevronPoints = '1,1 109.5,1 123,24 109.5,47 1,47 15,24';
+        let progressLayoutSignature = '10';
+        let progressHighlightFrame = null;
+
+        function updateExperimentProgressHighlight() {
+          progressHighlightFrame = null;
+          if (!progressViewport) return;
+
+          const firstGrayMilestone = progressMilestones.find(
+            (milestone) => milestone.classList.contains('machine-status-gray')
+          );
+          if (!firstGrayMilestone) {
+            progressViewport.style.setProperty('--progress-highlight-alpha', '0');
+            return;
+          }
+
+          const viewportRect = progressViewport.getBoundingClientRect();
+          const milestoneRect = firstGrayMilestone.getBoundingClientRect();
+          const centerX = milestoneRect.left - viewportRect.left + milestoneRect.width / 2;
+          const centerY = milestoneRect.top - viewportRect.top + milestoneRect.height / 2;
+
+          progressViewport.style.setProperty('--progress-highlight-x', centerX + 'px');
+          progressViewport.style.setProperty('--progress-highlight-y', centerY + 'px');
+          progressViewport.style.setProperty('--progress-highlight-alpha', '1');
+        }
+
+        function scheduleExperimentProgressHighlight() {
+          if (progressHighlightFrame !== null) return;
+          progressHighlightFrame = requestAnimationFrame(updateExperimentProgressHighlight);
+        }
+
+        function getMinimumExperimentProgressRowWidth(chevronCount) {
+          return chevronCount * minimumProgressChevronWidth;
+        }
+
+        function getExperimentProgressRows(availableWidth) {
+          if (availableWidth > getMinimumExperimentProgressRowWidth(10)) return [10];
+          if (availableWidth > getMinimumExperimentProgressRowWidth(5)) return [5, 5];
+          if (availableWidth > getMinimumExperimentProgressRowWidth(4)) return [4, 3, 3];
+          if (availableWidth > getMinimumExperimentProgressRowWidth(3)) return [3, 3, 2, 2];
+          if (availableWidth > getMinimumExperimentProgressRowWidth(2)) {
+            return [2, 2, 2, 2, 2];
+          }
+          return [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+        }
+
+        function layoutExperimentProgress() {
+          if (!progressTrack || progressMilestones.length === 0) return;
+
+          const availableWidth = progressTrack.clientWidth;
+          if (availableWidth <= 0) return;
+
+          const rowSizes = getExperimentProgressRows(availableWidth);
+          const widestRowSize = Math.max(...rowSizes);
+          const chevronWidth = Math.max(
+            minimumProgressChevronWidth,
+            (
+              availableWidth +
+              (widestRowSize - 1) * progressChevronOverlap
+            ) / widestRowSize
+          );
+          progressTrack.style.setProperty('--progress-chevron-width', chevronWidth + 'px');
+
+          const nextSignature = rowSizes.join(',');
+          if (nextSignature === progressLayoutSignature) {
+            scheduleExperimentProgressHighlight();
+            return;
+          }
+
+          progressTrack.replaceChildren();
+          let milestoneIndex = 0;
+          rowSizes.forEach((rowSize) => {
+            const row = document.createElement('div');
+            row.className = 'experiment-progress-row';
+
+            progressMilestones.slice(milestoneIndex, milestoneIndex + rowSize)
+              .forEach((milestone) => {
+                const polygon = milestone.querySelector('polygon');
+                if (polygon) {
+                  polygon.setAttribute(
+                    'points',
+                    milestone === progressMilestones[0]
+                      ? firstChevronPoints
+                      : joinedChevronPoints
+                  );
+                }
+                row.appendChild(milestone);
+              });
+
+            progressTrack.appendChild(row);
+            milestoneIndex += rowSize;
+          });
+          progressLayoutSignature = nextSignature;
+          scheduleExperimentProgressHighlight();
+        }
+
+        if (progressTrack) {
+          if (typeof ResizeObserver === 'function') {
+            new ResizeObserver(layoutExperimentProgress).observe(progressTrack);
+          } else {
+            window.addEventListener('resize', layoutExperimentProgress);
+          }
+          layoutExperimentProgress();
+        }
+
+        function updateExperimentProgress(telemetryData, isRunning) {
+          document.querySelectorAll('[data-machine-status-key]').forEach((milestone) => {
+            const key = milestone.dataset.machineStatusKey;
+            const label = milestone.dataset.machineStatusLabel;
+            const candidate = isRunning && telemetryData && typeof telemetryData === 'object'
+              ? telemetryData[key]
+              : null;
+            const state = validMachineStatusStates.has(candidate) ? candidate : 'gray';
+
+            milestone.classList.remove(
+              'machine-status-gray',
+              'machine-status-green',
+              'machine-status-red'
+            );
+            milestone.classList.add('machine-status-' + state);
+            milestone.setAttribute('aria-label', label + ': ' + state);
+            milestone.title = label + ': ' + state;
+          });
+          scheduleExperimentProgressHighlight();
+        }
+
+        async function pollDashboard() {
           try {
 
-          const res = await fetch('/data');
-          const data = await res.json();
+          const data = await fetchJsonWithTimeout('/data');
 
           const interlockIds = ['sic-door', 'sic-water', 'sic-vacuum-power', 'sic-vacuum-pressure', 'sic-oil-low', 'sic-oil-high', 'sic-estop', 'sic-estopExt', 'all-interlocks', 'g9-output', 'hvolt'];
           const vacuumIds = ['vac-indicator-0', 'vac-indicator-1', 'vac-indicator-2', 'vac-indicator-3', 'vac-indicator-4', 'vac-indicator-5', 'vac-indicator-6', 'vac-indicator-7'];
@@ -1245,11 +2823,7 @@ function renderDashboard(opts) {
           logLastModified.textContent = clean_string_1;
           displayLastModified.textContent = clean_string_2;
 
-          const now = Date.now();
-
-          const THRESHOLD = 2 * 60 * 1000;
-
-          let experimentRunning = (now - dateObject1) <= THRESHOLD;
+          const experimentRunning = data.experimentRunning === true;
 
           statusDiv.textContent = experimentRunning
           ? 'Dashboard is running'
@@ -1257,6 +2831,8 @@ function renderDashboard(opts) {
 
           statusDiv.classList.toggle('neon-success', experimentRunning);
           statusDiv.classList.toggle('neon-warning', !experimentRunning);
+
+          updateExperimentProgress(data, experimentRunning);
 
           interlockIds.forEach((id, i) => {
             const elem = document.getElementById(id);
@@ -1268,7 +2844,8 @@ function renderDashboard(opts) {
             elem.style.backgroundColor = experimentRunning ? data.vacuumColors[i] : 'grey';
           });
 
-          const pressureReadings = document.getElementById('pressureReadings');
+          const pressure972b = document.getElementById('pressure972b');
+          const pressure902b = document.getElementById('pressure902b');
 
           const webMonitorLastModified = document.getElementById('log-last-modified');
 
@@ -1301,9 +2878,9 @@ function renderDashboard(opts) {
           heaterVoltageB.textContent = (data.heaterVoltage_B !== null && data.heaterVoltage_B !== undefined && experimentRunning? "Voltage: " + Number(data.heaterVoltage_B).toFixed(2) + " V" : "Voltage: " + "--");
           heaterVoltageC.textContent = (data.heaterVoltage_C !== null && data.heaterVoltage_C !== undefined && experimentRunning? "Voltage: " + Number(data.heaterVoltage_C).toFixed(2) + " V" : "Voltage: " + "--");
 
-          heaterTemperatureA.textContent = (data.clamp_temperature_A !== null && data.clamp_temperature_A !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_A)) + "°C" : "Clamp Temperature: " + "--");
-          heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_B)) + "°C" : "Clamp Temperature: " + "--");
-          heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + Math.round(Number(data.clamp_temperature_C)) + "°C" : "Clamp Temperature: " + "--");
+          heaterTemperatureA.textContent = (data.clamp_temperature_A !== null && data.clamp_temperature_A !== undefined && experimentRunning? "Clamp Temperature: " + Number(data.clamp_temperature_A).toFixed(1) + "°C" : "Clamp Temperature: " + "--");
+          heaterTemperatureB.textContent = (data.clamp_temperature_B !== null && data.clamp_temperature_B !== undefined && experimentRunning? "Clamp Temperature: " + Number(data.clamp_temperature_B).toFixed(1) + "°C" : "Clamp Temperature: " + "--");
+          heaterTemperatureC.textContent = (data.clamp_temperature_C !== null && data.clamp_temperature_C !== undefined && experimentRunning? "Clamp Temperature: " + Number(data.clamp_temperature_C).toFixed(1) + "°C" : "Clamp Temperature: " + "--");
 
           // Update power-supply cards (Pos1: pos_1kv)
           const powerSupplySetVoltagePos1 = document.getElementById('powerSupplySetVoltagePos1');
@@ -1342,13 +2919,24 @@ function renderDashboard(opts) {
           if (powerSupplyMeasuredCurrentB3) powerSupplyMeasuredCurrentB3.textContent = 'Measured Current: ' + formatPowerSupplyCurrent(data.pos_3kv_i, experimentRunning);
 
           const dateObj = new Date(data.siteLastUpdated);
+          const serverNowMs = Date.parse(data.siteLastUpdated);
+          pressureViewportNow = Number.isFinite(serverNowMs)
+            ? serverNowMs / 1000
+            : Date.now() / 1000;
+          ccsViewportNow = pressureViewportNow;
+          if (pressureViewportKind !== 'custom') {
+            schedulePressureViewportRender();
+          }
           const clean_string = dateObj.toLocaleString("en-US", {
             hour12: true,
             timeZone: "America/Chicago"
           });
           siteLastUpdated.textContent = clean_string;
 
-          pressureReadings.textContent = String(data.pressure).replace("E", "e") + " mbar";
+          pressure972b.textContent =
+            '972B: ' + formatPressureValue(data.pressure, experimentRunning);
+          pressure902b.textContent =
+            '902B: ' + formatPressureValue(data.pressure_902b_mbar, experimentRunning);
           sensor1.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["1"] || data.temperatures["1"] === "DISCONNECTED" || data.temperatures["1"] === "None" && !experimentRunning) ? '--' : data.temperatures["1"] + '°C';
           sensor2.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["2"] || data.temperatures["2"] === "DISCONNECTED" || data.temperatures["2"] === "None" && !experimentRunning) ? '--' : data.temperatures["2"] + '°C';
           sensor3.querySelector('.gauge-cover').textContent = (!data.temperatures || !data.temperatures["3"] || data.temperatures["3"] === "DISCONNECTED" || data.temperatures["3"] === "None" && !experimentRunning) ? '--' : data.temperatures["3"] + '°C';
@@ -1362,35 +2950,36 @@ function renderDashboard(opts) {
           console.log(data.sicColors);
 
           // Live chart update
-          longTermPollCounter++;
-          const shouldUpdateLongTerm = longTermPollCounter >= LONG_TERM_POLL_EVERY;
-          if (shouldUpdateLongTerm) longTermPollCounter = 0;
+          const shouldUpdateLongTerm = Date.now() - lastLongTermPollAt >= LONG_TERM_POLL_INTERVAL_MS;
 
           if (currentPressureView === 'short' || (currentPressureView === 'long' && shouldUpdateLongTerm)) {
             try {
-              const chartRes = await fetch('/chart-data?view=' + currentPressureView);
-              const chartData = await chartRes.json();
-              applyPressureChartData(chartData);
+              const refreshedView = await refreshPressureChartData();
+              if (refreshedView === 'long') lastLongTermPollAt = Date.now();
             } catch (e) {
               console.error('Chart data update failed:', e);
             }
           }
 
           try {
-            const ccsRes = await fetch('/ccs-chart-data');
-            const ccsData = await ccsRes.json();
+            const ccsData = await fetchJsonWithTimeout('/ccs-chart-data');
             ccsChartA.setData([ccsData.A.xVals, ccsData.A.yVals]);
             ccsChartB.setData([ccsData.B.xVals, ccsData.B.yVals]);
             ccsChartC.setData([ccsData.C.xVals, ccsData.C.yVals]);
           } catch (e) {
             console.error('CCS chart data update failed:', e);
+          } finally {
+            updateCCSChartTimeWindows(ccsViewportNow);
           }
 
+          } catch (error) {
+            console.error('Failed to load the dashboard!', error);
+          } finally {
+            setTimeout(pollDashboard, 3000);
           }
-          catch {
-          console.error('Failed to load the dashboard!')
-            }
-          }, 3000)
+        }
+
+        setTimeout(pollDashboard, 3000);
 
         toggleButton.addEventListener('click', async () => {
           if (!showingFull) {
@@ -1501,4 +3090,18 @@ function renderDashboard(opts) {
   `;
 }
 
-module.exports = { renderDashboard };
+module.exports = {
+  fetchJsonWithTimeout,
+  renderDashboard,
+  getMachineStatusState,
+  normalizePressureValueForLogScale,
+  normalizePressureSeriesForLogScale,
+  transformPressureSeriesToLog10,
+  normalizePressureChartData,
+  hasRenderablePressureChartData,
+  getPaddedPressureExponentRange,
+  getPressureTimeWindowBounds,
+  clampPressureViewportRange,
+  getCCSTimeWindowBounds,
+  buildPressureViewportSample,
+};

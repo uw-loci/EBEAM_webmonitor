@@ -4,14 +4,15 @@ const {
   mapSupabaseDataToAppFormat,
   resetData,
   fetchLatestShortTermEntry,
-  fetchShortTermEntriesSince,
-  fetchLongTermEntriesSince,
+  drainShortTermEntriesSince,
+  drainLongTermEntriesSince,
 } = require('./supabase');
 const { fetchDisplayFileContents } = require('./gdrive');
 const {
   shortTermPressureGraph,
   longTermPressureGraph,
   appendPressurePoint,
+  parsePressureForLogScale,
   addCCSPoint,
   ccsGraphA,
   ccsGraphB,
@@ -24,6 +25,20 @@ const LONG_TERM_EXPECTED_INTERVAL_MS = 60_000;
 let telemetrySyncInProgress = false;
 let longTermSyncInProgress = false;
 let displayRefreshInProgress = false;
+
+function expireExperimentIfStale(now = Date.now()) {
+  const lastUpdateMs = state.webMonitorLastModified instanceof Date
+    ? state.webMonitorLastModified.getTime()
+    : NaN;
+
+  if (Number.isFinite(lastUpdateMs) && now - lastUpdateMs <= INACTIVE_THRESHOLD) {
+    return false;
+  }
+
+  state.experimentRunning = false;
+  resetData();
+  return true;
+}
 
 function parseTimestampMs(timestamp) {
   const parsed = Date.parse(timestamp);
@@ -102,6 +117,24 @@ function logBatchSummary(logger, label, summary) {
   );
 }
 
+function createCombinedSummary(lastTimestamp) {
+  return {
+    batchSize: 0,
+    appendedCount: 0,
+    skippedCount: 0,
+    firstTimestamp: null,
+    lastTimestamp,
+  };
+}
+
+function mergeSummary(combined, pageSummary) {
+  combined.batchSize += pageSummary.batchSize;
+  combined.appendedCount += pageSummary.appendedCount;
+  combined.skippedCount += pageSummary.skippedCount;
+  combined.firstTimestamp ??= pageSummary.firstTimestamp;
+  combined.lastTimestamp = pageSummary.lastTimestamp;
+}
+
 function applyShortTermEntries(entries, options = {}) {
   const {
     stateRef = state,
@@ -150,26 +183,25 @@ function applyShortTermEntries(entries, options = {}) {
       expectedIntervalMs,
     });
 
-    const tSec = Math.floor(entryMs / 1000);
+    const tSec = entryMs / 1000;
+    const ccsTimestampSec = Math.floor(tSec);
 
-    ccsPointAdder(ccsA, tSec, entry.data?.cathode?.A?.clamp_temperature ?? null);
-    ccsPointAdder(ccsB, tSec, entry.data?.cathode?.B?.clamp_temperature ?? null);
-    ccsPointAdder(ccsC, tSec, entry.data?.cathode?.C?.clamp_temperature ?? null);
+    ccsPointAdder(ccsA, ccsTimestampSec, entry.data?.cathode?.A?.clamp_temperature ?? null);
+    ccsPointAdder(ccsB, ccsTimestampSec, entry.data?.cathode?.B?.clamp_temperature ?? null);
+    ccsPointAdder(ccsC, ccsTimestampSec, entry.data?.cathode?.C?.clamp_temperature ?? null);
 
-    const pressure = Number.parseFloat(entry.data?.pressure);
-    if (!Number.isFinite(pressure)) {
+    const pressurePointAppended = pressurePointAppender(
+      graph,
+      tSec,
+      parsePressureForLogScale(entry.data?.pressure),
+      parsePressureForLogScale(entry.data?.pressure_902b_mbar)
+    );
+
+    if (pressurePointAppended === false) {
       summary.skippedCount++;
-      logger.warn(`Skipping short-term pressure row at ${entryTimestamp}: invalid pressure value`);
-      stateRef.lastShortTermCursor = entryCursor;
-      previousTimestamp = entryTimestamp;
-      previousMs = entryMs;
-      summary.lastTimestamp = entryTimestamp;
-      continue;
+    } else {
+      summary.appendedCount++;
     }
-
-    pressurePointAppender(graph, tSec, pressure);
-
-    summary.appendedCount++;
     stateRef.lastShortTermCursor = entryCursor;
     previousTimestamp = entryTimestamp;
     previousMs = entryMs;
@@ -240,10 +272,13 @@ function applyLongTermEntries(entries, options = {}) {
       continue;
     }
 
-    const tSec = Math.floor(entryMs / 1000);
-    pressurePointAppender(graph, tSec, pressure);
-
-    summary.appendedCount++;
+    const tSec = entryMs / 1000;
+    const pressurePointAppended = pressurePointAppender(graph, tSec, pressure);
+    if (pressurePointAppended === false) {
+      summary.skippedCount++;
+    } else {
+      summary.appendedCount++;
+    }
     stateRef.lastLongTermCursor = entryCursor;
     previousTimestamp = entryTimestamp;
     previousMs = entryMs;
@@ -259,8 +294,11 @@ function applyLongTermEntries(entries, options = {}) {
  */
 async function pollShortTerm() {
   try {
-    const entries = await fetchShortTermEntriesSince(state.lastShortTermCursor);
-    return applyShortTermEntries(entries);
+    const summary = createCombinedSummary(getCursorTimestamp(state.lastShortTermCursor));
+    await drainShortTermEntriesSince(state.lastShortTermCursor, async (entries) => {
+      mergeSummary(summary, applyShortTermEntries(entries));
+    });
+    return summary;
   } catch (err) {
     console.error('Error in pollShortTerm:', err);
     return null;
@@ -279,8 +317,11 @@ async function pollLongTerm() {
   longTermSyncInProgress = true;
 
   try {
-    const entries = await fetchLongTermEntriesSince(state.lastLongTermCursor);
-    return applyLongTermEntries(entries);
+    const summary = createCombinedSummary(getCursorTimestamp(state.lastLongTermCursor));
+    await drainLongTermEntriesSince(state.lastLongTermCursor, async (entries) => {
+      mergeSummary(summary, applyLongTermEntries(entries));
+    });
+    return summary;
   } catch (err) {
     console.error('Error in pollLongTerm:', err);
     return null;
@@ -294,6 +335,7 @@ async function pollLongTerm() {
  */
 async function fetchAndUpdateFile() {
   if (telemetrySyncInProgress) {
+    expireExperimentIfStale();
     console.warn('Telemetry sync skipped because the previous run is still in progress');
     return;
   }
@@ -312,12 +354,9 @@ async function fetchAndUpdateFile() {
     const latestCursor = buildCursor(latestEntry.created_at, latestEntry.id);
 
     const experimentTime = new Date(latestEntry.created_at);
-    const experimentTimestamp = experimentTime.getTime();
     state.webMonitorLastModified = experimentTime;
 
-    const now = Date.now();
-
-    if (now - experimentTimestamp > INACTIVE_THRESHOLD) {
+    if (expireExperimentIfStale()) {
       console.log('Experiment inactive - last update too old');
       if (isCursorAfter(latestCursor, state.lastShortTermCursor)) {
         state.lastShortTermCursor = latestCursor;
@@ -328,6 +367,11 @@ async function fetchAndUpdateFile() {
     }
 
     await pollShortTerm();
+
+    if (expireExperimentIfStale()) {
+      console.log('Experiment inactive - update became stale during telemetry sync');
+      return;
+    }
 
     const mappedData = mapSupabaseDataToAppFormat(latestEntry.data);
 

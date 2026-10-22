@@ -7,6 +7,10 @@ const RECENT_LOG_WINDOW_MS = 30 * 60 * 1000;
 const MAX_SNIPPET_LINES = 10_000;
 const FALLBACK_SNIPPET_LINES = 5_000;
 const MAX_SNIPPET_BYTES = 2 * 1024 * 1024;
+// Fetch enough tail data to fill the snippet even when the byte range starts
+// in the middle of a line. This keeps each refresh independent of total file
+// size as the experiment log grows over multiple days.
+const MAX_DOWNLOAD_TAIL_BYTES = MAX_SNIPPET_BYTES * 2;
 
 function normalizeTimestampCandidate(candidate) {
   if (!candidate) {
@@ -54,17 +58,32 @@ function createDisplayLogSnippetCollector(options = {}) {
   const fallbackLines = options.fallbackLines ?? FALLBACK_SNIPPET_LINES;
   const maxBytes = options.maxBytes ?? MAX_SNIPPET_BYTES;
 
-  const records = [];
+  let records = [];
+  let firstRecordIndex = 0;
   let totalBytes = 0;
   let newestTimestampMs = null;
 
+  function getRecordCount() {
+    return records.length - firstRecordIndex;
+  }
+
+  function compactRecordsIfNeeded() {
+    if (firstRecordIndex >= 4_096 && firstRecordIndex * 2 >= records.length) {
+      records = records.slice(firstRecordIndex);
+      firstRecordIndex = 0;
+    }
+  }
+
   function removeFirstRecord() {
-    if (records.length === 0) {
+    if (getRecordCount() === 0) {
       return;
     }
 
-    const removed = records.shift();
+    const removed = records[firstRecordIndex];
+    records[firstRecordIndex] = null;
+    firstRecordIndex++;
     totalBytes -= removed.byteLength;
+    compactRecordsIfNeeded();
   }
 
   function trimToRecentWindow() {
@@ -74,8 +93,8 @@ function createDisplayLogSnippetCollector(options = {}) {
 
     const oldestAllowedMs = newestTimestampMs - recentWindowMs;
 
-    while (records.length > 0) {
-      const firstTimestampMs = records[0].timestampMs;
+    while (getRecordCount() > 0) {
+      const firstTimestampMs = records[firstRecordIndex].timestampMs;
 
       if (firstTimestampMs != null) {
         if (firstTimestampMs < oldestAllowedMs) {
@@ -85,7 +104,9 @@ function createDisplayLogSnippetCollector(options = {}) {
         break;
       }
 
-      const nextTimestampIndex = records.findIndex((record, index) => index > 0 && record.timestampMs != null);
+      const nextTimestampIndex = records.findIndex(
+        (record, index) => index > firstRecordIndex && record?.timestampMs != null
+      );
       if (nextTimestampIndex === -1) {
         break;
       }
@@ -103,7 +124,7 @@ function createDisplayLogSnippetCollector(options = {}) {
   function trimToSafetyCaps() {
     const preferredLineLimit = newestTimestampMs == null ? fallbackLines : maxLines;
 
-    while (records.length > preferredLineLimit || totalBytes > maxBytes) {
+    while (getRecordCount() > preferredLineLimit || totalBytes > maxBytes) {
       removeFirstRecord();
     }
   }
@@ -123,10 +144,11 @@ function createDisplayLogSnippetCollector(options = {}) {
       trimToSafetyCaps();
     },
     finalize() {
+      const retainedRecords = records.slice(firstRecordIndex);
       return {
-        lines: records.map((record) => record.line).reverse(),
+        lines: retainedRecords.map((record) => record.line).reverse(),
         byteLength: totalBytes,
-        lineCount: records.length,
+        lineCount: retainedRecords.length,
         newestTimestampMs,
       };
     },
@@ -147,8 +169,39 @@ function buildDriveListUrl({ folderId = FOLDER_ID, apiKey = API_KEY } = {}) {
   url.searchParams.set('q', `'${folderId}' in parents and mimeType='text/plain'`);
   url.searchParams.set('orderBy', 'modifiedTime desc');
   url.searchParams.set('pageSize', '5');
-  url.searchParams.set('fields', 'files(id,name,modifiedTime)');
+  url.searchParams.set('fields', 'files(id,name,modifiedTime,size)');
   return url.toString();
+}
+
+function buildDriveDownloadRequest(fileId, options = {}) {
+  const apiKey = options.apiKey ?? API_KEY;
+  const maxDownloadBytes = options.maxDownloadBytes ?? MAX_DOWNLOAD_TAIL_BYTES;
+  const fileSize = Number(options.fileSize);
+  const url = new URL(
+    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}`
+  );
+  url.searchParams.set('alt', 'media');
+  url.searchParams.set('key', apiKey);
+
+  const headers = { Accept: 'text/plain' };
+  let rangeRequested = false;
+
+  if (
+    Number.isFinite(fileSize) &&
+    fileSize > maxDownloadBytes &&
+    Number.isFinite(maxDownloadBytes) &&
+    maxDownloadBytes > 0
+  ) {
+    const rangeStart = Math.max(0, Math.floor(fileSize - maxDownloadBytes));
+    headers.Range = `bytes=${rangeStart}-`;
+    rangeRequested = true;
+  }
+
+  return {
+    url: url.toString(),
+    headers,
+    rangeRequested,
+  };
 }
 
 function fetchJson(url) {
@@ -219,6 +272,7 @@ async function getMostRecentFile(options = {}) {
 async function fetchRecentLogSnippet(fileId, options = {}) {
   let retries = 3;
   const logger = options.logger ?? console;
+  const httpsGetFn = options.httpsGetFn ?? https.get;
   const collectorOptions = {
     recentWindowMs: options.recentWindowMs,
     maxLines: options.maxLines,
@@ -228,19 +282,21 @@ async function fetchRecentLogSnippet(fileId, options = {}) {
 
   while (retries > 0) {
     try {
+      const request = buildDriveDownloadRequest(fileId, options);
       const response = await new Promise((resolve, reject) => {
-        https
-          .get(
-            `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&key=${API_KEY}`,
-            { headers: { Accept: 'text/plain' } },
-            res => {
-              if (res.statusCode !== 200) {
-                reject(new Error(`Google API Failed: ${res.statusCode}`));
-                return;
-              }
-              resolve(res);
-            }
-          )
+        httpsGetFn(request.url, { headers: request.headers }, res => {
+          const expectedStatus = request.rangeRequested ? 206 : 200;
+          if (res.statusCode !== expectedStatus) {
+            res.resume?.();
+            reject(new Error(
+              request.rangeRequested && res.statusCode === 200
+                ? 'Google API ignored the bounded byte-range request'
+                : `Google API Failed: ${res.statusCode}`
+            ));
+            return;
+          }
+          resolve(res);
+        })
           .on('error', reject);
       });
 
@@ -271,7 +327,7 @@ async function fetchRecentLogSnippet(fileId, options = {}) {
 
     } catch (err) {
       retries--;
-      logger.log(`Retry attempt ${4 - retries}: ${err.message}`);
+      logger.log(`Retry attempt ${3 - retries}: ${err.message}`);
       if (retries === 0) return false;
     }
   }
@@ -341,7 +397,10 @@ async function fetchDisplayFileContents(options = {}) {
     logger.log("Fetching new display log file...");
     let snippet = null;
     try {
-      snippet = await fetchRecentLogSnippetFn(displayFile.id, options);
+      snippet = await fetchRecentLogSnippetFn(displayFile.id, {
+        ...options,
+        fileSize: displayFile.size,
+      });
       if (!snippet || !Array.isArray(snippet.lines)) {
         logger.warn("Display log fetch failed or returned no lines. Skipping extraction.");
         return false;
@@ -374,10 +433,12 @@ module.exports = {
   MAX_SNIPPET_LINES,
   FALLBACK_SNIPPET_LINES,
   MAX_SNIPPET_BYTES,
+  MAX_DOWNLOAD_TAIL_BYTES,
   parseDisplayLogTimestampMs,
   createDisplayLogSnippetCollector,
   collectRecentLogSnippet,
   buildDriveListUrl,
+  buildDriveDownloadRequest,
   listDriveTextFiles,
   getMostRecentFile,
   fetchRecentLogSnippet,

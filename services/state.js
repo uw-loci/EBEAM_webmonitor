@@ -13,6 +13,12 @@ const state = {
   sampleDataLines: [],
   timestamps: [],
   extractLines: [],
+  startup: {
+    status: 'starting',
+    startedAt: new Date().toISOString(),
+    completedAt: null,
+    error: null,
+  },
 
   // Base status used for sample data generation
   baseStatus: {
@@ -43,6 +49,7 @@ const state = {
   // Main data object holding all extracted experimental values
   data: {
     pressure: null,
+    pressure_902b_mbar: null,
     pressureTimestamp: null,
     safetyOutputDataFlags: null,
     safetyInputDataFlags: null,
@@ -50,6 +57,16 @@ const state = {
     safetyInputStatusFlags: null,
     temperatures: null,
     vacuumBits: null,
+    machine_status_temps: null,
+    machine_status_pressure_1e_4: null,
+    machine_status_interlocks: null,
+    machine_status_hv_panel: null,
+    machine_status_pressure_1e_6: null,
+    machine_status_hvps_nominal: null,
+    machine_status_bcon: null,
+    machine_status_cathodes: null,
+    machine_status_beams_ready: null,
+    machine_status_beams_on: null,
     heaterCurrent_A: null,
     heaterCurrent_B: null,
     heaterCurrent_C: null,

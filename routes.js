@@ -11,12 +11,53 @@ const {
   ccsGraphC,
   clearPressureGraph,
   getGraphMetadata,
+  getPressureGraphRangeSnapshot,
 } = require('./services/graphs');
 const { renderDashboard } = require('./views/dashboard');
+const { renderSystemHealthPage } = require('./views/systemHealth');
 
 const codeLastUpdated = new Date().toLocaleString('en-US', {
   timeZone: 'America/Chicago'
 });
+const HEALTH_DB_TIMEOUT_MS = 2_500;
+
+function getMemoryUsageMb() {
+  const memory = process.memoryUsage();
+  const toMb = (bytes) => Math.round((bytes / (1024 * 1024)) * 10) / 10;
+
+  return {
+    rss: toMb(memory.rss),
+    heapUsed: toMb(memory.heapUsed),
+    heapTotal: toMb(memory.heapTotal),
+    external: toMb(memory.external),
+  };
+}
+
+function getMemoryLimitMb() {
+  const configuredLimit = Number(process.env.RENDER_MEMORY_LIMIT_MB);
+  return Number.isFinite(configuredLimit) && configuredLimit > 0
+    ? configuredLimit
+    : 512;
+}
+
+async function getSupabaseStatus(timeoutMs = HEALTH_DB_TIMEOUT_MS) {
+  let timeoutId;
+  const timeout = new Promise((resolve) => {
+    timeoutId = setTimeout(() => resolve('timeout'), timeoutMs);
+  });
+  const query = Promise.resolve(
+    supabase.from('short_term_logs').select('count').limit(1)
+  ).then(
+    ({ error }) => error ? 'disconnected' : 'connected',
+    () => 'disconnected'
+  );
+
+  try {
+    return await Promise.race([query, timeout]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 function registerRoutes(app) {
 
@@ -52,7 +93,9 @@ function registerRoutes(app) {
     const { sicColors, vacColors } = computeAllColors(state.data, state.experimentRunning);
 
     res.json({
+      experimentRunning: state.experimentRunning,
       pressure: state.data.pressure,
+      pressure_902b_mbar: state.data.pressure_902b_mbar,
       pressureTimestamp: state.data.pressureTimestamp,
       safetyInputStatusFlags: state.data.safetyInputStatusFlags,
       safetyOutputStatusFlags: state.data.safetyOutputStatusFlags,
@@ -60,6 +103,16 @@ function registerRoutes(app) {
       safetyInputDataFlags: state.data.safetyInputDataFlags,
       temperatures: state.data.temperatures,
       vacuumBits: state.data.vacuumBits,
+      machine_status_temps: state.data.machine_status_temps,
+      machine_status_pressure_1e_4: state.data.machine_status_pressure_1e_4,
+      machine_status_interlocks: state.data.machine_status_interlocks,
+      machine_status_hv_panel: state.data.machine_status_hv_panel,
+      machine_status_pressure_1e_6: state.data.machine_status_pressure_1e_6,
+      machine_status_hvps_nominal: state.data.machine_status_hvps_nominal,
+      machine_status_bcon: state.data.machine_status_bcon,
+      machine_status_cathodes: state.data.machine_status_cathodes,
+      machine_status_beams_ready: state.data.machine_status_beams_ready,
+      machine_status_beams_on: state.data.machine_status_beams_on,
       vacuumColors: vacColors,
       sicColors,
       heaterCurrent_A: state.data.heaterCurrent_A,
@@ -98,19 +151,35 @@ function registerRoutes(app) {
     res.status(200).send('Refreshed display logs');
   });
 
+  app.get('/system-health', (req, res) => {
+    res.send(renderSystemHealthPage({ memoryLimitMb: getMemoryLimitMb() }));
+  });
+
   // Health check endpoint
   app.get('/health', async (req, res) => {
     try {
-      const { data, error } = await supabase
-        .from('short_term_logs')
-        .select('count')
-        .limit(1);
+      const supabaseStatus = await getSupabaseStatus();
 
       res.json({
         status: 'ok',
-        supabase: error ? 'disconnected' : 'connected',
+        supabase: supabaseStatus,
+        startup: { ...state.startup },
         experimentRunning: state.experimentRunning,
-        lastUpdate: state.webMonitorLastModified
+        lastUpdate: state.webMonitorLastModified,
+        sampledAt: new Date().toISOString(),
+        uptimeSeconds: Math.round(process.uptime()),
+        memoryLimitMb: getMemoryLimitMb(),
+        memoryMb: getMemoryUsageMb(),
+        cachePoints: {
+          shortTermPressure: shortTermPressureGraph.fullXVals.length,
+          longTermPressure: longTermPressureGraph.fullXVals.length,
+          ccsPerChannel: ccsGraphA.xVals.length,
+        },
+        cacheLimits: {
+          shortTermPressure: shortTermPressureGraph.maxDataPoints,
+          longTermPressure: longTermPressureGraph.maxDataPoints,
+          ccsPerChannel: ccsGraphA.maxPoints,
+        },
       });
     } catch (err) {
       res.status(500).json({
@@ -124,11 +193,42 @@ function registerRoutes(app) {
   app.get('/chart-data', (req, res) => {
     const view = req.query.view === 'long' ? 'long' : 'short';
     const graph = view === 'long' ? longTermPressureGraph : shortTermPressureGraph;
+    const rangeSnapshot = getPressureGraphRangeSnapshot(
+      graph,
+      req.query.from,
+      req.query.to,
+      req.query.maxPoints
+    );
 
-    res.json({
+    if (rangeSnapshot) {
+      return res.json({
+        view,
+        xVals: rangeSnapshot.xVals,
+        pressure972bVals: rangeSnapshot.pressure972bVals,
+        ...(view === 'short' && {
+          pressure902bVals: rangeSnapshot.pressure902bVals,
+        }),
+        rawPointCount: rangeSnapshot.rawPointCount,
+        totalRawPointCount: rangeSnapshot.totalRawPointCount,
+        displayPointCount: rangeSnapshot.displayPointCount,
+        downsampleFactor: rangeSnapshot.downsampleFactor,
+        sourceResolutionLabel: rangeSnapshot.sourceResolutionLabel,
+        sourceIntervalSeconds: rangeSnapshot.sourceIntervalSeconds,
+        cacheStartTime: rangeSnapshot.cacheStartTime,
+        cacheEndTime: rangeSnapshot.cacheEndTime,
+        rangeStartTime: rangeSnapshot.rangeStartTime,
+        rangeEndTime: rangeSnapshot.rangeEndTime,
+        rangeRequested: true,
+      });
+    }
+
+    return res.json({
       view,
       xVals: graph.displayXVals,
-      yVals: graph.displayYVals,
+      pressure972bVals: graph.displayYVals,
+      ...(view === 'short' && {
+        pressure902bVals: graph.displayPressure902bVals,
+      }),
       ...getGraphMetadata(graph),
     });
   });

@@ -15,7 +15,7 @@ If you need to change the web monitor branch that Render deploys:
 ## Setup
 
 ### Prerequisites
-- Node.js (v20+)
+- Node.js 24.22.1 (pinned in `.node-version` and `package.json`)
 - A Supabase project with the `short_term_logs` and `long_term_logs` tables
 - A Google Cloud API key with Drive API enabled
 - A Google Drive folder containing the system log files
@@ -219,6 +219,22 @@ See [SUPABASE-README.md](./SUPABASE-README.md) for the database-side hot/cold ta
 ## Deployment
 
 Hosted on [Render](https://render.com/). Render auto-deploys on pushes to whichever Git branch the service is configured to track.
+
+### Node.js runtime and redeployment
+
+Node.js is pinned to **24.22.1**, the [October 21, 2026 security release](https://nodejs.org/en/blog/release/v24.22.1), in `.node-version`, `package.json`, and the `NODE_VERSION` environment variable in `render.yaml`. The root package metadata in `package-lock.json` matches this pin.
+
+Render's [version selection order](https://render.com/docs/node-version) is `NODE_VERSION`, `.node-version`, `.nvmrc`, then `package.json` engines. An existing dashboard `NODE_VERSION` therefore overrides the repository files. A service created manually does not automatically apply `render.yaml` changes.
+
+When ready to deploy the runtime update:
+
+1. In the [Render Dashboard](https://dashboard.render.com/), open the EBEAM web monitor service, then **Settings > Build & Deploy**. Confirm **Branch** is `main` and note whether auto-deploy is enabled. If it tracks `develop` instead, merging into `develop` can deploy immediately; turn off auto-deploy first if deployment must wait.
+2. Open the service's **Environment** page and look for `NODE_VERSION`. If absent, no environment change is needed: Render will read `.node-version`. If it has another value, change it to `24.22.1` and choose **Save only** to avoid deploying yet. For a Blueprint-managed service, apply the matching `render.yaml` update when ready to deploy.
+3. Merge the runtime-update PR into `develop`. Then open and review a separate PR from `develop` into `main`; that release also includes any other changes already on `develop`. Leave the `main` PR unmerged until deployment is approved.
+4. When ready, merge the release PR into `main`. If auto-deploy is enabled and the service tracks `main`, Render will rebuild automatically. Otherwise choose **Manual Deploy > Deploy latest commit**. A service restart alone does not apply the runtime update.
+5. Open the new deployment's build log and confirm it reports Node.js `24.22.1`, then check `/health` and the dashboard's telemetry and charts after startup completes.
+
+See [Render's deployment documentation](https://render.com/docs/deploys) for deployment and auto-deploy controls.
 
 Required Render environment variables:
 - `SUPABASE_API_URL`
